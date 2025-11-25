@@ -169,6 +169,20 @@ async def health_check():
     }
 
 
+@app.get("/debug/files")
+async def debug_files():
+    """Debug endpoint to check what files are actually deployed."""
+    import os
+    cwd = os.getcwd()
+    return {
+        "current_working_directory": cwd,
+        "files_in_cwd": os.listdir('.'),
+        "assets_exists": os.path.exists('assets'),
+        "assets_files": os.listdir('assets') if os.path.exists('assets') else [],
+        "app_files": os.listdir('app') if os.path.exists('app') else []
+    }
+
+
 # Serve Outlook add-in HTML files
 from fastapi.responses import FileResponse
 
