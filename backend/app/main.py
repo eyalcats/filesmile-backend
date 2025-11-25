@@ -94,11 +94,23 @@ backend_dir = pathlib.Path(__file__).parent.parent
 outlook_addin_dir = backend_dir.parent / "outlook-addin"
 
 # Mount assets from backend directory (for Render deployment)
+import os
+print(f"Current working directory: {os.getcwd()}")
+print(f"Backend dir path: {backend_dir}")
+print(f"Assets dir path: {backend_dir / 'assets'}")
+print(f"Assets dir exists: {(backend_dir / 'assets').exists()}")
+if (backend_dir / 'assets').exists():
+    print(f"Files in assets dir: {os.listdir(str(backend_dir / 'assets'))}")
+
 if (backend_dir / "assets").exists():
     app.mount("/assets", StaticFiles(directory=str(backend_dir / "assets")), name="assets")
+    print("✅ Mounted /assets from backend directory")
 # Fallback to outlook-addin directory for local development
 elif (outlook_addin_dir / "assets").exists():
     app.mount("/assets", StaticFiles(directory=str(outlook_addin_dir / "assets")), name="assets")
+    print("✅ Mounted /assets from outlook-addin directory")
+else:
+    print("❌ WARNING: No assets directory found for mounting /assets")
 
 if (outlook_addin_dir / "src").exists():
     app.mount("/src", StaticFiles(directory=str(outlook_addin_dir / "src")), name="src")
