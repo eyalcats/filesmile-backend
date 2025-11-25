@@ -169,6 +169,12 @@ async def health_check():
     }
 
 
+@app.get("/test-debug")
+async def test_debug():
+    """Simple test endpoint to verify deployment."""
+    return {"test": "works", "timestamp": "2025-11-25"}
+
+
 @app.get("/debug/files")
 async def debug_files():
     """Debug endpoint to check what files are actually deployed."""
