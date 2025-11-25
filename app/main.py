@@ -93,9 +93,11 @@ import pathlib
 backend_dir = pathlib.Path(__file__).parent.parent
 outlook_addin_dir = backend_dir.parent / "outlook-addin"
 
-# Mount Outlook add-in static files
-app.mount("/assets", StaticFiles(directory=str(outlook_addin_dir / "assets")), name="assets")
-app.mount("/src", StaticFiles(directory=str(outlook_addin_dir / "src")), name="src")
+# Mount Outlook add-in static files (only if directory exists)
+if (outlook_addin_dir / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(outlook_addin_dir / "assets")), name="assets")
+if (outlook_addin_dir / "src").exists():
+    app.mount("/src", StaticFiles(directory=str(outlook_addin_dir / "src")), name="src")
 
 
 @app.get("/api/v1/test-simple")
@@ -157,13 +159,19 @@ from fastapi.responses import FileResponse
 @app.get("/taskpane.html")
 async def taskpane():
     """Serve the taskpane HTML file."""
-    return FileResponse(str(outlook_addin_dir / "taskpane.html"))
+    if (outlook_addin_dir / "taskpane.html").exists():
+        return FileResponse(str(outlook_addin_dir / "taskpane.html"))
+    else:
+        return {"error": "Taskpane not available in backend-only deployment"}
 
 
 @app.get("/commands.html")
 async def commands():
     """Serve the commands HTML file."""
-    return FileResponse(str(outlook_addin_dir / "commands.html"))
+    if (outlook_addin_dir / "commands.html").exists():
+        return FileResponse(str(outlook_addin_dir / "commands.html"))
+    else:
+        return {"error": "Commands not available in backend-only deployment"}
 
 
 if __name__ == "__main__":
