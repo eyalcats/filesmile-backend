@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "SlashCommand(/init)",
+      "Bash(mkdir:*)",
+      "Bash(python:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(taskkill /F /PID 28148)",
+      "Bash(powershell -Command \"Get-Process | Where-Object { $_Id -in @(42584, 27088, 5904, 29144, 28148, 56452) } | Stop-Process -Force\")",
+      "Bash(openssl version:*)",
+      "Bash(openssl req:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

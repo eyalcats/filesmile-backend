@@ -1,0 +1,192 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>😊 File-Smile</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <link rel="stylesheet" href="src/taskpane.css">
+</head>
+<body>
+    <!-- App Header -->
+    <div class="app-header">
+        <!-- Language switcher will be added here dynamically -->
+    </div>
+
+    <!-- Main Scrollable Container -->
+    <div class="main-container">
+        
+        <!-- Section 1: Company -->
+        <div class="section-row">
+            <label class="field-label" data-i18n="company">Company</label>
+            <div class="select-wrapper">
+                <select id="company" class="full-width input-control">
+                    <option value="" data-i18n="loading">Loading...</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Section 2: Email Context (Always Visible) -->
+        <div class="group-box email-box">
+            <div class="info-row">
+                <span class="label" data-i18n="from">From:</span>
+                <span id="emailSender" class="value text-truncate"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" data-i18n="date">Date:</span>
+                <span id="emailDate" class="value"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" data-i18n="subject">Subject:</span>
+                <span id="emailSubject" class="value text-truncate"></span>
+            </div>
+        </div>
+
+        <!-- Section 3: Search (Always Visible) -->
+        <div class="group-box search-box">
+            <div class="form-row">
+                <label data-i18n="searchBy">Search By</label>
+                <select id="searchBy" class="full-width input-control">
+                    <option value="Documents" data-i18n="documents">Documents</option>
+                    <!-- <option value="Cards">Cards</option> --> 
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <label data-i18n="docType">Doc Type</label>
+                <select id="searchGroup" class="full-width input-control">
+                    <option value="" data-i18n="loading">Loading...</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label data-i18n="searchValue">Search Value</label>
+                <div class="search-input-group">
+                    <input type="text" id="searchTerm" class="full-width input-control has-clear" data-i18n-placeholder="enterNumber" placeholder="Enter number...">
+                    <button id="clearSearch" class="clear-icon" data-i18n-title="clear" title="Clear">×</button>
+                </div>
+            </div>
+
+            <div class="toolbar-row">
+                <button id="searchButton" class="btn-primary full-width" data-i18n="search">Search 🔍</button>
+            </div>
+        </div>
+
+        <!-- Section 4: Export Actions (Always Visible) -->
+        <div id="exportSection" class="actions-container">
+            <div class="box-header" data-i18n="exportActions">Export Actions</div>
+            
+            <div class="form-row">
+                <label data-i18n="remarks">Remarks / Description</label>
+                <input type="text" id="exportRemarks" class="full-width input-control" data-i18n-placeholder="description" placeholder="Description...">
+            </div>
+            
+            <!-- Export Buttons Row -->
+            <div class="action-buttons-grid">
+                <button id="btnExportMail" class="action-btn">
+                    <span class="icon">💾</span>
+                    <span data-i18n="exportMail">Export Mail</span>
+                </button>
+                <button id="btnExportFiles" class="action-btn">
+                    <span class="icon">❐</span>
+                    <span data-i18n="exportFiles">Exp. Files</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Section 5: Selected Document (Hidden until selection) -->
+        <div id="selectedDocSection" class="group-box selected-doc-box" style="display: none;">
+            <div class="box-header" data-i18n="selectedDocument">Selected Document</div>
+            <div class="info-row">
+                <span class="label" data-i18n="type">Type:</span>
+                <span id="selDocType" class="value"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" data-i18n="date">Date:</span>
+                <span id="selDocDate" class="value"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" data-i18n="desc">Desc:</span>
+                <span id="selDocDesc" class="value"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" data-i18n="details">Details:</span>
+                <span id="selDocDetails" class="value"></span>
+            </div>
+            <div class="close-selection" id="clearSelection" data-i18n-title="clearSelection" title="Clear Selection">×</div>
+        </div>
+
+        <!-- Section 6: Attach Actions (Hidden until selection) -->
+        <div id="actionsSection" class="actions-container" style="display: none;">
+            <div class="box-header" data-i18n="attachActions">Attach Actions</div>
+            
+            <div class="form-row">
+                <label data-i18n="remarks">Remarks / Description</label>
+                <input type="text" id="remarks" class="full-width input-control" data-i18n-placeholder="description" placeholder="Description...">
+            </div>
+
+            <!-- Attach Buttons Row -->
+            <div class="action-buttons-grid">
+                <button id="btnAttachMail" class="action-btn">
+                    <span class="icon">✉️</span>
+                    <span data-i18n="attachMail">Attach Mail</span>
+                </button>
+                <button id="btnAttachFiles" class="action-btn">
+                    <span class="icon">📎</span>
+                    <span data-i18n="attachFiles">Attach Files</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="statusMessage" class="status-msg success" style="display: none;"></div>
+        <div id="errorMessage" class="status-msg error" style="display: none;"></div>
+
+    </div>
+
+    <!-- Search Results Modal -->
+    <div id="searchResultsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="selectDocument">Select Document</h3>
+                <span class="close-modal" id="closeResultsModal">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="list-view" id="resultsListBody">
+                    <!-- Items injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attachments Modal -->
+    <div id="attachmentsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="selectAttachments">Select Attachments</h3>
+                <span class="close-modal" id="closeAttachmentsModal">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="list-view" id="attachmentsListBody">
+                    <!-- Items injected here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btnUploadSelected" class="btn-primary full-width" data-i18n="uploadSelected">Upload Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p data-i18n="processing">Processing...</p>
+    </div>
+
+    <script src="src/config.js"></script>
+    <script src="src/api-client.js"></script>
+    <script src="src/auth-flow.js"></script>
+    <script src="src/taskpane.js"></script>
+</body>
+</html>
