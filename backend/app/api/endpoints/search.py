@@ -50,7 +50,7 @@ async def get_search_groups(
     """
     try:
         # Create Priority client using admin credentials for GET operation
-        client = AuthHelper.create_priority_client(current_user, request, use_admin_credentials=True)
+        client = AuthHelper.create_priority_client(current_user, request, use_admin_credentials=False)
 
         groups = await client.get_search_groups()
         await client.close()
@@ -155,7 +155,7 @@ async def find_document_by_number(
     """
     try:
         # Create Priority client using admin credentials for GET operation
-        client = AuthHelper.create_priority_client(current_user, http_request, use_admin_credentials=True)
+        client = AuthHelper.create_priority_client(current_user, http_request, use_admin_credentials=False)
         
         search_service = SearchService(client)
         doc = await search_service.find_doc_by_number(form_name, doc_number)
@@ -201,7 +201,7 @@ async def get_companies(
             raise HTTPException(status_code=401, detail="Authentication required")
         
         # Create Priority client using admin credentials for GET operation
-        client = AuthHelper.create_priority_client(current_user, http_request, use_admin_credentials=True)
+        client = AuthHelper.create_priority_client(current_user, http_request, use_admin_credentials=False)
         companies = await client.get_companies()
         await client.close()
 
