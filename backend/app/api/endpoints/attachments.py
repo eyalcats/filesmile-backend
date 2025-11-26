@@ -220,10 +220,22 @@ async def add_export_attachment(
         HTTPException: If upload fails
     """
     try:
+        # Debug logging
+        print(f"DEBUG: Export attachment request received")
+        print(f"DEBUG: User: {current_user.user.email}")
+        print(f"DEBUG: File description: {request.file_description}")
+        print(f"DEBUG: File extension: {request.file_extension}")
+        print(f"DEBUG: Source identifier: {request.source_identifier}")
+        print(f"DEBUG: MIME type: {request.mime_type}")
+        print(f"DEBUG: Base64 data length: {len(request.file_base64) if request.file_base64 else 0}")
+        
         # Create Priority client using authenticated user's credentials
+        print("DEBUG: Creating Priority client...")
         client = AuthHelper.create_priority_client(current_user, http_request)
+        print(f"DEBUG: Priority client created with username: {client.username}")
         
         attachment_service = AttachmentService(client)
+        print("DEBUG: Calling AttachmentService.add_export_attachment...")
 
         result = await attachment_service.add_export_attachment(
             user_login=client.username,
@@ -233,6 +245,8 @@ async def add_export_attachment(
             source_identifier=request.source_identifier,
             mime_type=request.mime_type
         )
+        
+        print(f"DEBUG: Export attachment successful: {result}")
 
         await client.close()
 
@@ -243,9 +257,13 @@ async def add_export_attachment(
         )
 
     except Exception as e:
+        # Detailed error logging
+        import traceback
+        print(f"DEBUG: Export attachment failed with error: {type(e).__name__}: {str(e)}")
+        print(f"DEBUG: Full traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Export attachment upload failed: {str(e)}"
+            detail=f"Export attachment upload failed: {type(e).__name__}: {str(e)}"
         )
 
 
