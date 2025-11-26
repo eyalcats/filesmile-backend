@@ -202,7 +202,7 @@ class PriorityClient:
         # Log OData command for Postman replication
         print(f"DEBUG: OData GET Command:")
         print(f"  URL: {url}")
-        print(f"  Headers: Authorization: Basic <base64('{self.username}:{password}')>")
+        print(f"  Headers: Authorization: Basic <base64('{self.username}:{self.password}')>")
         if params:
             print(f"  Params: {params}")
         print(f"  Postman: GET {url} with Basic Auth and params: {params}")
@@ -244,7 +244,7 @@ class PriorityClient:
         # Log OData command for Postman replication
         print(f"DEBUG: OData POST Command:")
         print(f"  URL: {url}")
-        print(f"  Headers: Authorization: Basic <base64('{self.username}:{password}')>, Content-Type: application/json")
+        print(f"  Headers: Authorization: Basic <base64('{self.username}:{self.password}')>, Content-Type: application/json")
         print(f"  Body: {data}")
         print(f"  Postman: POST {url} with Basic Auth and JSON body: {data}")
 
