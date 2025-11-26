@@ -8,9 +8,14 @@ from typing import Generator
 from app.core.config import settings
 
 # Create SQLAlchemy engine
+# Convert postgresql:// to postgresql+psycopg:// for psycopg3 compatibility
+database_url = settings.database_url
+if database_url.startswith('postgresql://') and 'psycopg' not in database_url:
+    database_url = database_url.replace('postgresql://', 'postgresql+psycopg://')
+
 engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
+    database_url,
+    connect_args={"check_same_thread": False} if "sqlite" in database_url else {},
     echo=settings.debug
 )
 
