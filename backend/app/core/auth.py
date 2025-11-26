@@ -150,8 +150,8 @@ async def get_current_user(
 
     # Verify JWT and extract payload
     payload = JWTService.verify_jwt(credentials.credentials)
-    user_id = payload.get("sub")
-    tenant_id = payload.get("tenant_id")
+    user_id = int(payload.get("sub"))  # Convert string to int
+    tenant_id = int(payload.get("tenant_id"))  # Convert string to int
 
     # Load user from database
     user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
