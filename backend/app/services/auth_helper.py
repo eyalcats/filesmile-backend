@@ -55,11 +55,17 @@ class AuthHelper:
                     erp_password = decrypt_value(tenant.erp_admin_password_or_token) if tenant.erp_admin_password_or_token else None
                     
                     if not erp_username or not erp_password:
-                        logger.error("Tenant admin ERP credentials not configured")
-                        raise HTTPException(
-                            status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="Tenant admin ERP credentials not configured. Please contact system administrator."
-                        )
+                        logger.warning("Tenant admin ERP credentials not configured, falling back to user credentials")
+                        # Fall back to user credentials since admin and user are the same
+                        erp_username = decrypt_value(user.erp_username) if user.erp_username else None
+                        erp_password = decrypt_value(user.erp_password_or_token) if user.erp_password_or_token else None
+                        
+                        if not erp_username or not erp_password:
+                            logger.error("Both admin and user ERP credentials not configured")
+                            raise HTTPException(
+                                status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="ERP credentials not configured. Please contact system administrator."
+                            )
                 else:
                     # Use user credentials for POST operations
                     logger.info(f"Using user credentials for POST operation (user: {user.email}, tenant: {tenant.name})")
