@@ -190,6 +190,14 @@ async def register_user(
 
     # Step 2: Validate ERP credentials before saving
     try:
+        # Debug logging
+        print(f"DEBUG: Validating ERP credentials for user: {request.email}")
+        print(f"DEBUG: ERP Username: {request.erp_username}")
+        print(f"DEBUG: ERP Password: {'*' * len(request.erp_password_or_token)}")
+        print(f"DEBUG: ERP Base URL: {tenant.erp_base_url}")
+        print(f"DEBUG: ERP Company: {tenant.erp_company}")
+        print(f"DEBUG: ERP Tabula INI: {tenant.erp_tabula_ini}")
+        
         # Create temporary Priority client to validate credentials
         validation_client = PriorityClient(
             username=request.erp_username,
@@ -200,14 +208,18 @@ async def register_user(
         )
         
         # Validate credentials by making a simple API call
+        print("DEBUG: Calling validate_credentials...")
         await validation_client.validate_credentials()
+        print("DEBUG: Credentials validation successful!")
         await validation_client.close()
         
     except Exception as e:
+        # Debug logging
+        print(f"DEBUG: ERP credentials validation failed: {type(e).__name__}: {str(e)}")
         # Raise exception to stop registration if credentials are invalid
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid ERP credentials",
+            detail=f"Invalid ERP credentials: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"}
         )
 
