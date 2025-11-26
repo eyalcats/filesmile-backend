@@ -193,6 +193,9 @@ class AttachmentService:
             mime_type=mime_type,
             extension=file_extension
         )
+        
+        # Debug the data URL
+        print(f"DEBUG: Generated data URL: {data_url[:100]}...")  # First 100 chars
 
         # Prepare export attachment data
         export_data = {
@@ -202,6 +205,14 @@ class AttachmentService:
             "MAILFROM": source_identifier,
             "USERLOGIN": user_login
         }
+        
+        # Debug the final data
+        print(f"DEBUG: Export data being sent:")
+        for key, value in export_data.items():
+            if key == "EXTFILENAME":
+                print(f"  {key}: {value[:100]}...")  # First 100 chars
+            else:
+                print(f"  {key}: {value}")
 
         # Upload to export staging
         result = await self.client.post(
