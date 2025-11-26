@@ -82,6 +82,7 @@ async def resolve_tenant(
 
     # Look up tenant by domain
     print(f"DEBUG: Querying TenantDomain table for domain: '{domain}'")
+    print(f"DEBUG: Database connection: {db.bind.url}")
     tenant_domain = db.query(TenantDomain).filter(
         TenantDomain.domain == domain
     ).first()
