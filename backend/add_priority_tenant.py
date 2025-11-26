@@ -33,21 +33,15 @@ def add_priority_tenant():
 
         print("🏢 Creating Priority Software tenant...")
 
-        # Validate required environment variables
-        if not settings.priority_base_url or not settings.priority_company:
-            print("❌ PRIORITY_BASE_URL and PRIORITY_COMPANY must be set in .env for tenant creation")
-            print("Please check your .env file or environment variables in Render")
-            return
-
-        # Create tenant with encrypted admin credentials
+        # Create minimal tenant - ERP config will be set via admin panel
         tenant = Tenant(
             name="Priority Software",
-            erp_base_url=settings.priority_base_url,
+            erp_base_url="https://placeholder.com/odata",  # Will be updated via admin panel
             erp_auth_type="basic",
-            erp_admin_username=encrypt_value(settings.priority_admin_user) if settings.priority_admin_user else None,
-            erp_admin_password_or_token=encrypt_value(settings.priority_admin_password) if settings.priority_admin_password else None,
-            erp_company=settings.priority_company,
-            erp_tabula_ini=settings.priority_tabula_ini or "tabula.ini",
+            erp_admin_username=None,  # Will be set via admin panel
+            erp_admin_password_or_token=None,  # Will be set via admin panel
+            erp_company="PLACEHOLDER",  # Will be updated via admin panel
+            erp_tabula_ini="tabula.ini",
             is_active=True
         )
         db.add(tenant)
@@ -61,14 +55,15 @@ def add_priority_tenant():
         print(f"  ✅ Added domain: priority-software.com")
 
         db.commit()
-        print("\n🎉 Priority Software tenant created successfully!")
+        print(f"\n🎉 Priority Software tenant created successfully!")
         print(f"\n📋 Tenant Details:")
         print(f"   ID: {tenant.id}")
         print(f"   Name: {tenant.name}")
         print(f"   Domain: priority-software.com")
-        print(f"   ERP Base URL: {tenant.erp_base_url}")
-        print(f"   ERP Company: {tenant.erp_company}")
+        print(f"   ERP Base URL: {tenant.erp_base_url} (placeholder - update via admin panel)")
+        print(f"   ERP Company: {tenant.erp_company} (placeholder - update via admin panel)")
         print(f"\n💡 Users with @priority-software.com emails can now register!")
+        print(f"⚠️  Remember to update ERP configuration via admin panel before user registration")
 
     except Exception as e:
         db.rollback()
