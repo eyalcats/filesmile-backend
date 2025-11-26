@@ -71,7 +71,9 @@ console.log('DEBUG: currentLang set to:', currentLang);
 
 // Get translation function
 function t(key) {
-    return translations[currentLang][key] || translations.en[key];
+    const result = translations[currentLang][key] || translations.en[key];
+    console.log('DEBUG: t() called with key:', key, 'currentLang:', currentLang, 'result:', result);
+    return result;
 }
 
 // Update UI with translations
@@ -935,9 +937,13 @@ function showLoading(show) {
 }
 
 function showStatus(msg, type = 'success') {
+    console.log('DEBUG: showStatus called with msg:', msg, 'type:', type);
     const el = type === 'error' ? document.getElementById('errorMessage') : document.getElementById('statusMessage');
+    console.log('DEBUG: status element found:', el);
+    console.log('DEBUG: setting textContent to:', msg);
     el.textContent = msg;
     el.style.display = 'block';
+    console.log('DEBUG: element display set to block, computed style:', window.getComputedStyle(el));
     
     // Auto hide after 4 seconds
     setTimeout(() => el.style.display = 'none', 4000);
