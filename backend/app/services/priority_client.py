@@ -208,6 +208,16 @@ class PriorityClient:
         print(f"  Postman: GET {url} with Basic Auth and params: {params}")
 
         response = await self.client.get(url, params=params)
+        
+        # Log response for debugging
+        print(f"DEBUG: OData Response Status: {response.status_code}")
+        if response.status_code >= 400:
+            try:
+                error_json = response.json()
+                print(f"DEBUG: OData Error Response: {error_json}")
+            except:
+                print(f"DEBUG: OData Error Text: {response.text}")
+        
         response.raise_for_status()
 
         return response.json()
@@ -249,6 +259,16 @@ class PriorityClient:
         print(f"  Postman: POST {url} with Basic Auth and JSON body: {data}")
 
         response = await self.client.post(url, json=data)
+        
+        # Log response for debugging
+        print(f"DEBUG: OData Response Status: {response.status_code}")
+        if response.status_code >= 400:
+            try:
+                error_json = response.json()
+                print(f"DEBUG: OData Error Response: {error_json}")
+            except:
+                print(f"DEBUG: OData Error Text: {response.text}")
+        
         response.raise_for_status()
 
         return response.json()
