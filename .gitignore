@@ -45,6 +45,14 @@ env/
 *.sqlite
 *.sqlite3
 
+# SSL Certificates (security)
+*.crt
+*.pem
+*.key
+backend/certs/*.crt
+backend/certs/*.pem
+backend/certs/*.key
+
 # Logs
 *.log
 logs/
