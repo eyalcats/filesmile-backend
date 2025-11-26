@@ -197,17 +197,15 @@ class AttachmentService:
         # Debug the data URL
         print(f"DEBUG: Generated data URL: {data_url[:100]}...")  # First 100 chars
 
-        # Prepare export attachment data
+        # Prepare export attachment data - only use valid fields for EXTFILESFILESMILE
         export_data = {
             "EXTFILEDES": file_description,
             "EXTFILENAME": data_url,
-            "SUFFIX": file_extension.lower(),
-            "MAILFROM": source_identifier,
-            "USERLOGIN": user_login
+            "SUFFIX": file_extension.lower()
         }
         
         # Debug the final data
-        print(f"DEBUG: Export data being sent:")
+        print(f"DEBUG: Export data being sent (valid fields only):")
         for key, value in export_data.items():
             if key == "EXTFILENAME":
                 print(f"  {key}: {value[:100]}...")  # First 100 chars
