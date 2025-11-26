@@ -35,7 +35,9 @@ const translations = {
         attachments: "Attachments",
         close: "Close",
         select: "Select",
-        back: "Back"
+        back: "Back",
+        emailExported: "Email exported successfully!",
+        emailUploaded: "Email attached successfully!"
     },
     he: {
         title: "פיילסמייל - חיפוש מסמכי Priority ERP",
@@ -55,7 +57,9 @@ const translations = {
         attachments: "קבצים מצורפים",
         close: "סגור",
         select: "בחר",
-        back: "חזור"
+        back: "חזור",
+        emailExported: "הדוא\"ל יוצא בהצלחה!",
+        emailUploaded: "הדוא\"ל צורף בהצלחה!"
     }
 };
 
