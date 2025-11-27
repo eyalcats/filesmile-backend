@@ -158,11 +158,12 @@ class UserResponse(BaseModel):
     tenant_id: int = Field(..., description="Associated tenant ID")
     display_name: Optional[str] = Field(None, description="Display name")
     role: str = Field(..., description="User role")
+    erp_username: Optional[str] = Field(None, description="ERP username (decrypted)")
     is_active: bool = Field(..., description="Active status")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
     
-    # Note: Sensitive fields (erp_username, erp_password_or_token) are excluded
+    # Note: erp_password_or_token is excluded for security
 
 
 class UserListResponse(BaseModel):

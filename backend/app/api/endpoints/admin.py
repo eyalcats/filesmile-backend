@@ -60,6 +60,29 @@ def tenant_to_response(tenant: Tenant) -> TenantResponse:
         created_at=tenant.created_at,
         updated_at=tenant.updated_at
     )
+
+
+def user_to_response(user: User) -> UserResponse:
+    """Convert user model to response with decrypted ERP username."""
+    decrypted_username = None
+    if user.erp_username:
+        try:
+            decrypted_username = decrypt_value(user.erp_username)
+        except Exception:
+            decrypted_username = user.erp_username
+    
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        tenant_id=user.tenant_id,
+        display_name=user.display_name,
+        role=user.role,
+        erp_username=decrypted_username,
+        is_active=user.is_active,
+        created_at=user.created_at,
+        updated_at=user.updated_at
+    )
+
 from app.core.config import settings
 import hashlib
 import secrets
@@ -455,7 +478,7 @@ async def list_users(
     users = query.offset(skip).limit(limit).all()
     
     return UserListResponse(
-        items=[UserResponse.model_validate(u) for u in users],
+        items=[user_to_response(u) for u in users],
         total=total
     )
 
@@ -469,7 +492,7 @@ async def get_user(user_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return UserResponse.model_validate(user)
+    return user_to_response(user)
 
 
 @router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -505,7 +528,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
     
-    return UserResponse.model_validate(user)
+    return user_to_response(user)
 
 
 @router.put("/users/{user_id}", response_model=UserResponse)
@@ -556,7 +579,7 @@ async def update_user(
     db.commit()
     db.refresh(user)
     
-    return UserResponse.model_validate(user)
+    return user_to_response(user)
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
