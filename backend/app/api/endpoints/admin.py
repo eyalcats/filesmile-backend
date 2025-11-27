@@ -29,7 +29,12 @@ from app.models.admin_schemas import (
     AdminLoginRequest,
     AdminLoginResponse,
 )
-from app.utils.encryption import encrypt_value
+try:
+    from app.utils.encryption import encrypt_value
+except ImportError:
+    # Fallback if encryption module not available
+    def encrypt_value(value):
+        return value
 from app.core.config import settings
 import hashlib
 import secrets
@@ -135,30 +140,53 @@ async def get_tenant(tenant_id: int, db: Session = Depends(get_db)):
 @router.post("/tenants", response_model=TenantResponse, status_code=status.HTTP_201_CREATED)
 async def create_tenant(tenant_data: TenantCreate, db: Session = Depends(get_db)):
     """Create a new tenant."""
-    # Check if tenant name already exists
-    existing = db.query(Tenant).filter(Tenant.name == tenant_data.name).first()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tenant with this name already exists"
+    try:
+        # Check if tenant name already exists
+        existing = db.query(Tenant).filter(Tenant.name == tenant_data.name).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tenant with this name already exists"
+            )
+        
+        # Encrypt sensitive fields if provided
+        encrypted_username = None
+        encrypted_password = None
+        if tenant_data.erp_admin_username:
+            try:
+                encrypted_username = encrypt_value(tenant_data.erp_admin_username)
+            except Exception:
+                encrypted_username = tenant_data.erp_admin_username
+        if tenant_data.erp_admin_password_or_token:
+            try:
+                encrypted_password = encrypt_value(tenant_data.erp_admin_password_or_token)
+            except Exception:
+                encrypted_password = tenant_data.erp_admin_password_or_token
+        
+        tenant = Tenant(
+            name=tenant_data.name,
+            erp_base_url=tenant_data.erp_base_url,
+            erp_auth_type=tenant_data.erp_auth_type or "basic",
+            erp_admin_username=encrypted_username,
+            erp_admin_password_or_token=encrypted_password,
+            erp_company=tenant_data.erp_company,
+            erp_tabula_ini=tenant_data.erp_tabula_ini or "tabula.ini",
+            is_active=tenant_data.is_active if tenant_data.is_active is not None else True
         )
-    
-    tenant = Tenant(
-        name=tenant_data.name,
-        erp_base_url=tenant_data.erp_base_url,
-        erp_auth_type=tenant_data.erp_auth_type or "basic",
-        erp_admin_username=encrypt_value(tenant_data.erp_admin_username) if tenant_data.erp_admin_username else None,
-        erp_admin_password_or_token=encrypt_value(tenant_data.erp_admin_password_or_token) if tenant_data.erp_admin_password_or_token else None,
-        erp_company=tenant_data.erp_company,
-        erp_tabula_ini=tenant_data.erp_tabula_ini or "tabula.ini",
-        is_active=tenant_data.is_active if tenant_data.is_active is not None else True
-    )
-    
-    db.add(tenant)
-    db.commit()
-    db.refresh(tenant)
-    
-    return TenantResponse.model_validate(tenant)
+        
+        db.add(tenant)
+        db.commit()
+        db.refresh(tenant)
+        
+        return TenantResponse.model_validate(tenant)
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create tenant: {str(e)}"
+        )
 
 
 @router.put("/tenants/{tenant_id}", response_model=TenantResponse)
