@@ -6,10 +6,13 @@ Handles both legacy API key authentication and new JWT multi-tenant authenticati
 from typing import Optional, Tuple
 from fastapi import Request
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
 from app.core.auth import CurrentUser
 from app.core.config import settings
 from app.utils.encryption import decrypt_value
 from app.services.priority_client import PriorityClient
+from app.models.database import UserTenant
+from app.db.session import get_db
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,7 +25,8 @@ class AuthHelper:
     def get_priority_credentials_and_config(
         current_user: Optional[CurrentUser] = None,
         request: Optional[Request] = None,
-        use_admin_credentials: bool = False
+        use_admin_credentials: bool = False,
+        db: Optional[Session] = None
     ) -> Tuple[str, str, str, str, str]:
         """
         Get Priority credentials and configuration based on JWT authentication.
@@ -34,6 +38,7 @@ class AuthHelper:
             request: FastAPI request object
             use_admin_credentials: If True, use tenant admin credentials (for GET operations)
                                  If False, use user credentials (for POST operations)
+            db: Database session (optional, will create one if not provided)
 
         Returns:
             Tuple of (username, password, company, base_url, tabula_ini)
@@ -47,6 +52,17 @@ class AuthHelper:
                 # Use tenant's ERP configuration
                 tenant = current_user.tenant
                 user = current_user.user
+                
+                # Get user-tenant association to access ERP credentials
+                if db is None:
+                    # Create a new session if not provided
+                    db = next(get_db())
+                
+                user_tenant = db.query(UserTenant).filter(
+                    UserTenant.user_id == user.id,
+                    UserTenant.tenant_id == tenant.id,
+                    UserTenant.is_active == True
+                ).first()
 
                 if use_admin_credentials:
                     # Use tenant admin credentials for GET operations
@@ -56,9 +72,10 @@ class AuthHelper:
                     
                     if not erp_username or not erp_password:
                         logger.warning("Tenant admin ERP credentials not configured, falling back to user credentials")
-                        # Fall back to user credentials since admin and user are the same
-                        erp_username = decrypt_value(user.erp_username) if user.erp_username else None
-                        erp_password = decrypt_value(user.erp_password_or_token) if user.erp_password_or_token else None
+                        # Fall back to user credentials from UserTenant
+                        if user_tenant:
+                            erp_username = decrypt_value(user_tenant.erp_username) if user_tenant.erp_username else None
+                            erp_password = decrypt_value(user_tenant.erp_password_or_token) if user_tenant.erp_password_or_token else None
                         
                         if not erp_username or not erp_password:
                             logger.error("Both admin and user ERP credentials not configured")
@@ -67,10 +84,14 @@ class AuthHelper:
                                 detail="ERP credentials not configured. Please contact system administrator."
                             )
                 else:
-                    # Use user credentials for POST operations
+                    # Use user credentials for POST operations from UserTenant
                     logger.info(f"Using user credentials for POST operation (user: {user.email}, tenant: {tenant.name})")
-                    erp_username = decrypt_value(user.erp_username) if user.erp_username else None
-                    erp_password = decrypt_value(user.erp_password_or_token) if user.erp_password_or_token else None
+                    if user_tenant:
+                        erp_username = decrypt_value(user_tenant.erp_username) if user_tenant.erp_username else None
+                        erp_password = decrypt_value(user_tenant.erp_password_or_token) if user_tenant.erp_password_or_token else None
+                    else:
+                        erp_username = None
+                        erp_password = None
                     
                     if not erp_username or not erp_password:
                         logger.error("User ERP credentials not configured")
