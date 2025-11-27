@@ -169,31 +169,20 @@ const App = {
     // ==================== TENANTS ====================
     
     /**
-     * Load tenants from API or mock data
+     * Load tenants from API
      */
     async loadTenants() {
         const search = document.getElementById('tenantsSearch').value;
         const status = document.getElementById('tenantsStatusFilter').value;
         
         try {
-            // Try to load from API
-            this.tenants = await API.getTenants({ search, status });
+            const response = await API.getTenants({ search, status });
+            // Handle response format: { items: [], total: n }
+            this.tenants = response.items || response;
         } catch (error) {
-            // Use mock data if API fails
-            console.warn('API unavailable, using mock data:', error.message);
-            this.tenants = this.getMockTenants();
-            
-            // Filter mock data
-            if (search) {
-                this.tenants = this.tenants.filter(t => 
-                    t.name.toLowerCase().includes(search.toLowerCase()) ||
-                    t.erp_base_url.toLowerCase().includes(search.toLowerCase())
-                );
-            }
-            if (status) {
-                const isActive = status === 'active';
-                this.tenants = this.tenants.filter(t => t.is_active === isActive);
-            }
+            console.error('Failed to load tenants:', error.message);
+            this.showToast('error', 'Error', 'Failed to load tenants: ' + error.message);
+            this.tenants = [];
         }
         
         this.renderTenants();
@@ -283,26 +272,20 @@ const App = {
     // ==================== DOMAINS ====================
     
     /**
-     * Load domains from API or mock data
+     * Load domains from API
      */
     async loadDomains() {
         const search = document.getElementById('domainsSearch').value;
         const tenantId = document.getElementById('domainsTenantFilter').value;
         
         try {
-            this.domains = await API.getDomains({ search, tenant_id: tenantId });
+            const response = await API.getDomains({ search, tenant_id: tenantId });
+            // Handle response format: { items: [], total: n }
+            this.domains = response.items || response;
         } catch (error) {
-            console.warn('API unavailable, using mock data:', error.message);
-            this.domains = this.getMockDomains();
-            
-            if (search) {
-                this.domains = this.domains.filter(d => 
-                    d.domain.toLowerCase().includes(search.toLowerCase())
-                );
-            }
-            if (tenantId) {
-                this.domains = this.domains.filter(d => d.tenant_id === parseInt(tenantId));
-            }
+            console.error('Failed to load domains:', error.message);
+            this.showToast('error', 'Error', 'Failed to load domains: ' + error.message);
+            this.domains = [];
         }
         
         this.renderDomains();
@@ -389,7 +372,7 @@ const App = {
     // ==================== USERS ====================
     
     /**
-     * Load users from API or mock data
+     * Load users from API
      */
     async loadUsers() {
         const search = document.getElementById('usersSearch').value;
@@ -397,24 +380,13 @@ const App = {
         const status = document.getElementById('usersStatusFilter').value;
         
         try {
-            this.users = await API.getUsers({ search, tenant_id: tenantId, status });
+            const response = await API.getUsers({ search, tenant_id: tenantId, status });
+            // Handle response format: { items: [], total: n }
+            this.users = response.items || response;
         } catch (error) {
-            console.warn('API unavailable, using mock data:', error.message);
-            this.users = this.getMockUsers();
-            
-            if (search) {
-                this.users = this.users.filter(u => 
-                    u.email.toLowerCase().includes(search.toLowerCase()) ||
-                    (u.display_name && u.display_name.toLowerCase().includes(search.toLowerCase()))
-                );
-            }
-            if (tenantId) {
-                this.users = this.users.filter(u => u.tenant_id === parseInt(tenantId));
-            }
-            if (status) {
-                const isActive = status === 'active';
-                this.users = this.users.filter(u => u.is_active === isActive);
-            }
+            console.error('Failed to load users:', error.message);
+            this.showToast('error', 'Error', 'Failed to load users: ' + error.message);
+            this.users = [];
         }
         
         this.renderUsers();
@@ -647,108 +619,39 @@ const App = {
     // ==================== CRUD OPERATIONS ====================
     
     async createTenant(data) {
-        try {
-            await API.createTenant(data);
-        } catch (error) {
-            // Mock create
-            const newTenant = {
-                id: Math.max(...this.tenants.map(t => t.id), 0) + 1,
-                ...data,
-                is_active: data.is_active !== false,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-            this.tenants.push(newTenant);
-        }
+        await API.createTenant(data);
     },
     
     async saveTenant(id, data) {
-        try {
-            await API.updateTenant(id, data);
-        } catch (error) {
-            // Mock update
-            const index = this.tenants.findIndex(t => t.id === id);
-            if (index !== -1) {
-                this.tenants[index] = { ...this.tenants[index], ...data, updated_at: new Date().toISOString() };
-            }
-        }
+        await API.updateTenant(id, data);
     },
     
     async performDeleteTenant(id) {
-        try {
-            await API.deleteTenant(id);
-        } catch (error) {
-            // Mock delete
-            this.tenants = this.tenants.filter(t => t.id !== id);
-            this.domains = this.domains.filter(d => d.tenant_id !== id);
-            this.users = this.users.filter(u => u.tenant_id !== id);
-        }
+        await API.deleteTenant(id);
     },
     
     async createDomain(data) {
-        try {
-            await API.createDomain(data);
-        } catch (error) {
-            const newDomain = {
-                id: Math.max(...this.domains.map(d => d.id), 0) + 1,
-                ...data,
-                created_at: new Date().toISOString()
-            };
-            this.domains.push(newDomain);
-        }
+        await API.createDomain(data);
     },
     
     async saveDomain(id, data) {
-        try {
-            await API.updateDomain(id, data);
-        } catch (error) {
-            const index = this.domains.findIndex(d => d.id === id);
-            if (index !== -1) {
-                this.domains[index] = { ...this.domains[index], ...data };
-            }
-        }
+        await API.updateDomain(id, data);
     },
     
     async performDeleteDomain(id) {
-        try {
-            await API.deleteDomain(id);
-        } catch (error) {
-            this.domains = this.domains.filter(d => d.id !== id);
-        }
+        await API.deleteDomain(id);
     },
     
     async createUser(data) {
-        try {
-            await API.createUser(data);
-        } catch (error) {
-            const newUser = {
-                id: Math.max(...this.users.map(u => u.id), 0) + 1,
-                ...data,
-                is_active: data.is_active !== false,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-            this.users.push(newUser);
-        }
+        await API.createUser(data);
     },
     
     async saveUser(id, data) {
-        try {
-            await API.updateUser(id, data);
-        } catch (error) {
-            const index = this.users.findIndex(u => u.id === id);
-            if (index !== -1) {
-                this.users[index] = { ...this.users[index], ...data, updated_at: new Date().toISOString() };
-            }
-        }
+        await API.updateUser(id, data);
     },
     
     async performDeleteUser(id) {
-        try {
-            await API.deleteUser(id);
-        } catch (error) {
-            this.users = this.users.filter(u => u.id !== id);
-        }
+        await API.deleteUser(id);
     },
     
     // ==================== FORM TEMPLATES ====================
@@ -1003,106 +906,6 @@ const App = {
         return div.innerHTML;
     },
     
-    // ==================== MOCK DATA ====================
-    
-    getMockTenants() {
-        return [
-            {
-                id: 1,
-                name: 'Acme Corporation',
-                erp_base_url: 'https://erp.acme.com',
-                erp_auth_type: 'basic',
-                erp_admin_username: 'admin',
-                erp_company: 'ACME',
-                erp_tabula_ini: 'tabula.ini',
-                is_active: true,
-                created_at: '2024-01-15T10:30:00Z',
-                updated_at: '2024-01-15T10:30:00Z'
-            },
-            {
-                id: 2,
-                name: 'Tech Solutions Ltd',
-                erp_base_url: 'https://priority.techsolutions.com',
-                erp_auth_type: 'oauth2',
-                erp_admin_username: 'sysadmin',
-                erp_company: 'TECH',
-                erp_tabula_ini: 'tabula.ini',
-                is_active: true,
-                created_at: '2024-02-20T14:15:00Z',
-                updated_at: '2024-02-20T14:15:00Z'
-            },
-            {
-                id: 3,
-                name: 'Global Industries',
-                erp_base_url: 'https://erp.globalind.com',
-                erp_auth_type: 'basic',
-                erp_admin_username: 'admin',
-                erp_company: 'GLOB',
-                erp_tabula_ini: 'tabula.ini',
-                is_active: false,
-                created_at: '2024-03-10T09:00:00Z',
-                updated_at: '2024-03-10T09:00:00Z'
-            }
-        ];
-    },
-    
-    getMockDomains() {
-        return [
-            { id: 1, tenant_id: 1, domain: 'acme.com', created_at: '2024-01-15T10:30:00Z' },
-            { id: 2, tenant_id: 1, domain: 'acme.co.il', created_at: '2024-01-15T10:35:00Z' },
-            { id: 3, tenant_id: 2, domain: 'techsolutions.com', created_at: '2024-02-20T14:15:00Z' },
-            { id: 4, tenant_id: 3, domain: 'globalind.com', created_at: '2024-03-10T09:00:00Z' }
-        ];
-    },
-    
-    getMockUsers() {
-        return [
-            {
-                id: 1,
-                tenant_id: 1,
-                email: 'john.doe@acme.com',
-                display_name: 'John Doe',
-                role: 'admin',
-                erp_username: 'jdoe',
-                is_active: true,
-                created_at: '2024-01-16T08:00:00Z',
-                updated_at: '2024-01-16T08:00:00Z'
-            },
-            {
-                id: 2,
-                tenant_id: 1,
-                email: 'jane.smith@acme.com',
-                display_name: 'Jane Smith',
-                role: 'user',
-                erp_username: 'jsmith',
-                is_active: true,
-                created_at: '2024-01-17T09:30:00Z',
-                updated_at: '2024-01-17T09:30:00Z'
-            },
-            {
-                id: 3,
-                tenant_id: 2,
-                email: 'mike.wilson@techsolutions.com',
-                display_name: 'Mike Wilson',
-                role: 'admin',
-                erp_username: 'mwilson',
-                is_active: true,
-                created_at: '2024-02-21T11:00:00Z',
-                updated_at: '2024-02-21T11:00:00Z'
-            },
-            {
-                id: 4,
-                tenant_id: 3,
-                email: 'sarah.jones@globalind.com',
-                display_name: 'Sarah Jones',
-                role: 'user',
-                erp_username: 'sjones',
-                is_active: false,
-                created_at: '2024-03-11T14:00:00Z',
-                updated_at: '2024-03-11T14:00:00Z'
-            }
-        ];
-    }
 };
 
 // ==================== HELPER FUNCTIONS ====================
