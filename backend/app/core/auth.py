@@ -173,9 +173,10 @@ async def get_current_user(
 
     # Verify user belongs to tenant
     if user.tenant_id != tenant.id:
+        logger.error(f"Tenant mismatch: user.tenant_id={user.tenant_id}, token tenant_id={tenant.id}, user_email={user.email}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User does not belong to this tenant"
+            detail=f"User does not belong to this tenant (user tenant: {user.tenant_id}, token tenant: {tenant.id})"
         )
 
     return CurrentUser(user=user, tenant=tenant)
