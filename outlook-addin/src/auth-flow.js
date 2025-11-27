@@ -83,19 +83,14 @@ class AuthFlow {
                 throw error;
             }
 
-            // Step 3: Show ERP credentials form and validate
-            const erpCredentials = await this.showCredentialsForm(userEmail, selectedTenantName, selectedTenantId);
-            if (!erpCredentials) {
+            // Step 3: Show ERP credentials form and validate (also registers user)
+            const result = await this.showCredentialsForm(userEmail, selectedTenantName, selectedTenantId);
+            if (!result) {
                 return false;
             }
-
-            // Step 4: Register user and get JWT (credentials already validated in form)
-            const response = await apiClient.registerUser({
-                email: userEmail,
-                erp_username: erpCredentials.username,
-                erp_password_or_token: erpCredentials.password,
-                tenant_id: selectedTenantId  // Include selected tenant for multi-tenant domains
-            });
+            
+            // The form already called registerUser and got the response
+            const { credentials: erpCredentials, response } = result;
 
             // Step 5: Store JWT token and mark registration complete
             ConfigHelper.setJwtToken(response.access_token);
@@ -348,16 +343,19 @@ class AuthFlow {
 
                     try {
                         // Validate credentials by attempting registration
-                        await apiClient.registerUser({
+                        console.log('DEBUG: Registering with tenant_id:', tenantId);
+                        const requestData = {
                             email: email,
                             erp_username: username,
                             erp_password_or_token: password,
                             tenant_id: tenantId
-                        });
+                        };
+                        console.log('DEBUG: Request data:', JSON.stringify(requestData));
+                        const response = await apiClient.registerUser(requestData);
 
-                        // Success - close modal and resolve
+                        // Success - close modal and resolve with credentials AND response
                         document.body.removeChild(overlay);
-                        resolve({ username, password });
+                        resolve({ credentials: { username, password }, response });
                         
                     } catch (error) {
                         // Handle 401 Unauthorized specifically
