@@ -9,7 +9,7 @@ Provides:
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.models.database import Tenant, TenantDomain, User
+from app.models.database import Tenant, TenantDomain, User, UserTenant
 from app.models.schemas import (
     TenantResolveRequest,
     TenantResolveResponse,
@@ -267,25 +267,40 @@ async def register_user(
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-    # Step 3: Find or create user
+    # Step 3: Find or create user and user-tenant association
     user = db.query(User).filter(User.email == request.email).first()
 
-    if user:
-        # Update existing user's credentials
-        user.erp_username = encrypt_value(request.erp_username)
-        user.erp_password_or_token = encrypt_value(request.erp_password_or_token)
-        user.is_active = True
-    else:
+    if not user:
         # Create new user
         user = User(
-            tenant_id=tenant.id,
             email=request.email,
-            erp_username=encrypt_value(request.erp_username),
-            erp_password_or_token=encrypt_value(request.erp_password_or_token),
             role="user",
             is_active=True
         )
         db.add(user)
+        db.flush()  # Get user ID
+    
+    # Find or create user-tenant association
+    user_tenant = db.query(UserTenant).filter(
+        UserTenant.user_id == user.id,
+        UserTenant.tenant_id == tenant.id
+    ).first()
+    
+    if user_tenant:
+        # Update existing association's credentials
+        user_tenant.erp_username = encrypt_value(request.erp_username)
+        user_tenant.erp_password_or_token = encrypt_value(request.erp_password_or_token)
+        user_tenant.is_active = True
+    else:
+        # Create new user-tenant association
+        user_tenant = UserTenant(
+            user_id=user.id,
+            tenant_id=tenant.id,
+            erp_username=encrypt_value(request.erp_username),
+            erp_password_or_token=encrypt_value(request.erp_password_or_token),
+            is_active=True
+        )
+        db.add(user_tenant)
 
     db.commit()
     db.refresh(user)

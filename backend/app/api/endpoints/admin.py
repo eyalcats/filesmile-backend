@@ -72,7 +72,11 @@ def user_tenant_to_response(ut: UserTenant, tenant_name: str = None) -> UserTena
     if ut.erp_username:
         try:
             decrypted_username = decrypt_value(ut.erp_username)
-        except Exception:
+            # If decryption returns None, use the raw value (might be unencrypted)
+            if decrypted_username is None:
+                decrypted_username = ut.erp_username
+        except Exception as e:
+            print(f"DEBUG: Failed to decrypt erp_username for user_tenant {ut.id}: {e}")
             decrypted_username = ut.erp_username
     
     return UserTenantResponse(
