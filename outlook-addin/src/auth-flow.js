@@ -84,7 +84,7 @@ class AuthFlow {
             }
 
             // Step 3: Show ERP credentials form and validate
-            const erpCredentials = await this.showCredentialsForm(userEmail, selectedTenantName);
+            const erpCredentials = await this.showCredentialsForm(userEmail, selectedTenantName, selectedTenantId);
             if (!erpCredentials) {
                 return false;
             }
@@ -236,9 +236,10 @@ class AuthFlow {
      * Show UI for entering ERP credentials
      * @param {string} email - User email
      * @param {string} tenantName - Tenant name
+     * @param {number} tenantId - Tenant ID for registration
      * @returns {Promise<{username: string, password: string, displayName?: string} | null>}
      */
-    static async showCredentialsForm(email, tenantName) {
+    static async showCredentialsForm(email, tenantName, tenantId) {
         return new Promise((resolve) => {
             // Create modal overlay
             const overlay = document.createElement('div');
@@ -350,7 +351,8 @@ class AuthFlow {
                         await apiClient.registerUser({
                             email: email,
                             erp_username: username,
-                            erp_password_or_token: password
+                            erp_password_or_token: password,
+                            tenant_id: tenantId
                         });
 
                         // Success - close modal and resolve
