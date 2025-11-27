@@ -32,6 +32,10 @@ const CONFIG = {
         // Users
         USERS: '/admin/users',
         USER: (id) => `/admin/users/${id}`,
+        
+        // User-Tenant associations
+        USER_TENANTS: (userId) => `/admin/users/${userId}/tenants`,
+        USER_TENANT: (userId, tenantId) => `/admin/users/${userId}/tenants/${tenantId}`,
     },
     
     // Storage keys

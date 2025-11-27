@@ -23,6 +23,8 @@ const App = {
     currentEditId: null,
     currentDeleteId: null,
     currentDeleteType: null,
+    currentUserForTenants: null,  // User being managed in tenants modal
+    currentEditUserTenant: null,  // Tenant being edited in user-tenant form
     tenants: [],
     domains: [],
     users: [],
@@ -80,6 +82,22 @@ const App = {
             if (e.target === e.currentTarget) this.closeDeleteModal();
         });
         document.getElementById('deleteConfirm').addEventListener('click', () => this.confirmDelete());
+        
+        // User tenants modal events
+        document.getElementById('userTenantsModalClose').addEventListener('click', () => this.closeUserTenantsModal());
+        document.getElementById('userTenantsModalDone').addEventListener('click', () => this.closeUserTenantsModal());
+        document.getElementById('userTenantsModalOverlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) this.closeUserTenantsModal();
+        });
+        document.getElementById('addUserTenantBtn').addEventListener('click', () => this.openAddUserTenantForm());
+        
+        // User tenant form modal events
+        document.getElementById('userTenantFormModalClose').addEventListener('click', () => this.closeUserTenantFormModal());
+        document.getElementById('userTenantFormCancel').addEventListener('click', () => this.closeUserTenantFormModal());
+        document.getElementById('userTenantFormModalOverlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) this.closeUserTenantFormModal();
+        });
+        document.getElementById('userTenantFormSave').addEventListener('click', () => this.saveUserTenant());
         
         // Search inputs
         document.getElementById('tenantsSearch').addEventListener('input', debounce(() => this.loadTenants(), 300));
@@ -419,13 +437,29 @@ const App = {
         }
         
         tbody.innerHTML = this.users.map(user => {
-            const tenant = this.tenants.find(t => t.id === user.tenant_id);
+            // Build tenant badges
+            const tenantBadges = (user.tenants || []).map(ut => {
+                const statusClass = ut.is_active ? 'active' : 'inactive';
+                return `<span class="tenant-badge ${statusClass}" title="${ut.is_active ? 'Active' : 'Inactive'}">${this.escapeHtml(ut.tenant_name || 'Unknown')}</span>`;
+            }).join('');
+            const tenantDisplay = tenantBadges || '<span class="no-tenants">No tenants</span>';
+            
             return `
                 <tr>
                     <td>${user.id}</td>
                     <td><strong>${this.escapeHtml(user.email)}</strong></td>
                     <td>${user.display_name ? this.escapeHtml(user.display_name) : '-'}</td>
-                    <td>${tenant ? this.escapeHtml(tenant.name) : 'Unknown'}</td>
+                    <td>
+                        <div class="tenant-badges-container">
+                            ${tenantDisplay}
+                            <button class="btn-icon manage-tenants" onclick="App.manageUserTenants(${user.id})" title="Manage Tenants">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
                     <td>${this.escapeHtml(user.role)}</td>
                     <td>
                         <span class="status-badge ${user.is_active ? 'active' : 'inactive'}">
@@ -754,9 +788,41 @@ const App = {
      * @returns {string} - Form HTML
      */
     getUserForm(user = {}) {
+        const isEdit = !!user.id;
         const tenantOptions = this.tenants.map(t => 
-            `<option value="${t.id}" ${user.tenant_id === t.id ? 'selected' : ''}>${this.escapeHtml(t.name)}</option>`
+            `<option value="${t.id}">${this.escapeHtml(t.name)}</option>`
         ).join('');
+        
+        // For new users, show initial tenant selection
+        const initialTenantSection = !isEdit ? `
+                <div class="form-section">
+                    <h4>Initial Tenant (Optional)</h4>
+                    <p class="form-help">You can add more tenants after creating the user.</p>
+                    
+                    <div class="form-group">
+                        <label for="tenant_id">Tenant</label>
+                        <select id="tenant_id" name="tenant_id">
+                            <option value="">No initial tenant</option>
+                            ${tenantOptions}
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="erp_username">ERP Username</label>
+                            <input type="text" id="erp_username" name="erp_username" placeholder="ERP username for this tenant">
+                        </div>
+                        <div class="form-group">
+                            <label for="erp_password_or_token">ERP Password/Token</label>
+                            <input type="password" id="erp_password_or_token" name="erp_password_or_token" placeholder="ERP password">
+                        </div>
+                    </div>
+                </div>
+        ` : `
+                <div class="form-section">
+                    <p class="form-help">To manage tenant associations and ERP credentials, use the "Manage Tenants" button in the users table.</p>
+                </div>
+        `;
         
         return `
             <form id="userForm">
@@ -767,49 +833,294 @@ const App = {
                     </div>
                     <div class="form-group">
                         <label for="display_name">Display Name</label>
-                        <input type="text" id="display_name" name="display_name" value="${this.escapeHtml(user.display_name || '')}" placeholder="John Doe">
+                        <input type="text" id="display_name" name="display_name" value="${this.escapeHtml(user.display_name || '')}" placeholder="Display name">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="tenant_id" class="required">Tenant</label>
-                        <select id="tenant_id" name="tenant_id" required>
-                            <option value="">Select a tenant</option>
-                            ${tenantOptions}
-                        </select>
-                    </div>
-                    <div class="form-group">
                         <label for="role">Role</label>
                         <select id="role" name="role">
-                            <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
+                            <option value="user" ${user.role === 'user' || !user.role ? 'selected' : ''}>User</option>
                             <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <div class="toggle-wrapper" style="margin-top: 28px;">
+                            <label class="toggle">
+                                <input type="checkbox" name="is_active" ${user.is_active !== false ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">Active</span>
+                        </div>
+                    </div>
                 </div>
+                
+                ${initialTenantSection}
+            </form>
+        `;
+    },
+    
+    // ==================== USER-TENANT MANAGEMENT ====================
+    
+    /**
+     * Open the manage tenants modal for a user
+     * @param {number} userId - User ID
+     */
+    async manageUserTenants(userId) {
+        const user = this.users.find(u => u.id === userId);
+        if (!user) return;
+        
+        this.currentUserForTenants = user;
+        
+        // Update modal title and user info
+        document.getElementById('userTenantsModalTitle').textContent = 'Manage User Tenants';
+        document.getElementById('userTenantsUserInfo').innerHTML = `User: <strong>${this.escapeHtml(user.email)}</strong>`;
+        
+        // Render tenant associations
+        this.renderUserTenantsList();
+        
+        // Show modal
+        document.getElementById('userTenantsModalOverlay').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    },
+    
+    /**
+     * Render the list of tenant associations for current user
+     */
+    renderUserTenantsList() {
+        const container = document.getElementById('userTenantsList');
+        const userTenants = this.currentUserForTenants?.tenants || [];
+        
+        if (userTenants.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state small">
+                    <p>No tenant associations yet. Click "Add Tenant" to connect this user to a tenant.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = userTenants.map(ut => `
+            <div class="user-tenant-card ${ut.is_active ? '' : 'inactive'}">
+                <div class="user-tenant-info">
+                    <h4>${this.escapeHtml(ut.tenant_name || 'Unknown Tenant')}</h4>
+                    <p>ERP Username: ${ut.erp_username ? this.escapeHtml(ut.erp_username) : '<em>Not set</em>'}</p>
+                    <span class="status-badge ${ut.is_active ? 'active' : 'inactive'}">
+                        ${ut.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                </div>
+                <div class="user-tenant-actions">
+                    <button class="btn-icon edit" onclick="App.editUserTenant(${ut.tenant_id})" title="Edit">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <button class="btn-icon delete" onclick="App.removeUserTenantConfirm(${ut.tenant_id})" title="Remove">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    },
+    
+    /**
+     * Close the user tenants modal
+     */
+    closeUserTenantsModal() {
+        document.getElementById('userTenantsModalOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+        this.currentUserForTenants = null;
+        // Reload users to reflect any changes
+        this.loadUsers();
+    },
+    
+    /**
+     * Open form to add a new tenant association
+     */
+    openAddUserTenantForm() {
+        this.currentEditUserTenant = null;
+        
+        // Get tenants not already associated with this user
+        const existingTenantIds = (this.currentUserForTenants?.tenants || []).map(ut => ut.tenant_id);
+        const availableTenants = this.tenants.filter(t => !existingTenantIds.includes(t.id));
+        
+        if (availableTenants.length === 0) {
+            this.showToast('warning', 'No Available Tenants', 'This user is already associated with all tenants.');
+            return;
+        }
+        
+        document.getElementById('userTenantFormModalTitle').textContent = 'Add Tenant';
+        document.getElementById('userTenantFormModalBody').innerHTML = this.getUserTenantForm(null, availableTenants);
+        document.getElementById('userTenantFormModalOverlay').classList.add('active');
+    },
+    
+    /**
+     * Open form to edit an existing tenant association
+     * @param {number} tenantId - Tenant ID
+     */
+    editUserTenant(tenantId) {
+        const userTenant = (this.currentUserForTenants?.tenants || []).find(ut => ut.tenant_id === tenantId);
+        if (!userTenant) return;
+        
+        this.currentEditUserTenant = userTenant;
+        
+        document.getElementById('userTenantFormModalTitle').textContent = 'Edit Tenant Association';
+        document.getElementById('userTenantFormModalBody').innerHTML = this.getUserTenantForm(userTenant, null);
+        document.getElementById('userTenantFormModalOverlay').classList.add('active');
+    },
+    
+    /**
+     * Get user-tenant form HTML
+     * @param {Object} userTenant - Existing association (for edit)
+     * @param {Array} availableTenants - Available tenants (for add)
+     * @returns {string} - Form HTML
+     */
+    getUserTenantForm(userTenant = null, availableTenants = null) {
+        const isEdit = !!userTenant;
+        
+        const tenantSelect = isEdit ? `
+            <div class="form-group">
+                <label>Tenant</label>
+                <input type="text" value="${this.escapeHtml(userTenant.tenant_name || 'Unknown')}" disabled>
+                <input type="hidden" name="tenant_id" value="${userTenant.tenant_id}">
+            </div>
+        ` : `
+            <div class="form-group">
+                <label for="tenant_id" class="required">Tenant</label>
+                <select id="tenant_id" name="tenant_id" required>
+                    <option value="">Select a tenant</option>
+                    ${availableTenants.map(t => `<option value="${t.id}">${this.escapeHtml(t.name)}</option>`).join('')}
+                </select>
+            </div>
+        `;
+        
+        return `
+            <form id="userTenantForm">
+                ${tenantSelect}
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="erp_username">ERP Username</label>
-                        <input type="text" id="erp_username" name="erp_username" value="${this.escapeHtml(user.erp_username || '')}" placeholder="ERP username">
+                        <input type="text" id="erp_username" name="erp_username" value="${this.escapeHtml(userTenant?.erp_username || '')}" placeholder="ERP username for this tenant">
                     </div>
                     <div class="form-group">
                         <label for="erp_password_or_token">ERP Password/Token</label>
-                        <input type="password" id="erp_password_or_token" name="erp_password_or_token" placeholder="${user.id ? '(unchanged)' : 'ERP password'}">
+                        <input type="password" id="erp_password_or_token" name="erp_password_or_token" placeholder="${isEdit ? '(unchanged)' : 'ERP password'}">
                     </div>
                 </div>
                 
                 <div class="form-group">
                     <div class="toggle-wrapper">
                         <label class="toggle">
-                            <input type="checkbox" name="is_active" ${user.is_active !== false ? 'checked' : ''}>
+                            <input type="checkbox" name="is_active" ${userTenant?.is_active !== false ? 'checked' : ''}>
                             <span class="toggle-slider"></span>
                         </label>
-                        <span class="toggle-label">Active</span>
+                        <span class="toggle-label">Active for this tenant</span>
                     </div>
                 </div>
             </form>
         `;
+    },
+    
+    /**
+     * Close the user tenant form modal
+     */
+    closeUserTenantFormModal() {
+        document.getElementById('userTenantFormModalOverlay').classList.remove('active');
+        this.currentEditUserTenant = null;
+    },
+    
+    /**
+     * Save user-tenant association (add or update)
+     */
+    async saveUserTenant() {
+        const form = document.querySelector('#userTenantForm');
+        if (!form) return;
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Convert checkbox
+        data.is_active = data.is_active === 'on';
+        
+        // Convert tenant_id to number
+        data.tenant_id = parseInt(data.tenant_id);
+        
+        // Remove empty password field for updates
+        if (this.currentEditUserTenant && !data.erp_password_or_token) {
+            delete data.erp_password_or_token;
+        }
+        
+        try {
+            if (this.currentEditUserTenant) {
+                // Update existing
+                await API.updateUserTenant(this.currentUserForTenants.id, data.tenant_id, data);
+                this.showToast('success', 'Success', 'Tenant association updated');
+            } else {
+                // Add new
+                await API.addUserTenant(this.currentUserForTenants.id, data);
+                this.showToast('success', 'Success', 'Tenant added to user');
+            }
+            
+            // Refresh user data
+            await this.refreshCurrentUserTenants();
+            this.closeUserTenantFormModal();
+        } catch (error) {
+            this.showToast('error', 'Error', error.message);
+        }
+    },
+    
+    /**
+     * Confirm removal of a tenant association
+     * @param {number} tenantId - Tenant ID
+     */
+    removeUserTenantConfirm(tenantId) {
+        const userTenant = (this.currentUserForTenants?.tenants || []).find(ut => ut.tenant_id === tenantId);
+        if (!userTenant) return;
+        
+        if (confirm(`Remove "${userTenant.tenant_name}" from this user?`)) {
+            this.removeUserTenant(tenantId);
+        }
+    },
+    
+    /**
+     * Remove a tenant association from the current user
+     * @param {number} tenantId - Tenant ID
+     */
+    async removeUserTenant(tenantId) {
+        try {
+            await API.removeUserTenant(this.currentUserForTenants.id, tenantId);
+            this.showToast('success', 'Removed', 'Tenant removed from user');
+            await this.refreshCurrentUserTenants();
+        } catch (error) {
+            this.showToast('error', 'Error', error.message);
+        }
+    },
+    
+    /**
+     * Refresh the current user's tenant associations
+     */
+    async refreshCurrentUserTenants() {
+        if (!this.currentUserForTenants) return;
+        
+        try {
+            const tenants = await API.getUserTenants(this.currentUserForTenants.id);
+            this.currentUserForTenants.tenants = tenants;
+            this.renderUserTenantsList();
+            
+            // Also update in the users array
+            const userIndex = this.users.findIndex(u => u.id === this.currentUserForTenants.id);
+            if (userIndex !== -1) {
+                this.users[userIndex].tenants = tenants;
+            }
+        } catch (error) {
+            console.error('Failed to refresh user tenants:', error);
+        }
     },
     
     // ==================== UTILITIES ====================

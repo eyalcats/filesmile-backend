@@ -1154,3 +1154,145 @@ table {
         padding: 0 16px;
     }
 }
+
+/* ===== User Tenant Management ===== */
+
+/* Tenant badges in users table */
+.tenant-badges-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.tenant-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: var(--success-color);
+    color: white;
+}
+
+.tenant-badge.inactive {
+    background-color: var(--secondary-color);
+}
+
+.no-tenants {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.875rem;
+}
+
+.btn-icon.manage-tenants {
+    margin-left: 8px;
+    color: var(--secondary-color);
+}
+
+.btn-icon.manage-tenants:hover {
+    color: var(--primary-hover);
+    background-color: var(--primary-light);
+}
+
+/* User tenants modal */
+.modal-lg {
+    max-width: 700px;
+}
+
+.user-tenants-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.user-tenants-header p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.875rem;
+}
+
+.btn-sm svg {
+    width: 14px;
+    height: 14px;
+}
+
+.user-tenants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.user-tenant-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background-color: var(--bg-color);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.user-tenant-card.inactive {
+    opacity: 0.7;
+    background-color: #f1f5f9;
+}
+
+.user-tenant-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.user-tenant-info p {
+    margin: 0 0 8px 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.user-tenant-info em {
+    color: var(--text-muted);
+}
+
+.user-tenant-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.empty-state.small {
+    padding: 24px;
+    text-align: center;
+}
+
+.empty-state.small p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+/* Form sections */
+.form-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.form-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-section .form-help {
+    margin-bottom: 12px;
+}

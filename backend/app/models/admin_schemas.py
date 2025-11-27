@@ -120,33 +120,68 @@ class DomainListResponse(BaseModel):
 
 
 # ============================================================================
+# UserTenant Schemas (Junction table for user-tenant associations)
+# ============================================================================
+
+class UserTenantBase(BaseModel):
+    """Base schema for user-tenant association."""
+    tenant_id: int = Field(..., description="Associated tenant ID")
+    erp_username: Optional[str] = Field(None, description="ERP username for this tenant")
+    erp_password_or_token: Optional[str] = Field(None, description="ERP password/token for this tenant")
+    is_active: Optional[bool] = Field(default=True, description="Active status for this tenant")
+
+
+class UserTenantCreate(UserTenantBase):
+    """Schema for creating a user-tenant association."""
+    pass
+
+
+class UserTenantUpdate(BaseModel):
+    """Schema for updating a user-tenant association."""
+    erp_username: Optional[str] = Field(None, description="ERP username for this tenant")
+    erp_password_or_token: Optional[str] = Field(None, description="ERP password/token for this tenant")
+    is_active: Optional[bool] = Field(None, description="Active status for this tenant")
+
+
+class UserTenantResponse(BaseModel):
+    """Response schema for user-tenant association."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int = Field(..., description="Association ID")
+    tenant_id: int = Field(..., description="Tenant ID")
+    tenant_name: Optional[str] = Field(None, description="Tenant name (for display)")
+    erp_username: Optional[str] = Field(None, description="ERP username (decrypted)")
+    is_active: bool = Field(..., description="Active status for this tenant")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+
+# ============================================================================
 # User Schemas
 # ============================================================================
 
 class UserBase(BaseModel):
     """Base user schema."""
     email: str = Field(..., description="User email")
-    tenant_id: int = Field(..., description="Associated tenant ID")
     display_name: Optional[str] = Field(None, description="Display name")
     role: Optional[str] = Field(default="user", description="User role (user, admin)")
 
 
 class UserCreate(UserBase):
-    """Schema for creating a new user."""
-    erp_username: Optional[str] = Field(None, description="ERP username")
-    erp_password_or_token: Optional[str] = Field(None, description="ERP password/token")
-    is_active: Optional[bool] = Field(default=True, description="Active status")
+    """Schema for creating a new user with initial tenant association."""
+    is_active: Optional[bool] = Field(default=True, description="Global active status")
+    # Initial tenant association (optional - can add tenants later)
+    tenant_id: Optional[int] = Field(None, description="Initial tenant ID")
+    erp_username: Optional[str] = Field(None, description="ERP username for initial tenant")
+    erp_password_or_token: Optional[str] = Field(None, description="ERP password/token for initial tenant")
 
 
 class UserUpdate(BaseModel):
     """Schema for updating a user (all fields optional)."""
     email: Optional[str] = Field(None, description="User email")
-    tenant_id: Optional[int] = Field(None, description="Associated tenant ID")
     display_name: Optional[str] = Field(None, description="Display name")
     role: Optional[str] = Field(None, description="User role")
-    erp_username: Optional[str] = Field(None, description="ERP username")
-    erp_password_or_token: Optional[str] = Field(None, description="ERP password/token")
-    is_active: Optional[bool] = Field(None, description="Active status")
+    is_active: Optional[bool] = Field(None, description="Global active status")
 
 
 class UserResponse(BaseModel):
@@ -155,18 +190,35 @@ class UserResponse(BaseModel):
     
     id: int = Field(..., description="User ID")
     email: str = Field(..., description="User email")
-    tenant_id: int = Field(..., description="Associated tenant ID")
     display_name: Optional[str] = Field(None, description="Display name")
     role: str = Field(..., description="User role")
-    erp_username: Optional[str] = Field(None, description="ERP username (decrypted)")
-    is_active: bool = Field(..., description="Active status")
+    is_active: bool = Field(..., description="Global active status")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
-    
-    # Note: erp_password_or_token is excluded for security
+    # List of tenant associations
+    tenants: List[UserTenantResponse] = Field(default=[], description="Associated tenants")
 
 
 class UserListResponse(BaseModel):
     """Response schema for user list."""
     items: List[UserResponse] = Field(..., description="List of users")
     total: int = Field(..., description="Total count")
+
+
+# ============================================================================
+# UserTenant Management Schemas (for adding/removing tenant associations)
+# ============================================================================
+
+class AddUserTenantRequest(BaseModel):
+    """Request to add a tenant association to a user."""
+    tenant_id: int = Field(..., description="Tenant ID to associate")
+    erp_username: Optional[str] = Field(None, description="ERP username for this tenant")
+    erp_password_or_token: Optional[str] = Field(None, description="ERP password/token for this tenant")
+    is_active: Optional[bool] = Field(default=True, description="Active status for this tenant")
+
+
+class UpdateUserTenantRequest(BaseModel):
+    """Request to update a user's tenant association."""
+    erp_username: Optional[str] = Field(None, description="ERP username for this tenant")
+    erp_password_or_token: Optional[str] = Field(None, description="ERP password/token for this tenant")
+    is_active: Optional[bool] = Field(None, description="Active status for this tenant")

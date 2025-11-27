@@ -261,5 +261,55 @@ const API = {
         return this.request(CONFIG.ENDPOINTS.USER(id), {
             method: 'DELETE'
         });
+    },
+    
+    // ==================== USER-TENANT ASSOCIATIONS ====================
+    
+    /**
+     * Get all tenant associations for a user
+     * @param {number} userId - User ID
+     * @returns {Promise<Array>} - List of user-tenant associations
+     */
+    async getUserTenants(userId) {
+        return this.request(CONFIG.ENDPOINTS.USER_TENANTS(userId));
+    },
+    
+    /**
+     * Add a tenant association to a user
+     * @param {number} userId - User ID
+     * @param {Object} data - Tenant association data (tenant_id, erp_username, erp_password_or_token, is_active)
+     * @returns {Promise<Object>} - Created association
+     */
+    async addUserTenant(userId, data) {
+        return this.request(CONFIG.ENDPOINTS.USER_TENANTS(userId), {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
+     * Update a user's tenant association
+     * @param {number} userId - User ID
+     * @param {number} tenantId - Tenant ID
+     * @param {Object} data - Updated association data
+     * @returns {Promise<Object>} - Updated association
+     */
+    async updateUserTenant(userId, tenantId, data) {
+        return this.request(CONFIG.ENDPOINTS.USER_TENANT(userId, tenantId), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
+     * Remove a tenant association from a user
+     * @param {number} userId - User ID
+     * @param {number} tenantId - Tenant ID
+     * @returns {Promise<void>}
+     */
+    async removeUserTenant(userId, tenantId) {
+        return this.request(CONFIG.ENDPOINTS.USER_TENANT(userId, tenantId), {
+            method: 'DELETE'
+        });
     }
 };

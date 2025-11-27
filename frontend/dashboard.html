@@ -212,7 +212,7 @@
                                     <th>ID</th>
                                     <th>Email</th>
                                     <th>Display Name</th>
-                                    <th>Tenant</th>
+                                    <th>Tenants</th>
                                     <th>Role</th>
                                     <th>Status</th>
                                     <th>Created</th>
@@ -273,6 +273,61 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="deleteCancel">Cancel</button>
                 <button class="btn btn-danger" id="deleteConfirm">Delete</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Tenants Modal -->
+    <div class="modal-overlay" id="userTenantsModalOverlay">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 id="userTenantsModalTitle">Manage User Tenants</h2>
+                <button class="modal-close" id="userTenantsModalClose">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="userTenantsModalBody">
+                <div class="user-tenants-header">
+                    <p id="userTenantsUserInfo">User: <strong></strong></p>
+                    <button class="btn btn-primary btn-sm" id="addUserTenantBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Tenant
+                    </button>
+                </div>
+                <div class="user-tenants-list" id="userTenantsList">
+                    <!-- Tenant associations loaded dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="userTenantsModalDone">Done</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add/Edit User Tenant Modal -->
+    <div class="modal-overlay" id="userTenantFormModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="userTenantFormModalTitle">Add Tenant</h2>
+                <button class="modal-close" id="userTenantFormModalClose">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="userTenantFormModalBody">
+                <!-- Form loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="userTenantFormCancel">Cancel</button>
+                <button class="btn btn-primary" id="userTenantFormSave">Save</button>
             </div>
         </div>
     </div>

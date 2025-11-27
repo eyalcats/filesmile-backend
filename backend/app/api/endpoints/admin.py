@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.db.session import get_db
-from app.models.database import Tenant, TenantDomain, User
+from app.models.database import Tenant, TenantDomain, User, UserTenant
 from app.models.admin_schemas import (
     # Tenant schemas
     TenantCreate,
@@ -25,6 +25,10 @@ from app.models.admin_schemas import (
     UserUpdate,
     UserResponse,
     UserListResponse,
+    # UserTenant schemas
+    UserTenantResponse,
+    AddUserTenantRequest,
+    UpdateUserTenantRequest,
     # Auth schemas
     AdminLoginRequest,
     AdminLoginResponse,
@@ -62,25 +66,42 @@ def tenant_to_response(tenant: Tenant) -> TenantResponse:
     )
 
 
-def user_to_response(user: User) -> UserResponse:
-    """Convert user model to response with decrypted ERP username."""
+def user_tenant_to_response(ut: UserTenant, tenant_name: str = None) -> UserTenantResponse:
+    """Convert UserTenant model to response with decrypted ERP username."""
     decrypted_username = None
-    if user.erp_username:
+    if ut.erp_username:
         try:
-            decrypted_username = decrypt_value(user.erp_username)
+            decrypted_username = decrypt_value(ut.erp_username)
         except Exception:
-            decrypted_username = user.erp_username
+            decrypted_username = ut.erp_username
+    
+    return UserTenantResponse(
+        id=ut.id,
+        tenant_id=ut.tenant_id,
+        tenant_name=tenant_name or (ut.tenant.name if ut.tenant else None),
+        erp_username=decrypted_username,
+        is_active=ut.is_active,
+        created_at=ut.created_at,
+        updated_at=ut.updated_at
+    )
+
+
+def user_to_response(user: User) -> UserResponse:
+    """Convert user model to response with tenant associations."""
+    # Build list of tenant associations
+    tenants = []
+    for ut in user.tenant_associations:
+        tenants.append(user_tenant_to_response(ut))
     
     return UserResponse(
         id=user.id,
         email=user.email,
-        tenant_id=user.tenant_id,
         display_name=user.display_name,
         role=user.role,
-        erp_username=decrypted_username,
         is_active=user.is_active,
         created_at=user.created_at,
-        updated_at=user.updated_at
+        updated_at=user.updated_at,
+        tenants=tenants
     )
 
 from app.core.config import settings
@@ -497,7 +518,7 @@ async def get_user(user_id: int, db: Session = Depends(get_db)):
 
 @router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Create a new user."""
+    """Create a new user with optional initial tenant association."""
     # Check if email already exists
     existing = db.query(User).filter(User.email == user_data.email.lower()).first()
     if existing:
@@ -506,25 +527,36 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="User with this email already exists"
         )
     
-    # Verify tenant exists
-    tenant = db.query(Tenant).filter(Tenant.id == user_data.tenant_id).first()
-    if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tenant not found"
-        )
-    
+    # Create the user
     user = User(
-        tenant_id=user_data.tenant_id,
         email=user_data.email.lower(),
         display_name=user_data.display_name,
         role=user_data.role or "user",
-        erp_username=encrypt_value(user_data.erp_username) if user_data.erp_username else None,
-        erp_password_or_token=encrypt_value(user_data.erp_password_or_token) if user_data.erp_password_or_token else None,
         is_active=user_data.is_active if user_data.is_active is not None else True
     )
     
     db.add(user)
+    db.flush()  # Get the user ID
+    
+    # If tenant_id is provided, create initial tenant association
+    if user_data.tenant_id:
+        tenant = db.query(Tenant).filter(Tenant.id == user_data.tenant_id).first()
+        if not tenant:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tenant not found"
+            )
+        
+        user_tenant = UserTenant(
+            user_id=user.id,
+            tenant_id=user_data.tenant_id,
+            erp_username=encrypt_value(user_data.erp_username) if user_data.erp_username else None,
+            erp_password_or_token=encrypt_value(user_data.erp_password_or_token) if user_data.erp_password_or_token else None,
+            is_active=True
+        )
+        db.add(user_tenant)
+    
     db.commit()
     db.refresh(user)
     
@@ -537,7 +569,7 @@ async def update_user(
     user_data: UserUpdate,
     db: Session = Depends(get_db)
 ):
-    """Update an existing user."""
+    """Update an existing user (basic info only, use tenant endpoints for tenant associations)."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
@@ -555,23 +587,11 @@ async def update_user(
             )
         user.email = user_data.email.lower()
     
-    # Update other fields if provided
-    if user_data.tenant_id is not None:
-        tenant = db.query(Tenant).filter(Tenant.id == user_data.tenant_id).first()
-        if not tenant:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tenant not found"
-            )
-        user.tenant_id = user_data.tenant_id
+    # Update basic user fields
     if user_data.display_name is not None:
         user.display_name = user_data.display_name
     if user_data.role is not None:
         user.role = user_data.role
-    if user_data.erp_username is not None:
-        user.erp_username = encrypt_value(user_data.erp_username)
-    if user_data.erp_password_or_token is not None:
-        user.erp_password_or_token = encrypt_value(user_data.erp_password_or_token)
     if user_data.is_active is not None:
         user.is_active = user_data.is_active
     
@@ -593,5 +613,128 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
         )
     
     db.delete(user)
+    db.commit()
+    return None
+
+
+# ============================================================================
+# User-Tenant Associations CRUD
+# ============================================================================
+
+@router.get("/users/{user_id}/tenants", response_model=List[UserTenantResponse])
+async def list_user_tenants(user_id: int, db: Session = Depends(get_db)):
+    """List all tenant associations for a user."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return [user_tenant_to_response(ut) for ut in user.tenant_associations]
+
+
+@router.post("/users/{user_id}/tenants", response_model=UserTenantResponse, status_code=status.HTTP_201_CREATED)
+async def add_user_tenant(
+    user_id: int,
+    request: AddUserTenantRequest,
+    db: Session = Depends(get_db)
+):
+    """Add a tenant association to a user."""
+    # Verify user exists
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Verify tenant exists
+    tenant = db.query(Tenant).filter(Tenant.id == request.tenant_id).first()
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant not found"
+        )
+    
+    # Check if association already exists
+    existing = db.query(UserTenant).filter(
+        UserTenant.user_id == user_id,
+        UserTenant.tenant_id == request.tenant_id
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is already associated with this tenant"
+        )
+    
+    user_tenant = UserTenant(
+        user_id=user_id,
+        tenant_id=request.tenant_id,
+        erp_username=encrypt_value(request.erp_username) if request.erp_username else None,
+        erp_password_or_token=encrypt_value(request.erp_password_or_token) if request.erp_password_or_token else None,
+        is_active=request.is_active if request.is_active is not None else True
+    )
+    
+    db.add(user_tenant)
+    db.commit()
+    db.refresh(user_tenant)
+    
+    return user_tenant_to_response(user_tenant, tenant.name)
+
+
+@router.put("/users/{user_id}/tenants/{tenant_id}", response_model=UserTenantResponse)
+async def update_user_tenant(
+    user_id: int,
+    tenant_id: int,
+    request: UpdateUserTenantRequest,
+    db: Session = Depends(get_db)
+):
+    """Update a user's tenant association (ERP credentials, active status)."""
+    user_tenant = db.query(UserTenant).filter(
+        UserTenant.user_id == user_id,
+        UserTenant.tenant_id == tenant_id
+    ).first()
+    
+    if not user_tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User-tenant association not found"
+        )
+    
+    # Update fields if provided
+    if request.erp_username is not None:
+        user_tenant.erp_username = encrypt_value(request.erp_username)
+    if request.erp_password_or_token is not None:
+        user_tenant.erp_password_or_token = encrypt_value(request.erp_password_or_token)
+    if request.is_active is not None:
+        user_tenant.is_active = request.is_active
+    
+    user_tenant.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user_tenant)
+    
+    return user_tenant_to_response(user_tenant)
+
+
+@router.delete("/users/{user_id}/tenants/{tenant_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_user_tenant(
+    user_id: int,
+    tenant_id: int,
+    db: Session = Depends(get_db)
+):
+    """Remove a tenant association from a user."""
+    user_tenant = db.query(UserTenant).filter(
+        UserTenant.user_id == user_id,
+        UserTenant.tenant_id == tenant_id
+    ).first()
+    
+    if not user_tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User-tenant association not found"
+        )
+    
+    db.delete(user_tenant)
     db.commit()
     return None
