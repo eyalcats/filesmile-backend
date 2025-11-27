@@ -179,6 +179,9 @@ async def register_user(
             detail="Invalid email format"
         )
 
+    # Debug: Log incoming request
+    print(f"DEBUG: Register request received - email: {request.email}, tenant_id: {request.tenant_id}")
+    
     # Check if tenant_id was provided (for multi-tenant domains)
     if request.tenant_id:
         # Verify the tenant_id is valid for this domain
