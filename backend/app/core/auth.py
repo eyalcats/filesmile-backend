@@ -16,7 +16,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.session import get_db
-from app.models.database import User, Tenant
+from app.models.database import User, Tenant, UserTenant
 import logging
 
 logger = logging.getLogger(__name__)
@@ -171,12 +171,18 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-    # Verify user belongs to tenant
-    if user.tenant_id != tenant.id:
-        logger.error(f"Tenant mismatch: user.tenant_id={user.tenant_id}, token tenant_id={tenant.id}, user_email={user.email}")
+    # Verify user has an active association with the tenant
+    user_tenant = db.query(UserTenant).filter(
+        UserTenant.user_id == user.id,
+        UserTenant.tenant_id == tenant.id,
+        UserTenant.is_active == True
+    ).first()
+    
+    if not user_tenant:
+        logger.error(f"User-tenant association not found or inactive: user_id={user.id}, tenant_id={tenant.id}, user_email={user.email}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"User does not belong to this tenant (user tenant: {user.tenant_id}, token tenant: {tenant.id})"
+            detail="User does not have access to this tenant"
         )
 
     return CurrentUser(user=user, tenant=tenant)
