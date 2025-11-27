@@ -67,12 +67,13 @@ class TenantResponse(BaseModel):
     erp_base_url: str = Field(..., description="ERP base URL")
     erp_company: str = Field(..., description="ERP company code")
     erp_auth_type: Optional[str] = Field(None, description="Auth type")
+    erp_admin_username: Optional[str] = Field(None, description="ERP admin username (decrypted)")
     erp_tabula_ini: Optional[str] = Field(None, description="Tabula INI file")
     is_active: bool = Field(..., description="Active status")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
     
-    # Note: Sensitive fields (erp_admin_username, erp_admin_password_or_token) are excluded
+    # Note: erp_admin_password_or_token is excluded for security
 
 
 class TenantListResponse(BaseModel):

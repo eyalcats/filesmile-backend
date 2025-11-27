@@ -30,11 +30,36 @@ from app.models.admin_schemas import (
     AdminLoginResponse,
 )
 try:
-    from app.utils.encryption import encrypt_value
+    from app.utils.encryption import encrypt_value, decrypt_value
 except ImportError:
     # Fallback if encryption module not available
     def encrypt_value(value):
         return value
+    def decrypt_value(value):
+        return value
+
+
+def tenant_to_response(tenant: Tenant) -> TenantResponse:
+    """Convert tenant model to response with decrypted username."""
+    decrypted_username = None
+    if tenant.erp_admin_username:
+        try:
+            decrypted_username = decrypt_value(tenant.erp_admin_username)
+        except Exception:
+            decrypted_username = tenant.erp_admin_username
+    
+    return TenantResponse(
+        id=tenant.id,
+        name=tenant.name,
+        erp_base_url=tenant.erp_base_url,
+        erp_company=tenant.erp_company,
+        erp_auth_type=tenant.erp_auth_type,
+        erp_admin_username=decrypted_username,
+        erp_tabula_ini=tenant.erp_tabula_ini,
+        is_active=tenant.is_active,
+        created_at=tenant.created_at,
+        updated_at=tenant.updated_at
+    )
 from app.core.config import settings
 import hashlib
 import secrets
@@ -120,7 +145,7 @@ async def list_tenants(
     tenants = query.offset(skip).limit(limit).all()
     
     return TenantListResponse(
-        items=[TenantResponse.model_validate(t) for t in tenants],
+        items=[tenant_to_response(t) for t in tenants],
         total=total
     )
 
@@ -134,7 +159,7 @@ async def get_tenant(tenant_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tenant not found"
         )
-    return TenantResponse.model_validate(tenant)
+    return tenant_to_response(tenant)
 
 
 @router.post("/tenants", response_model=TenantResponse, status_code=status.HTTP_201_CREATED)
@@ -178,7 +203,7 @@ async def create_tenant(tenant_data: TenantCreate, db: Session = Depends(get_db)
         db.commit()
         db.refresh(tenant)
         
-        return TenantResponse.model_validate(tenant)
+        return tenant_to_response(tenant)
     except HTTPException:
         raise
     except Exception as e:
@@ -225,7 +250,7 @@ async def update_tenant(
     db.commit()
     db.refresh(tenant)
     
-    return TenantResponse.model_validate(tenant)
+    return tenant_to_response(tenant)
 
 
 @router.delete("/tenants/{tenant_id}", status_code=status.HTTP_204_NO_CONTENT)
