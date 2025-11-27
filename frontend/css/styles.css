@@ -1,8 +1,8 @@
 /* ===== CSS Variables ===== */
 :root {
-    --primary-color: #4f46e5;
-    --primary-hover: #4338ca;
-    --primary-light: #eef2ff;
+    --primary-color: #facc15;
+    --primary-hover: #eab308;
+    --primary-light: #fef9c3;
     --secondary-color: #64748b;
     --success-color: #10b981;
     --danger-color: #ef4444;
@@ -12,7 +12,7 @@
     --bg-color: #f8fafc;
     --bg-white: #ffffff;
     --bg-dark: #1e293b;
-    --bg-sidebar: #0f172a;
+    --bg-sidebar: linear-gradient(180deg, #fde047 0%, #facc15 100%);
     
     --text-primary: #1e293b;
     --text-secondary: #64748b;
@@ -100,7 +100,7 @@ table {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #fde047 0%, #facc15 100%);
     padding: 20px;
 }
 
@@ -119,6 +119,12 @@ table {
 .login-header {
     text-align: center;
     margin-bottom: 32px;
+}
+
+.login-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 16px;
 }
 
 .login-header h1 {
@@ -328,8 +334,9 @@ table {
 /* ===== Sidebar ===== */
 .sidebar {
     width: var(--sidebar-width);
-    background: var(--bg-sidebar);
-    color: var(--text-white);
+    background: var(--bg-white);
+    color: var(--text-primary);
+    border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -345,7 +352,13 @@ table {
     align-items: center;
     gap: 12px;
     padding: 20px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, #fde047 0%, #facc15 100%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-logo {
+    width: 32px;
+    height: 32px;
 }
 
 .sidebar-header h2 {
@@ -354,8 +367,8 @@ table {
 }
 
 .badge {
-    background: var(--primary-color);
-    color: var(--text-white);
+    background: var(--text-primary);
+    color: var(--primary-color);
     font-size: 0.625rem;
     font-weight: 600;
     padding: 2px 8px;
@@ -384,18 +397,19 @@ table {
     gap: 12px;
     padding: 12px 16px;
     border-radius: var(--border-radius);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     transition: var(--transition);
 }
 
 .nav-link:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-white);
+    background: var(--bg-color);
+    color: var(--text-primary);
 }
 
 .nav-link.active {
-    background: var(--primary-color);
-    color: var(--text-white);
+    background: var(--primary-light);
+    color: var(--primary-hover);
+    font-weight: 500;
 }
 
 .nav-link svg {
@@ -406,7 +420,8 @@ table {
 
 .sidebar-footer {
     padding: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -421,7 +436,7 @@ table {
 .user-avatar {
     width: 40px;
     height: 40px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--border-color);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -431,7 +446,7 @@ table {
 .user-avatar svg {
     width: 20px;
     height: 20px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 .user-details {
@@ -452,12 +467,12 @@ table {
 .btn-logout {
     padding: 8px;
     border-radius: var(--border-radius);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     transition: var(--transition);
 }
 
 .btn-logout:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--border-color);
     color: var(--danger-color);
 }
 

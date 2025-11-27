@@ -55,9 +55,26 @@ class AuthFlow {
 
             // Step 2: Resolve tenant from email domain
             let tenantInfo;
+            let selectedTenantId = null;
+            let selectedTenantName = null;
             try {
                 tenantInfo = await apiClient.resolveTenant(userEmail);
-                ConfigHelper.setTenantId(tenantInfo.tenant_id);
+                
+                // Check if user needs to select a tenant
+                if (tenantInfo.requires_selection && tenantInfo.tenants && tenantInfo.tenants.length > 1) {
+                    // Show tenant selection UI
+                    const selectedTenant = await this.showTenantSelectionUI(userEmail, tenantInfo.tenants);
+                    if (!selectedTenant) {
+                        return false; // User cancelled
+                    }
+                    selectedTenantId = selectedTenant.tenant_id;
+                    selectedTenantName = selectedTenant.tenant_name;
+                } else {
+                    selectedTenantId = tenantInfo.tenant_id;
+                    selectedTenantName = tenantInfo.tenant_name;
+                }
+                
+                ConfigHelper.setTenantId(selectedTenantId);
             } catch (error) {
                 if (error.message.includes('TENANT_NOT_FOUND')) {
                     await this.showTenantNotFoundUI(userEmail);
@@ -67,7 +84,7 @@ class AuthFlow {
             }
 
             // Step 3: Show ERP credentials form and validate
-            const erpCredentials = await this.showCredentialsForm(userEmail, tenantInfo.tenant_name);
+            const erpCredentials = await this.showCredentialsForm(userEmail, selectedTenantName);
             if (!erpCredentials) {
                 return false;
             }
@@ -76,7 +93,8 @@ class AuthFlow {
             const response = await apiClient.registerUser({
                 email: userEmail,
                 erp_username: erpCredentials.username,
-                erp_password_or_token: erpCredentials.password
+                erp_password_or_token: erpCredentials.password,
+                tenant_id: selectedTenantId  // Include selected tenant for multi-tenant domains
             });
 
             // Step 5: Store JWT token and mark registration complete
@@ -91,6 +109,7 @@ class AuthFlow {
             // Store encrypted credentials for silent re-authentication
             localStorage.setItem('filesmile_registration_complete', 'true');
             localStorage.setItem('filesmile_user_email', userEmail);
+            localStorage.setItem('filesmile_tenant_id', selectedTenantId.toString());
             // Note: In production, you might want to encrypt these locally
             localStorage.setItem('filesmile_erp_username', erpCredentials.username);
             localStorage.setItem('filesmile_erp_password', erpCredentials.password);
@@ -128,6 +147,7 @@ class AuthFlow {
             const userEmail = localStorage.getItem('filesmile_user_email');
             const erpUsername = localStorage.getItem('filesmile_erp_username');
             const erpPassword = localStorage.getItem('filesmile_erp_password');
+            const storedTenantId = localStorage.getItem('filesmile_tenant_id');
             
             if (!userEmail || !erpUsername || !erpPassword) {
                 console.error('Missing stored credentials for auto-reauthentication');
@@ -136,16 +156,28 @@ class AuthFlow {
 
             console.log(`🔄 Silent auto-reauthentication for: ${userEmail}`);
 
-            // Resolve tenant from email domain
-            const tenantInfo = await apiClient.resolveTenant(userEmail);
-            ConfigHelper.setTenantId(tenantInfo.tenant_id);
+            // Use stored tenant_id if available (for multi-tenant domains)
+            let tenantId = storedTenantId ? parseInt(storedTenantId) : null;
+            
+            if (!tenantId) {
+                // Resolve tenant from email domain
+                const tenantInfo = await apiClient.resolveTenant(userEmail);
+                if (tenantInfo.requires_selection) {
+                    // Can't auto-reauthenticate without stored tenant_id
+                    throw new Error('Tenant selection required');
+                }
+                tenantId = tenantInfo.tenant_id;
+            }
+            
+            ConfigHelper.setTenantId(tenantId);
 
             // Register user and get new JWT using stored credentials
             const response = await apiClient.registerUser({
                 email: userEmail,
                 display_name: Office.context.mailbox.userProfile.displayName,
                 erp_username: erpUsername,
-                erp_password_or_token: erpPassword
+                erp_password_or_token: erpPassword,
+                tenant_id: tenantId  // Include tenant_id for multi-tenant domains
             });
 
             // Store new JWT token
@@ -166,6 +198,7 @@ class AuthFlow {
             localStorage.removeItem('filesmile_user_email');
             localStorage.removeItem('filesmile_erp_username');
             localStorage.removeItem('filesmile_erp_password');
+            localStorage.removeItem('filesmile_tenant_id');
             return await this.startLoginFlow();
         }
     }
@@ -341,6 +374,109 @@ class AuthFlow {
                         // Focus back to username field for retry
                         modal.querySelector('#erp-username-input').focus();
                     }
+                }
+            });
+
+            // Handle cancel
+            modal.querySelector('#cancel-btn').addEventListener('click', () => {
+                document.body.removeChild(overlay);
+                resolve(null);
+            });
+        });
+    }
+
+    /**
+     * Show tenant selection UI when domain has multiple tenants
+     * @param {string} email - User email
+     * @param {Array} tenants - List of available tenants
+     * @returns {Promise<{tenant_id: number, tenant_name: string} | null>}
+     */
+    static async showTenantSelectionUI(email, tenants) {
+        return new Promise((resolve) => {
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.7);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                max-width: 400px;
+                width: 90%;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            `;
+
+            const tenantOptions = tenants.map(t => 
+                `<option value="${t.tenant_id}">${t.tenant_name}</option>`
+            ).join('');
+
+            modal.innerHTML = `
+                <h3 style="margin-top: 0;">🏢 Select Your Organization</h3>
+                <p style="color: #666; font-size: 14px;">
+                    <strong>Email:</strong> ${email}
+                </p>
+                <p style="color: #666; font-size: 13px;">
+                    Your email domain is connected to multiple organizations. Please select the one you want to use.
+                </p>
+                <form id="tenant-selection-form">
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500;">
+                            Organization *
+                        </label>
+                        <select
+                            id="tenant-select"
+                            required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px;"
+                        >
+                            <option value="">Select an organization...</option>
+                            ${tenantOptions}
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                        <button
+                            type="button"
+                            id="cancel-btn"
+                            style="padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            id="continue-btn"
+                            style="padding: 8px 16px; border: none; background: linear-gradient(135deg, #FDB913 0%, #FFD54F 100%); color: #2C2C2C; border-radius: 4px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);"
+                        >
+                            Continue
+                        </button>
+                    </div>
+                </form>
+            `;
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            // Handle form submission
+            const form = modal.querySelector('#tenant-selection-form');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const select = modal.querySelector('#tenant-select');
+                const selectedId = parseInt(select.value);
+                
+                if (selectedId) {
+                    const selectedTenant = tenants.find(t => t.tenant_id === selectedId);
+                    document.body.removeChild(overlay);
+                    resolve(selectedTenant);
                 }
             });
 

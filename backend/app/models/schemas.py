@@ -17,10 +17,18 @@ class TenantResolveRequest(BaseModel):
     email: str = Field(..., description="User email address")
 
 
+class TenantInfo(BaseModel):
+    """Basic tenant information."""
+    tenant_id: int = Field(..., description="Tenant ID")
+    tenant_name: str = Field(..., description="Tenant name")
+
+
 class TenantResolveResponse(BaseModel):
     """Response model for tenant resolution."""
-    tenant_id: int = Field(..., description="Resolved tenant ID")
-    tenant_name: str = Field(..., description="Tenant name")
+    tenant_id: Optional[int] = Field(None, description="Resolved tenant ID (if single tenant)")
+    tenant_name: Optional[str] = Field(None, description="Tenant name (if single tenant)")
+    tenants: Optional[List[TenantInfo]] = Field(None, description="List of tenants (if multiple)")
+    requires_selection: bool = Field(default=False, description="True if user must select a tenant")
 
 
 class UserRegisterRequest(BaseModel):
@@ -28,6 +36,7 @@ class UserRegisterRequest(BaseModel):
     email: str = Field(..., description="User email address")
     erp_username: str = Field(..., description="User's ERP username")
     erp_password_or_token: str = Field(..., description="User's ERP password or token")
+    tenant_id: Optional[int] = Field(None, description="Selected tenant ID (required if domain has multiple tenants)")
 
 
 class UserRegisterResponse(BaseModel):

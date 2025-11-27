@@ -290,13 +290,20 @@ async def get_domain(domain_id: int, db: Session = Depends(get_db)):
 
 @router.post("/domains", response_model=DomainResponse, status_code=status.HTTP_201_CREATED)
 async def create_domain(domain_data: DomainCreate, db: Session = Depends(get_db)):
-    """Create a new domain."""
-    # Check if domain already exists
-    existing = db.query(TenantDomain).filter(TenantDomain.domain == domain_data.domain.lower()).first()
+    """Create a new domain-tenant mapping.
+    
+    Note: A domain can be connected to multiple tenants.
+    The unique constraint is on (tenant_id, domain) pair.
+    """
+    # Check if this exact tenant-domain pair already exists
+    existing = db.query(TenantDomain).filter(
+        TenantDomain.domain == domain_data.domain.lower(),
+        TenantDomain.tenant_id == domain_data.tenant_id
+    ).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Domain already exists"
+            detail="This domain is already connected to this tenant"
         )
     
     # Verify tenant exists
@@ -325,7 +332,7 @@ async def update_domain(
     domain_data: DomainUpdate,
     db: Session = Depends(get_db)
 ):
-    """Update an existing domain."""
+    """Update an existing domain-tenant mapping."""
     domain = db.query(TenantDomain).filter(TenantDomain.id == domain_id).first()
     if not domain:
         raise HTTPException(
@@ -333,14 +340,24 @@ async def update_domain(
             detail="Domain not found"
         )
     
-    # Check if new domain name conflicts
-    if domain_data.domain and domain_data.domain.lower() != domain.domain:
-        existing = db.query(TenantDomain).filter(TenantDomain.domain == domain_data.domain.lower()).first()
+    new_domain_name = domain_data.domain.lower() if domain_data.domain else domain.domain
+    new_tenant_id = domain_data.tenant_id if domain_data.tenant_id is not None else domain.tenant_id
+    
+    # Check if the new combination would conflict with existing entry
+    if new_domain_name != domain.domain or new_tenant_id != domain.tenant_id:
+        existing = db.query(TenantDomain).filter(
+            TenantDomain.domain == new_domain_name,
+            TenantDomain.tenant_id == new_tenant_id,
+            TenantDomain.id != domain_id
+        ).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Domain already exists"
+                detail="This domain-tenant combination already exists"
             )
+    
+    # Update domain name if provided
+    if domain_data.domain:
         domain.domain = domain_data.domain.lower()
     
     # Update tenant if provided

@@ -54,16 +54,20 @@ class TenantDomain(Base):
     """
     Tenant Domain model - maps email domains to tenants.
 
-    One tenant can have multiple domains:
-    - Example: Tenant "Acme Corp" owns: acme.com, acme.co.il, subsidiary.com
+    Supports many-to-many relationship:
+    - One tenant can have multiple domains
+    - One domain can be connected to multiple tenants
+    
+    When a domain is connected to multiple tenants, users will be prompted
+    to select their tenant during registration.
 
-    Used for tenant resolution: user@acme.com -> Tenant ID
+    Used for tenant resolution: user@acme.com -> [Tenant IDs]
     """
     __tablename__ = "tenant_domains"
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
-    domain = Column(String(255), nullable=False, unique=True, index=True)  # e.g., "example.com"
+    domain = Column(String(255), nullable=False, index=True)  # e.g., "example.com"
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -71,9 +75,9 @@ class TenantDomain(Base):
     # Relationships
     tenant = relationship("Tenant", back_populates="domains")
 
-    # Constraints
+    # Constraints - unique combination of tenant_id and domain (not just domain)
     __table_args__ = (
-        UniqueConstraint('domain', name='uq_tenant_domains_domain'),
+        UniqueConstraint('tenant_id', 'domain', name='uq_tenant_domain_pair'),
     )
 
     def __repr__(self):

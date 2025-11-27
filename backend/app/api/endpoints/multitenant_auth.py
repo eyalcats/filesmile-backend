@@ -13,6 +13,7 @@ from app.models.database import Tenant, TenantDomain, User
 from app.models.schemas import (
     TenantResolveRequest,
     TenantResolveResponse,
+    TenantInfo,
     UserRegisterRequest,
     UserRegisterResponse
 )
@@ -49,25 +50,26 @@ async def resolve_tenant(
     db: Session = Depends(get_db)
 ) -> TenantResolveResponse:
     """
-    Resolve tenant from user's email domain.
+    Resolve tenant(s) from user's email domain.
 
     The Outlook add-in calls this endpoint on startup with the user's email.
-    Backend extracts the domain and finds the corresponding tenant.
+    Backend extracts the domain and finds the corresponding tenant(s).
 
     Flow:
     1. Extract domain from email (e.g., user@acme.com -> acme.com)
-    2. Look up tenant by domain in tenant_domains table
-    3. Return tenant_id and name if found
+    2. Look up all tenants by domain in tenant_domains table
+    3. If single tenant: return tenant_id and name
+    4. If multiple tenants: return list for user selection
 
     Args:
         request: Contains user email
         db: Database session
 
     Returns:
-        Tenant ID and name
+        Single tenant info OR list of tenants for selection
 
     Raises:
-        404: If tenant not found for this domain
+        404: If no tenant found for this domain
         400: If email format is invalid
     """
     try:
@@ -80,23 +82,18 @@ async def resolve_tenant(
             detail="Invalid email format"
         )
 
-    # Look up tenant by domain
+    # Look up ALL tenants for this domain (supports multi-tenant domains)
     print(f"DEBUG: Querying TenantDomain table for domain: '{domain}'")
-    print(f"DEBUG: Database connection: {db.bind.url}")
-    tenant_domain = db.query(TenantDomain).filter(
+    tenant_domains = db.query(TenantDomain).filter(
         TenantDomain.domain == domain
-    ).first()
+    ).all()
 
-    print(f"DEBUG: tenant_domain found: {tenant_domain is not None}")
-    if tenant_domain:
-        print(f"DEBUG: tenant_domain.tenant_id: {tenant_domain.tenant_id}")
-        print(f"DEBUG: tenant_domain.domain: {tenant_domain.domain}")
-    else:
+    print(f"DEBUG: Found {len(tenant_domains)} tenant_domain entries")
+    
+    if not tenant_domains:
         # Let's also check what domains are available in the database
         all_domains = db.query(TenantDomain).all()
         print(f"DEBUG: Available domains in database: {[td.domain for td in all_domains]}")
-
-    if not tenant_domain:
         print("DEBUG: Raising TENANT_NOT_FOUND exception")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -104,17 +101,16 @@ async def resolve_tenant(
             headers={"X-Error-Code": "TENANT_NOT_FOUND"}
         )
 
-    # Get tenant
-    tenant = db.query(Tenant).filter(
-        Tenant.id == tenant_domain.tenant_id,
+    # Get all active tenants for these domain entries
+    tenant_ids = [td.tenant_id for td in tenant_domains]
+    tenants = db.query(Tenant).filter(
+        Tenant.id.in_(tenant_ids),
         Tenant.is_active == True
-    ).first()
+    ).all()
 
-    print(f"DEBUG: tenant found: {tenant is not None}")
-    if tenant:
-        print(f"DEBUG: tenant.name: {tenant.name}")
-
-    if not tenant:
+    print(f"DEBUG: Found {len(tenants)} active tenants")
+    
+    if not tenants:
         print("DEBUG: Raising TENANT_NOT_FOUND_OR_INACTIVE exception")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -122,9 +118,25 @@ async def resolve_tenant(
             headers={"X-Error-Code": "TENANT_NOT_FOUND"}
         )
 
+    # Single tenant - return directly
+    if len(tenants) == 1:
+        tenant = tenants[0]
+        print(f"DEBUG: Single tenant found: {tenant.name}")
+        return TenantResolveResponse(
+            tenant_id=tenant.id,
+            tenant_name=tenant.name,
+            requires_selection=False
+        )
+    
+    # Multiple tenants - return list for selection
+    print(f"DEBUG: Multiple tenants found, requiring selection")
+    tenant_list = [
+        TenantInfo(tenant_id=t.id, tenant_name=t.name)
+        for t in tenants
+    ]
     return TenantResolveResponse(
-        tenant_id=tenant.id,
-        tenant_name=tenant.name
+        tenants=tenant_list,
+        requires_selection=True
     )
 
 
@@ -167,20 +179,49 @@ async def register_user(
             detail="Invalid email format"
         )
 
-    tenant_domain = db.query(TenantDomain).filter(
-        TenantDomain.domain == domain
-    ).first()
+    # Check if tenant_id was provided (for multi-tenant domains)
+    if request.tenant_id:
+        # Verify the tenant_id is valid for this domain
+        tenant_domain = db.query(TenantDomain).filter(
+            TenantDomain.domain == domain,
+            TenantDomain.tenant_id == request.tenant_id
+        ).first()
+        
+        if not tenant_domain:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Selected tenant is not valid for this email domain"
+            )
+        
+        tenant = db.query(Tenant).filter(
+            Tenant.id == request.tenant_id,
+            Tenant.is_active == True
+        ).first()
+    else:
+        # No tenant_id provided - check if domain has single or multiple tenants
+        tenant_domains = db.query(TenantDomain).filter(
+            TenantDomain.domain == domain
+        ).all()
 
-    if not tenant_domain:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No tenant configured for this email domain"
-        )
-
-    tenant = db.query(Tenant).filter(
-        Tenant.id == tenant_domain.tenant_id,
-        Tenant.is_active == True
-    ).first()
+        if not tenant_domains:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No tenant configured for this email domain"
+            )
+        
+        if len(tenant_domains) > 1:
+            # Multiple tenants - user must select one
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="TENANT_SELECTION_REQUIRED",
+                headers={"X-Error-Code": "TENANT_SELECTION_REQUIRED"}
+            )
+        
+        # Single tenant
+        tenant = db.query(Tenant).filter(
+            Tenant.id == tenant_domains[0].tenant_id,
+            Tenant.is_active == True
+        ).first()
 
     if not tenant:
         raise HTTPException(

@@ -734,7 +734,7 @@ const App = {
                 <div class="form-group">
                     <label for="domain" class="required">Domain</label>
                     <input type="text" id="domain" name="domain" value="${this.escapeHtml(domain.domain || '')}" required placeholder="e.g., example.com">
-                    <span class="form-help">Email domain without @ symbol</span>
+                    <span class="form-help">Email domain without @ symbol. A domain can be connected to multiple tenants.</span>
                 </div>
                 
                 <div class="form-group">
