@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.core.config import settings
-from app.api.endpoints import search, attachments, auth, multitenant_auth
+from app.api.endpoints import search, attachments, auth, multitenant_auth, admin
 from app.services.priority_client import PriorityClientFactory
 from app.db.session import init_db
 
@@ -87,6 +87,9 @@ app.include_router(auth.router, prefix=settings.api_prefix, include_in_schema=Fa
 
 # Multi-tenant authentication endpoints (new)
 app.include_router(multitenant_auth.router, prefix=f"{settings.api_prefix}/auth", tags=["auth"], include_in_schema=False)
+
+# Admin panel endpoints
+app.include_router(admin.router, prefix=settings.api_prefix, tags=["admin"])
 
 # Get paths relative to this file
 import pathlib

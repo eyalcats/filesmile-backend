@@ -1,0 +1,504 @@
+"""
+Admin API endpoints for managing tenants, domains, and users.
+
+Provides CRUD operations for the admin frontend panel.
+"""
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from app.db.session import get_db
+from app.models.database import Tenant, TenantDomain, User
+from app.models.admin_schemas import (
+    # Tenant schemas
+    TenantCreate,
+    TenantUpdate,
+    TenantResponse,
+    TenantListResponse,
+    # Domain schemas
+    DomainCreate,
+    DomainUpdate,
+    DomainResponse,
+    DomainListResponse,
+    # User schemas
+    UserCreate,
+    UserUpdate,
+    UserResponse,
+    UserListResponse,
+    # Auth schemas
+    AdminLoginRequest,
+    AdminLoginResponse,
+)
+from app.utils.encryption import encrypt_value
+from app.core.config import settings
+import hashlib
+import secrets
+from datetime import datetime, timedelta
+
+router = APIRouter(prefix="/admin", tags=["Admin"])
+
+
+# ============================================================================
+# Admin Authentication
+# ============================================================================
+
+def verify_admin_credentials(username: str, password: str) -> bool:
+    """
+    Verify admin credentials.
+    In production, use proper password hashing and database storage.
+    """
+    # Get admin credentials from environment or use defaults for development
+    admin_username = getattr(settings, 'admin_username', 'admin')
+    admin_password = getattr(settings, 'admin_password', 'admin123')
+    return username == admin_username and password == admin_password
+
+
+def create_admin_token() -> str:
+    """Generate a simple admin session token."""
+    return secrets.token_urlsafe(32)
+
+
+@router.post("/login", response_model=AdminLoginResponse)
+async def admin_login(request: AdminLoginRequest):
+    """
+    Admin login endpoint.
+    
+    Returns a session token for authenticated admin access.
+    """
+    if not verify_admin_credentials(request.username, request.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+    
+    token = create_admin_token()
+    return AdminLoginResponse(
+        access_token=token,
+        token_type="bearer",
+        username=request.username,
+        expires_in=86400  # 24 hours
+    )
+
+
+# ============================================================================
+# Tenants CRUD
+# ============================================================================
+
+@router.get("/tenants", response_model=TenantListResponse)
+async def list_tenants(
+    search: Optional[str] = Query(None, description="Search term"),
+    status: Optional[str] = Query(None, description="Filter by status (active/inactive)"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db)
+):
+    """List all tenants with optional filtering."""
+    query = db.query(Tenant)
+    
+    # Apply search filter
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                Tenant.name.ilike(search_term),
+                Tenant.erp_base_url.ilike(search_term),
+                Tenant.erp_company.ilike(search_term)
+            )
+        )
+    
+    # Apply status filter
+    if status:
+        is_active = status.lower() == 'active'
+        query = query.filter(Tenant.is_active == is_active)
+    
+    total = query.count()
+    tenants = query.offset(skip).limit(limit).all()
+    
+    return TenantListResponse(
+        items=[TenantResponse.model_validate(t) for t in tenants],
+        total=total
+    )
+
+
+@router.get("/tenants/{tenant_id}", response_model=TenantResponse)
+async def get_tenant(tenant_id: int, db: Session = Depends(get_db)):
+    """Get a single tenant by ID."""
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tenant not found"
+        )
+    return TenantResponse.model_validate(tenant)
+
+
+@router.post("/tenants", response_model=TenantResponse, status_code=status.HTTP_201_CREATED)
+async def create_tenant(tenant_data: TenantCreate, db: Session = Depends(get_db)):
+    """Create a new tenant."""
+    # Check if tenant name already exists
+    existing = db.query(Tenant).filter(Tenant.name == tenant_data.name).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant with this name already exists"
+        )
+    
+    tenant = Tenant(
+        name=tenant_data.name,
+        erp_base_url=tenant_data.erp_base_url,
+        erp_auth_type=tenant_data.erp_auth_type or "basic",
+        erp_admin_username=encrypt_value(tenant_data.erp_admin_username) if tenant_data.erp_admin_username else None,
+        erp_admin_password_or_token=encrypt_value(tenant_data.erp_admin_password_or_token) if tenant_data.erp_admin_password_or_token else None,
+        erp_company=tenant_data.erp_company,
+        erp_tabula_ini=tenant_data.erp_tabula_ini or "tabula.ini",
+        is_active=tenant_data.is_active if tenant_data.is_active is not None else True
+    )
+    
+    db.add(tenant)
+    db.commit()
+    db.refresh(tenant)
+    
+    return TenantResponse.model_validate(tenant)
+
+
+@router.put("/tenants/{tenant_id}", response_model=TenantResponse)
+async def update_tenant(
+    tenant_id: int,
+    tenant_data: TenantUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update an existing tenant."""
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tenant not found"
+        )
+    
+    # Update fields if provided
+    if tenant_data.name is not None:
+        tenant.name = tenant_data.name
+    if tenant_data.erp_base_url is not None:
+        tenant.erp_base_url = tenant_data.erp_base_url
+    if tenant_data.erp_auth_type is not None:
+        tenant.erp_auth_type = tenant_data.erp_auth_type
+    if tenant_data.erp_admin_username is not None:
+        tenant.erp_admin_username = encrypt_value(tenant_data.erp_admin_username)
+    if tenant_data.erp_admin_password_or_token is not None:
+        tenant.erp_admin_password_or_token = encrypt_value(tenant_data.erp_admin_password_or_token)
+    if tenant_data.erp_company is not None:
+        tenant.erp_company = tenant_data.erp_company
+    if tenant_data.erp_tabula_ini is not None:
+        tenant.erp_tabula_ini = tenant_data.erp_tabula_ini
+    if tenant_data.is_active is not None:
+        tenant.is_active = tenant_data.is_active
+    
+    tenant.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(tenant)
+    
+    return TenantResponse.model_validate(tenant)
+
+
+@router.delete("/tenants/{tenant_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tenant(tenant_id: int, db: Session = Depends(get_db)):
+    """Delete a tenant and all associated domains and users."""
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tenant not found"
+        )
+    
+    db.delete(tenant)
+    db.commit()
+    return None
+
+
+# ============================================================================
+# Domains CRUD
+# ============================================================================
+
+@router.get("/domains", response_model=DomainListResponse)
+async def list_domains(
+    search: Optional[str] = Query(None, description="Search term"),
+    tenant_id: Optional[int] = Query(None, description="Filter by tenant ID"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db)
+):
+    """List all domains with optional filtering."""
+    query = db.query(TenantDomain)
+    
+    # Apply search filter
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(TenantDomain.domain.ilike(search_term))
+    
+    # Apply tenant filter
+    if tenant_id:
+        query = query.filter(TenantDomain.tenant_id == tenant_id)
+    
+    total = query.count()
+    domains = query.offset(skip).limit(limit).all()
+    
+    return DomainListResponse(
+        items=[DomainResponse.model_validate(d) for d in domains],
+        total=total
+    )
+
+
+@router.get("/domains/{domain_id}", response_model=DomainResponse)
+async def get_domain(domain_id: int, db: Session = Depends(get_db)):
+    """Get a single domain by ID."""
+    domain = db.query(TenantDomain).filter(TenantDomain.id == domain_id).first()
+    if not domain:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Domain not found"
+        )
+    return DomainResponse.model_validate(domain)
+
+
+@router.post("/domains", response_model=DomainResponse, status_code=status.HTTP_201_CREATED)
+async def create_domain(domain_data: DomainCreate, db: Session = Depends(get_db)):
+    """Create a new domain."""
+    # Check if domain already exists
+    existing = db.query(TenantDomain).filter(TenantDomain.domain == domain_data.domain.lower()).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Domain already exists"
+        )
+    
+    # Verify tenant exists
+    tenant = db.query(Tenant).filter(Tenant.id == domain_data.tenant_id).first()
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant not found"
+        )
+    
+    domain = TenantDomain(
+        tenant_id=domain_data.tenant_id,
+        domain=domain_data.domain.lower()
+    )
+    
+    db.add(domain)
+    db.commit()
+    db.refresh(domain)
+    
+    return DomainResponse.model_validate(domain)
+
+
+@router.put("/domains/{domain_id}", response_model=DomainResponse)
+async def update_domain(
+    domain_id: int,
+    domain_data: DomainUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update an existing domain."""
+    domain = db.query(TenantDomain).filter(TenantDomain.id == domain_id).first()
+    if not domain:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Domain not found"
+        )
+    
+    # Check if new domain name conflicts
+    if domain_data.domain and domain_data.domain.lower() != domain.domain:
+        existing = db.query(TenantDomain).filter(TenantDomain.domain == domain_data.domain.lower()).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Domain already exists"
+            )
+        domain.domain = domain_data.domain.lower()
+    
+    # Update tenant if provided
+    if domain_data.tenant_id is not None:
+        tenant = db.query(Tenant).filter(Tenant.id == domain_data.tenant_id).first()
+        if not tenant:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tenant not found"
+            )
+        domain.tenant_id = domain_data.tenant_id
+    
+    db.commit()
+    db.refresh(domain)
+    
+    return DomainResponse.model_validate(domain)
+
+
+@router.delete("/domains/{domain_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_domain(domain_id: int, db: Session = Depends(get_db)):
+    """Delete a domain."""
+    domain = db.query(TenantDomain).filter(TenantDomain.id == domain_id).first()
+    if not domain:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Domain not found"
+        )
+    
+    db.delete(domain)
+    db.commit()
+    return None
+
+
+# ============================================================================
+# Users CRUD
+# ============================================================================
+
+@router.get("/users", response_model=UserListResponse)
+async def list_users(
+    search: Optional[str] = Query(None, description="Search term"),
+    tenant_id: Optional[int] = Query(None, description="Filter by tenant ID"),
+    status: Optional[str] = Query(None, description="Filter by status (active/inactive)"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db)
+):
+    """List all users with optional filtering."""
+    query = db.query(User)
+    
+    # Apply search filter
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                User.email.ilike(search_term),
+                User.display_name.ilike(search_term)
+            )
+        )
+    
+    # Apply tenant filter
+    if tenant_id:
+        query = query.filter(User.tenant_id == tenant_id)
+    
+    # Apply status filter
+    if status:
+        is_active = status.lower() == 'active'
+        query = query.filter(User.is_active == is_active)
+    
+    total = query.count()
+    users = query.offset(skip).limit(limit).all()
+    
+    return UserListResponse(
+        items=[UserResponse.model_validate(u) for u in users],
+        total=total
+    )
+
+
+@router.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(user_id: int, db: Session = Depends(get_db)):
+    """Get a single user by ID."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return UserResponse.model_validate(user)
+
+
+@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
+    """Create a new user."""
+    # Check if email already exists
+    existing = db.query(User).filter(User.email == user_data.email.lower()).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists"
+        )
+    
+    # Verify tenant exists
+    tenant = db.query(Tenant).filter(Tenant.id == user_data.tenant_id).first()
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant not found"
+        )
+    
+    user = User(
+        tenant_id=user_data.tenant_id,
+        email=user_data.email.lower(),
+        display_name=user_data.display_name,
+        role=user_data.role or "user",
+        erp_username=encrypt_value(user_data.erp_username) if user_data.erp_username else None,
+        erp_password_or_token=encrypt_value(user_data.erp_password_or_token) if user_data.erp_password_or_token else None,
+        is_active=user_data.is_active if user_data.is_active is not None else True
+    )
+    
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    return UserResponse.model_validate(user)
+
+
+@router.put("/users/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: int,
+    user_data: UserUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update an existing user."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Check if new email conflicts
+    if user_data.email and user_data.email.lower() != user.email:
+        existing = db.query(User).filter(User.email == user_data.email.lower()).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this email already exists"
+            )
+        user.email = user_data.email.lower()
+    
+    # Update other fields if provided
+    if user_data.tenant_id is not None:
+        tenant = db.query(Tenant).filter(Tenant.id == user_data.tenant_id).first()
+        if not tenant:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tenant not found"
+            )
+        user.tenant_id = user_data.tenant_id
+    if user_data.display_name is not None:
+        user.display_name = user_data.display_name
+    if user_data.role is not None:
+        user.role = user_data.role
+    if user_data.erp_username is not None:
+        user.erp_username = encrypt_value(user_data.erp_username)
+    if user_data.erp_password_or_token is not None:
+        user.erp_password_or_token = encrypt_value(user_data.erp_password_or_token)
+    if user_data.is_active is not None:
+        user.is_active = user_data.is_active
+    
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+    
+    return UserResponse.model_validate(user)
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(user_id: int, db: Session = Depends(get_db)):
+    """Delete a user."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    db.delete(user)
+    db.commit()
+    return None

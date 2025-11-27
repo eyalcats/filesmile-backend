@@ -1,0 +1,235 @@
+/**
+ * API Module
+ * 
+ * Handles all API communications with the backend.
+ * Provides CRUD operations for tenants, domains, and users.
+ */
+
+const API = {
+    /**
+     * Make an authenticated API request
+     * @param {string} endpoint - API endpoint
+     * @param {Object} options - Fetch options
+     * @returns {Promise<Object>} - Response data
+     */
+    async request(endpoint, options = {}) {
+        const url = CONFIG.API_URL + endpoint;
+        const token = Auth.getToken();
+        
+        const defaultOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+        };
+        
+        const mergedOptions = {
+            ...defaultOptions,
+            ...options,
+            headers: {
+                ...defaultOptions.headers,
+                ...options.headers
+            }
+        };
+        
+        try {
+            const response = await fetch(url, mergedOptions);
+            
+            // Handle 401 Unauthorized
+            if (response.status === 401) {
+                Auth.logout();
+                window.location.href = 'index.html';
+                throw new Error('Session expired. Please login again.');
+            }
+            
+            // Handle other errors
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || errorData.message || `HTTP error ${response.status}`);
+            }
+            
+            // Handle empty responses
+            const text = await response.text();
+            return text ? JSON.parse(text) : {};
+        } catch (error) {
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('Network error. Please check your connection.');
+            }
+            throw error;
+        }
+    },
+    
+    // ==================== TENANTS ====================
+    
+    /**
+     * Get all tenants
+     * @param {Object} params - Query parameters (search, status, page, limit)
+     * @returns {Promise<Array>} - List of tenants
+     */
+    async getTenants(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = CONFIG.ENDPOINTS.TENANTS + (queryString ? `?${queryString}` : '');
+        return this.request(endpoint);
+    },
+    
+    /**
+     * Get a single tenant by ID
+     * @param {number} id - Tenant ID
+     * @returns {Promise<Object>} - Tenant data
+     */
+    async getTenant(id) {
+        return this.request(CONFIG.ENDPOINTS.TENANT(id));
+    },
+    
+    /**
+     * Create a new tenant
+     * @param {Object} data - Tenant data
+     * @returns {Promise<Object>} - Created tenant
+     */
+    async createTenant(data) {
+        return this.request(CONFIG.ENDPOINTS.TENANTS, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
+     * Update an existing tenant
+     * @param {number} id - Tenant ID
+     * @param {Object} data - Updated tenant data
+     * @returns {Promise<Object>} - Updated tenant
+     */
+    async updateTenant(id, data) {
+        return this.request(CONFIG.ENDPOINTS.TENANT(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
+     * Delete a tenant
+     * @param {number} id - Tenant ID
+     * @returns {Promise<void>}
+     */
+    async deleteTenant(id) {
+        return this.request(CONFIG.ENDPOINTS.TENANT(id), {
+            method: 'DELETE'
+        });
+    },
+    
+    // ==================== DOMAINS ====================
+    
+    /**
+     * Get all domains
+     * @param {Object} params - Query parameters (search, tenant_id, page, limit)
+     * @returns {Promise<Array>} - List of domains
+     */
+    async getDomains(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = CONFIG.ENDPOINTS.DOMAINS + (queryString ? `?${queryString}` : '');
+        return this.request(endpoint);
+    },
+    
+    /**
+     * Get a single domain by ID
+     * @param {number} id - Domain ID
+     * @returns {Promise<Object>} - Domain data
+     */
+    async getDomain(id) {
+        return this.request(CONFIG.ENDPOINTS.DOMAIN(id));
+    },
+    
+    /**
+     * Create a new domain
+     * @param {Object} data - Domain data
+     * @returns {Promise<Object>} - Created domain
+     */
+    async createDomain(data) {
+        return this.request(CONFIG.ENDPOINTS.DOMAINS, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
+     * Update an existing domain
+     * @param {number} id - Domain ID
+     * @param {Object} data - Updated domain data
+     * @returns {Promise<Object>} - Updated domain
+     */
+    async updateDomain(id, data) {
+        return this.request(CONFIG.ENDPOINTS.DOMAIN(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
+     * Delete a domain
+     * @param {number} id - Domain ID
+     * @returns {Promise<void>}
+     */
+    async deleteDomain(id) {
+        return this.request(CONFIG.ENDPOINTS.DOMAIN(id), {
+            method: 'DELETE'
+        });
+    },
+    
+    // ==================== USERS ====================
+    
+    /**
+     * Get all users
+     * @param {Object} params - Query parameters (search, tenant_id, status, page, limit)
+     * @returns {Promise<Array>} - List of users
+     */
+    async getUsers(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = CONFIG.ENDPOINTS.USERS + (queryString ? `?${queryString}` : '');
+        return this.request(endpoint);
+    },
+    
+    /**
+     * Get a single user by ID
+     * @param {number} id - User ID
+     * @returns {Promise<Object>} - User data
+     */
+    async getUser(id) {
+        return this.request(CONFIG.ENDPOINTS.USER(id));
+    },
+    
+    /**
+     * Create a new user
+     * @param {Object} data - User data
+     * @returns {Promise<Object>} - Created user
+     */
+    async createUser(data) {
+        return this.request(CONFIG.ENDPOINTS.USERS, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
+     * Update an existing user
+     * @param {number} id - User ID
+     * @param {Object} data - Updated user data
+     * @returns {Promise<Object>} - Updated user
+     */
+    async updateUser(id, data) {
+        return this.request(CONFIG.ENDPOINTS.USER(id), {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
+     * Delete a user
+     * @param {number} id - User ID
+     * @returns {Promise<void>}
+     */
+    async deleteUser(id) {
+        return this.request(CONFIG.ENDPOINTS.USER(id), {
+            method: 'DELETE'
+        });
+    }
+};
