@@ -71,11 +71,11 @@ app = FastAPI(
     openapi_components={"securitySchemes": {}}
 )
 
-# Configure CORS
+# Configure CORS - allow all origins for admin panel access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,  # Must be False when allow_origins is ["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )

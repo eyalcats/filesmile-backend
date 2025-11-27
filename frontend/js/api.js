@@ -7,6 +7,21 @@
 
 const API = {
     /**
+     * Filter out empty/null/undefined values from params object
+     * @param {Object} params - Parameters object
+     * @returns {Object} - Filtered parameters
+     */
+    filterParams(params) {
+        const filtered = {};
+        for (const [key, value] of Object.entries(params)) {
+            if (value !== null && value !== undefined && value !== '') {
+                filtered[key] = value;
+            }
+        }
+        return filtered;
+    },
+    
+    /**
      * Make an authenticated API request
      * @param {string} endpoint - API endpoint
      * @param {Object} options - Fetch options
@@ -45,7 +60,19 @@ const API = {
             // Handle other errors
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || errorData.message || `HTTP error ${response.status}`);
+                // Handle different error formats
+                let errorMessage = 'Unknown error';
+                if (typeof errorData.detail === 'string') {
+                    errorMessage = errorData.detail;
+                } else if (Array.isArray(errorData.detail)) {
+                    // FastAPI validation errors come as array
+                    errorMessage = errorData.detail.map(e => e.msg || e.message).join(', ');
+                } else if (errorData.message) {
+                    errorMessage = errorData.message;
+                } else {
+                    errorMessage = `HTTP error ${response.status}`;
+                }
+                throw new Error(errorMessage);
             }
             
             // Handle empty responses
@@ -67,7 +94,8 @@ const API = {
      * @returns {Promise<Array>} - List of tenants
      */
     async getTenants(params = {}) {
-        const queryString = new URLSearchParams(params).toString();
+        const filtered = this.filterParams(params);
+        const queryString = new URLSearchParams(filtered).toString();
         const endpoint = CONFIG.ENDPOINTS.TENANTS + (queryString ? `?${queryString}` : '');
         return this.request(endpoint);
     },
@@ -125,7 +153,8 @@ const API = {
      * @returns {Promise<Array>} - List of domains
      */
     async getDomains(params = {}) {
-        const queryString = new URLSearchParams(params).toString();
+        const filtered = this.filterParams(params);
+        const queryString = new URLSearchParams(filtered).toString();
         const endpoint = CONFIG.ENDPOINTS.DOMAINS + (queryString ? `?${queryString}` : '');
         return this.request(endpoint);
     },
@@ -183,7 +212,8 @@ const API = {
      * @returns {Promise<Array>} - List of users
      */
     async getUsers(params = {}) {
-        const queryString = new URLSearchParams(params).toString();
+        const filtered = this.filterParams(params);
+        const queryString = new URLSearchParams(filtered).toString();
         const endpoint = CONFIG.ENDPOINTS.USERS + (queryString ? `?${queryString}` : '');
         return this.request(endpoint);
     },
