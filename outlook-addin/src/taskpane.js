@@ -1054,49 +1054,42 @@ async function handleChangeTenant() {
         const selectedTenant = await AuthFlow.showTenantSelectionUI(userEmail, tenantInfo.tenants);
         
         if (selectedTenant) {
-            // Store new tenant info
-            ConfigHelper.setTenantId(selectedTenant.tenant_id);
-            localStorage.setItem('filesmile_tenant_id', selectedTenant.tenant_id.toString());
-            localStorage.setItem('filesmile_tenant_name', selectedTenant.tenant_name);
-            
-            // Try to authenticate with existing credentials first
-            const erpUsername = localStorage.getItem('filesmile_erp_username');
-            const erpPassword = localStorage.getItem('filesmile_erp_password');
-            
             let authSuccess = false;
             
-            if (erpUsername && erpPassword) {
-                try {
-                    // Try existing credentials with new tenant
-                    const response = await apiClient.registerUser({
-                        email: userEmail,
-                        erp_username: erpUsername,
-                        erp_password_or_token: erpPassword,
-                        tenant_id: selectedTenant.tenant_id
-                    });
-                    
-                    // Success with existing credentials
-                    ConfigHelper.setJwtToken(response.access_token);
-                    ConfigHelper.setTenantId(response.tenant_id);
-                    ConfigHelper.setUserInfo({
-                        user_id: response.user_id,
-                        email: response.email,
-                        tenant_id: response.tenant_id
-                    });
-                    
-                    authSuccess = true;
-                    showStatus(ConfigHelper.t('tenantChanged'), 'success');
-                    
-                } catch (authError) {
-                    console.log('Existing credentials failed for new tenant, will prompt for new credentials');
-                    // Credentials didn't work for new tenant, will prompt below
-                }
+            // Try to switch tenant using server-stored credentials first
+            try {
+                console.log('Attempting to switch tenant using server-stored credentials...');
+                const response = await apiClient.switchTenant(userEmail, selectedTenant.tenant_id);
+                
+                // Success with server-stored credentials
+                ConfigHelper.setJwtToken(response.access_token);
+                ConfigHelper.setTenantId(response.tenant_id);
+                localStorage.setItem('filesmile_tenant_id', response.tenant_id.toString());
+                localStorage.setItem('filesmile_tenant_name', selectedTenant.tenant_name);
+                ConfigHelper.setUserInfo({
+                    user_id: response.user_id,
+                    email: response.email,
+                    tenant_id: response.tenant_id
+                });
+                
+                authSuccess = true;
+                showStatus(ConfigHelper.t('tenantChanged'), 'success');
+                console.log('Tenant switch successful using server-stored credentials!');
+                
+            } catch (switchError) {
+                console.log('Server-stored credentials not available or invalid:', switchError.message);
+                // Will prompt for credentials below
             }
             
-            // If no credentials or they failed, prompt for new ones
+            // If server credentials failed, prompt for new ones
             if (!authSuccess) {
                 // Clear JWT since we're switching tenants
                 ConfigHelper.setJwtToken(null);
+                
+                // Store new tenant info
+                ConfigHelper.setTenantId(selectedTenant.tenant_id);
+                localStorage.setItem('filesmile_tenant_id', selectedTenant.tenant_id.toString());
+                localStorage.setItem('filesmile_tenant_name', selectedTenant.tenant_name);
                 
                 // Show credentials form for new tenant
                 const result = await AuthFlow.showCredentialsForm(userEmail, selectedTenant.tenant_name, selectedTenant.tenant_id);
@@ -1111,7 +1104,7 @@ async function handleChangeTenant() {
                         tenant_id: result.response.tenant_id
                     });
                     
-                    // Store credentials for future use
+                    // Store credentials locally for future use
                     localStorage.setItem('filesmile_erp_username', result.credentials.username);
                     localStorage.setItem('filesmile_erp_password', result.credentials.password);
                     

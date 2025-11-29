@@ -39,6 +39,12 @@ class UserRegisterRequest(BaseModel):
     tenant_id: Optional[int] = Field(None, description="Selected tenant ID (required if domain has multiple tenants)")
 
 
+class SwitchTenantRequest(BaseModel):
+    """Request model for switching to a different tenant using stored credentials."""
+    email: str = Field(..., description="User email address")
+    tenant_id: int = Field(..., description="Target tenant ID to switch to")
+
+
 class UserRegisterResponse(BaseModel):
     """Response model for user registration."""
     access_token: str = Field(..., description="JWT access token")

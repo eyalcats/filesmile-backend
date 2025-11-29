@@ -90,6 +90,19 @@ class FileSmileAPI {
         });
     }
 
+    /**
+     * Switch to a different tenant using stored credentials on the server
+     * @param {string} email - User's email address
+     * @param {number} tenantId - Target tenant ID to switch to
+     * @returns {Promise<{access_token: string, tenant_id: number, user_id: number}>}
+     */
+    async switchTenant(email, tenantId) {
+        return await this.request('/auth/switch-tenant', {
+            method: 'POST',
+            body: JSON.stringify({ email, tenant_id: tenantId })
+        });
+    }
+
     // ========================================================================
     // Legacy API Key Authentication (Backward Compatibility)
     // ========================================================================

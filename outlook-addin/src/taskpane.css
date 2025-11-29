@@ -612,31 +612,42 @@ label, .field-label {
 }
 
 /* RTL Support for Settings */
-[dir="rtl"] .settings-btn {
+[dir="rtl"] .settings-modal-content {
+    direction: rtl;
+}
+
+[dir="rtl"] .settings-body {
+    direction: rtl;
     text-align: right;
-    flex-direction: row-reverse;
-}
-
-[dir="rtl"] .settings-btn-text {
-    align-items: flex-end;
-}
-
-[dir="rtl"] .settings-info-row {
-    flex-direction: row-reverse;
-}
-
-[dir="rtl"] .settings-label {
-    text-align: left;
-}
-
-[dir="rtl"] .settings-value {
-    text-align: left;
 }
 
 [dir="rtl"] .settings-section-title {
     text-align: right;
 }
 
-[dir="rtl"] .settings-body {
-    direction: rtl;
+[dir="rtl"] .settings-info-row {
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+[dir="rtl"] .settings-label {
+    text-align: right;
+}
+
+[dir="rtl"] .settings-value {
+    text-align: left;
+}
+
+[dir="rtl"] .settings-btn {
+    flex-direction: row-reverse;
+    text-align: right;
+}
+
+[dir="rtl"] .settings-btn-text {
+    align-items: flex-end;
+    text-align: right;
+}
+
+[dir="rtl"] .settings-btn-desc {
+    text-align: right;
 }

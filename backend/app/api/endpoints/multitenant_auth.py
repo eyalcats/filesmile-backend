@@ -15,7 +15,8 @@ from app.models.schemas import (
     TenantResolveResponse,
     TenantInfo,
     UserRegisterRequest,
-    UserRegisterResponse
+    UserRegisterResponse,
+    SwitchTenantRequest
 )
 from app.core.auth import JWTService
 from app.core.config import settings
@@ -315,6 +316,125 @@ async def register_user(
     # Calculate expiration time in seconds
     expires_in = int((expires_at - user.created_at).total_seconds())
 
+    return UserRegisterResponse(
+        access_token=access_token,
+        token_type="bearer",
+        tenant_id=tenant.id,
+        user_id=user.id,
+        email=user.email,
+        expires_in=expires_in
+    )
+
+
+@router.post("/switch-tenant", response_model=UserRegisterResponse)
+async def switch_tenant(
+    request: SwitchTenantRequest,
+    db: Session = Depends(get_db)
+) -> UserRegisterResponse:
+    """
+    Switch to a different tenant using stored credentials.
+    
+    This endpoint allows users who have previously registered with multiple tenants
+    to switch between them without re-entering credentials.
+    
+    Flow:
+    1. Find user by email
+    2. Find user-tenant association for the target tenant
+    3. Decrypt stored credentials
+    4. Validate credentials against ERP
+    5. Generate new JWT token for the target tenant
+    
+    Args:
+        request: Switch tenant request with email and target tenant_id
+        db: Database session
+    
+    Returns:
+        JWT access token and user info for the new tenant
+    
+    Raises:
+        404: If user or tenant not found
+        401: If no stored credentials or credentials invalid
+    """
+    print(f"DEBUG: Switch tenant request - email: {request.email}, tenant_id: {request.tenant_id}")
+    
+    # Step 1: Find user
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Step 2: Find tenant
+    tenant = db.query(Tenant).filter(
+        Tenant.id == request.tenant_id,
+        Tenant.is_active == True
+    ).first()
+    
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tenant not found or inactive"
+        )
+    
+    # Step 3: Find user-tenant association with stored credentials
+    user_tenant = db.query(UserTenant).filter(
+        UserTenant.user_id == user.id,
+        UserTenant.tenant_id == tenant.id,
+        UserTenant.is_active == True
+    ).first()
+    
+    if not user_tenant or not user_tenant.erp_username or not user_tenant.erp_password_or_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="NO_STORED_CREDENTIALS",
+            headers={"X-Error-Code": "NO_STORED_CREDENTIALS"}
+        )
+    
+    # Step 4: Decrypt credentials
+    try:
+        erp_username = decrypt_value(user_tenant.erp_username)
+        erp_password = decrypt_value(user_tenant.erp_password_or_token)
+    except Exception as e:
+        print(f"DEBUG: Failed to decrypt credentials: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="NO_STORED_CREDENTIALS",
+            headers={"X-Error-Code": "NO_STORED_CREDENTIALS"}
+        )
+    
+    # Step 5: Validate credentials against ERP
+    try:
+        print(f"DEBUG: Validating stored credentials for tenant switch")
+        validation_client = PriorityClient(
+            username=erp_username,
+            password=erp_password,
+            company=tenant.erp_company,
+            base_url=tenant.erp_base_url,
+            tabula_ini=tenant.erp_tabula_ini
+        )
+        
+        await validation_client.validate_credentials()
+        await validation_client.close()
+        print("DEBUG: Stored credentials validated successfully!")
+        
+    except Exception as e:
+        print(f"DEBUG: Stored credentials validation failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="STORED_CREDENTIALS_INVALID",
+            headers={"X-Error-Code": "STORED_CREDENTIALS_INVALID"}
+        )
+    
+    # Step 6: Generate new JWT token for this tenant
+    access_token, expires_at = JWTService.create_user_jwt(
+        user_id=user.id,
+        tenant_id=tenant.id,
+        email=user.email
+    )
+    
+    expires_in = int((expires_at - user.created_at).total_seconds())
+    
     return UserRegisterResponse(
         access_token=access_token,
         token_type="bearer",
