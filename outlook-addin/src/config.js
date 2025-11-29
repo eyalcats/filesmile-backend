@@ -197,6 +197,7 @@ const TRANSLATIONS = {
         tenantNotFound: 'Organization not found.',
         changeTenantFailed: 'Failed to change organization',
         logoutConfirm: 'Are you sure you want to logout? This will clear all stored data.',
+        cancel: 'Cancel',
         
         // Form labels
         company: 'Company',
@@ -284,6 +285,7 @@ const TRANSLATIONS = {
         tenantNotFound: 'הארגון לא נמצא.',
         changeTenantFailed: 'החלפת הארגון נכשלה',
         logoutConfirm: 'האם אתה בטוח שברצונך להתנתק? פעולה זו תמחק את כל הנתונים השמורים.',
+        cancel: 'ביטול',
         
         // Form labels
         company: 'חברה',

@@ -1050,6 +1050,7 @@ async function handleReenterCredentials() {
 /**
  * Handle change tenant action
  * Allows user to switch to a different tenant if they have access to multiple
+ * Tries existing credentials first, only prompts if they fail
  */
 async function handleChangeTenant() {
     toggleModal('settingsModal', false);
@@ -1077,43 +1078,79 @@ async function handleChangeTenant() {
         const selectedTenant = await AuthFlow.showTenantSelectionUI(userEmail, tenantInfo.tenants);
         
         if (selectedTenant) {
-            // Clear current authentication
-            ConfigHelper.setJwtToken(null);
-            
             // Store new tenant info
             ConfigHelper.setTenantId(selectedTenant.tenant_id);
             localStorage.setItem('filesmile_tenant_id', selectedTenant.tenant_id.toString());
             localStorage.setItem('filesmile_tenant_name', selectedTenant.tenant_name);
             
-            // Clear stored credentials since they might be different for new tenant
-            localStorage.removeItem('filesmile_erp_username');
-            localStorage.removeItem('filesmile_erp_password');
+            // Try to authenticate with existing credentials first
+            const erpUsername = localStorage.getItem('filesmile_erp_username');
+            const erpPassword = localStorage.getItem('filesmile_erp_password');
             
-            // Show credentials form for new tenant
-            const result = await AuthFlow.showCredentialsForm(userEmail, selectedTenant.tenant_name, selectedTenant.tenant_id);
+            let authSuccess = false;
             
-            if (result) {
-                // Store new JWT token and credentials
-                ConfigHelper.setJwtToken(result.response.access_token);
-                ConfigHelper.setTenantId(result.response.tenant_id);
-                ConfigHelper.setUserInfo({
-                    user_id: result.response.user_id,
-                    email: result.response.email,
-                    tenant_id: result.response.tenant_id
-                });
-                
-                // Store credentials for future auto-reauthentication
-                localStorage.setItem('filesmile_erp_username', result.credentials.username);
-                localStorage.setItem('filesmile_erp_password', result.credentials.password);
-                
-                showStatus(ConfigHelper.t('tenantChanged'), 'success');
-                
-                // Reload data for new tenant
-                await Promise.all([
-                    loadCompanies(),
-                    loadSearchGroups()
-                ]);
+            if (erpUsername && erpPassword) {
+                try {
+                    // Try existing credentials with new tenant
+                    const response = await apiClient.registerUser({
+                        email: userEmail,
+                        erp_username: erpUsername,
+                        erp_password_or_token: erpPassword,
+                        tenant_id: selectedTenant.tenant_id
+                    });
+                    
+                    // Success with existing credentials
+                    ConfigHelper.setJwtToken(response.access_token);
+                    ConfigHelper.setTenantId(response.tenant_id);
+                    ConfigHelper.setUserInfo({
+                        user_id: response.user_id,
+                        email: response.email,
+                        tenant_id: response.tenant_id
+                    });
+                    
+                    authSuccess = true;
+                    showStatus(ConfigHelper.t('tenantChanged'), 'success');
+                    
+                } catch (authError) {
+                    console.log('Existing credentials failed for new tenant, will prompt for new credentials');
+                    // Credentials didn't work for new tenant, will prompt below
+                }
             }
+            
+            // If no credentials or they failed, prompt for new ones
+            if (!authSuccess) {
+                // Clear JWT since we're switching tenants
+                ConfigHelper.setJwtToken(null);
+                
+                // Show credentials form for new tenant
+                const result = await AuthFlow.showCredentialsForm(userEmail, selectedTenant.tenant_name, selectedTenant.tenant_id);
+                
+                if (result) {
+                    // Store new JWT token and credentials
+                    ConfigHelper.setJwtToken(result.response.access_token);
+                    ConfigHelper.setTenantId(result.response.tenant_id);
+                    ConfigHelper.setUserInfo({
+                        user_id: result.response.user_id,
+                        email: result.response.email,
+                        tenant_id: result.response.tenant_id
+                    });
+                    
+                    // Store credentials for future use
+                    localStorage.setItem('filesmile_erp_username', result.credentials.username);
+                    localStorage.setItem('filesmile_erp_password', result.credentials.password);
+                    
+                    showStatus(ConfigHelper.t('tenantChanged'), 'success');
+                } else {
+                    // User cancelled, revert tenant selection
+                    return;
+                }
+            }
+            
+            // Reload data for new tenant
+            await Promise.all([
+                loadCompanies(),
+                loadSearchGroups()
+            ]);
         }
     } catch (error) {
         console.error('Change tenant failed:', error);
@@ -1131,9 +1168,81 @@ async function handleChangeTenant() {
  * Handle logout action
  * Clears all stored data and reloads the add-in
  */
-function handleLogout() {
-    if (confirm(ConfigHelper.t('logoutConfirm'))) {
+async function handleLogout() {
+    // Show custom confirmation dialog since confirm() may not work in Outlook add-ins
+    const confirmed = await showLogoutConfirmation();
+    if (confirmed) {
         toggleModal('settingsModal', false);
-        AuthFlow.logout();
+        showLoading(true);
+        
+        // Clear all storage
+        ConfigHelper.clearStorage();
+        
+        // Small delay to show loading, then reload
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
     }
+}
+
+/**
+ * Show custom logout confirmation dialog
+ * @returns {Promise<boolean>} - True if user confirms, false otherwise
+ */
+function showLogoutConfirmation() {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 300px;
+            width: 90%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        `;
+
+        modal.innerHTML = `
+            <div style="font-size: 40px; margin-bottom: 12px;">🚪</div>
+            <h3 style="margin: 0 0 12px 0; font-size: 16px;">${ConfigHelper.t('logout')}</h3>
+            <p style="color: #666; font-size: 13px; margin-bottom: 20px;">
+                ${ConfigHelper.t('logoutConfirm')}
+            </p>
+            <div style="display: flex; gap: 8px; justify-content: center;">
+                <button id="cancel-logout-btn" style="padding: 8px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">
+                    ${ConfigHelper.t('cancel') || 'Cancel'}
+                </button>
+                <button id="confirm-logout-btn" style="padding: 8px 20px; border: none; background: #a80000; color: white; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                    ${ConfigHelper.t('logout')}
+                </button>
+            </div>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        modal.querySelector('#confirm-logout-btn').addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            resolve(true);
+        });
+
+        modal.querySelector('#cancel-logout-btn').addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            resolve(false);
+        });
+    });
 }
