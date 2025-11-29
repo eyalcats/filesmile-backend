@@ -614,6 +614,11 @@ label, .field-label {
 /* RTL Support for Settings */
 [dir="rtl"] .settings-btn {
     text-align: right;
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .settings-btn-text {
+    align-items: flex-end;
 }
 
 [dir="rtl"] .settings-info-row {
@@ -621,9 +626,17 @@ label, .field-label {
 }
 
 [dir="rtl"] .settings-label {
-    text-align: right;
+    text-align: left;
 }
 
 [dir="rtl"] .settings-value {
+    text-align: left;
+}
+
+[dir="rtl"] .settings-section-title {
     text-align: right;
+}
+
+[dir="rtl"] .settings-body {
+    direction: rtl;
 }
