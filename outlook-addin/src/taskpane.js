@@ -386,30 +386,6 @@ function formatDate(dateStr) {
     return d.toLocaleDateString();
 }
 
-/**
- * Add language switcher to the header
- */
-function addLanguageSwitcher() {
-    const header = document.querySelector('.app-header');
-    const switcher = document.createElement('span');
-    switcher.className = 'menu-item language-switcher';
-    switcher.innerHTML = '🌐 EN/HE';
-    switcher.title = 'Switch Language / החלף שפה';
-    switcher.addEventListener('click', toggleLanguage);
-    header.appendChild(switcher);
-}
-
-/**
- * Toggle between English and Hebrew
- */
-function toggleLanguage() {
-    const currentLang = ConfigHelper.getLanguage();
-    const newLang = currentLang === 'en' ? 'he' : 'en';
-    ConfigHelper.setLanguage(newLang);
-    applyTranslations();
-    // Reload search groups to update their text
-    loadSearchGroups();
-}
 
 /**
  * Apply translations to all elements with data-i18n attributes
