@@ -105,6 +105,7 @@ class AuthFlow {
             localStorage.setItem('filesmile_registration_complete', 'true');
             localStorage.setItem('filesmile_user_email', userEmail);
             localStorage.setItem('filesmile_tenant_id', selectedTenantId.toString());
+            localStorage.setItem('filesmile_tenant_name', selectedTenantName);
             // Note: In production, you might want to encrypt these locally
             localStorage.setItem('filesmile_erp_username', erpCredentials.username);
             localStorage.setItem('filesmile_erp_password', erpCredentials.password);
@@ -194,6 +195,7 @@ class AuthFlow {
             localStorage.removeItem('filesmile_erp_username');
             localStorage.removeItem('filesmile_erp_password');
             localStorage.removeItem('filesmile_tenant_id');
+            localStorage.removeItem('filesmile_tenant_name');
             return await this.startLoginFlow();
         }
     }

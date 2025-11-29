@@ -484,3 +484,146 @@ label, .field-label {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* Settings Icon */
+.settings-icon {
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.settings-icon:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: rotate(45deg);
+}
+
+/* Settings Modal Specific Styles */
+.settings-modal-content {
+    height: auto;
+    max-height: 80%;
+    border-radius: 8px;
+}
+
+.settings-body {
+    padding: 16px;
+}
+
+.settings-section {
+    margin-bottom: 20px;
+}
+
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.settings-section-title {
+    font-weight: 700;
+    color: var(--border-yellow);
+    margin-bottom: 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #edebe9;
+}
+
+.settings-info-row {
+    display: flex;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.settings-label {
+    font-weight: 600;
+    width: 100px;
+    flex-shrink: 0;
+    color: #605e5c;
+    font-size: 13px;
+}
+
+.settings-value {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-color);
+    word-break: break-all;
+}
+
+/* Settings Action Buttons */
+.settings-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid #edebe9;
+    background: white;
+    cursor: pointer;
+    border-radius: 6px;
+    gap: 12px;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.settings-btn:hover {
+    background-color: #f3f2f1;
+    border-color: var(--border-yellow);
+}
+
+.settings-btn:last-child {
+    margin-bottom: 0;
+}
+
+.settings-btn-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.settings-btn-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.settings-btn-text > span:first-child {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-color);
+}
+
+.settings-btn-desc {
+    font-size: 11px;
+    color: #605e5c;
+    font-weight: normal;
+}
+
+.settings-btn-danger {
+    border-color: #fde7e9;
+}
+
+.settings-btn-danger:hover {
+    background-color: #fde7e9;
+    border-color: #a80000;
+}
+
+.settings-btn-danger .settings-btn-text > span:first-child {
+    color: #a80000;
+}
+
+/* RTL Support for Settings */
+[dir="rtl"] .settings-btn {
+    text-align: right;
+}
+
+[dir="rtl"] .settings-info-row {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .settings-label {
+    text-align: right;
+}
+
+[dir="rtl"] .settings-value {
+    text-align: right;
+}

@@ -278,6 +278,13 @@ function setupEventListeners() {
     document.getElementById('searchBy').addEventListener('change', function() {
         populateDocTypes(this.value);
     });
+
+    // Settings Modal
+    document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+    document.getElementById('closeSettingsModal').addEventListener('click', () => toggleModal('settingsModal', false));
+    document.getElementById('btnReenterCredentials').addEventListener('click', handleReenterCredentials);
+    document.getElementById('btnChangeTenant').addEventListener('click', handleChangeTenant);
+    document.getElementById('btnLogout').addEventListener('click', handleLogout);
 }
 
 /**
@@ -947,4 +954,186 @@ function showStatus(msg, type = 'success') {
     
     // Auto hide after 4 seconds
     setTimeout(() => el.style.display = 'none', 4000);
+}
+
+/**
+ * Settings Modal Functions
+ */
+
+/**
+ * Open settings modal and populate user info
+ */
+function openSettingsModal() {
+    // Populate user info
+    const userEmail = ConfigHelper.getUserEmail() || localStorage.getItem('filesmile_user_email') || '-';
+    const userInfo = ConfigHelper.getUserInfo();
+    
+    document.getElementById('settingsUserEmail').textContent = userEmail;
+    
+    // Get tenant name - we need to fetch it or use stored value
+    const tenantId = ConfigHelper.getTenantId() || localStorage.getItem('filesmile_tenant_id');
+    if (tenantId) {
+        // Try to get tenant name from stored info or display tenant ID
+        const storedTenantName = localStorage.getItem('filesmile_tenant_name');
+        document.getElementById('settingsTenantName').textContent = storedTenantName || `Tenant #${tenantId}`;
+    } else {
+        document.getElementById('settingsTenantName').textContent = '-';
+    }
+    
+    // Apply translations to modal
+    applyTranslations();
+    
+    // Show modal
+    toggleModal('settingsModal', true);
+}
+
+/**
+ * Handle re-enter credentials action
+ * Clears stored credentials and triggers re-authentication
+ */
+async function handleReenterCredentials() {
+    toggleModal('settingsModal', false);
+    
+    // Clear JWT token to force re-authentication
+    ConfigHelper.setJwtToken(null);
+    localStorage.removeItem('filesmile_erp_username');
+    localStorage.removeItem('filesmile_erp_password');
+    
+    // Keep registration complete flag but force credential re-entry
+    // by clearing the stored credentials
+    
+    showLoading(true);
+    try {
+        // Get user email
+        const userEmail = ConfigHelper.getUserEmail() || localStorage.getItem('filesmile_user_email');
+        const tenantId = ConfigHelper.getTenantId() || localStorage.getItem('filesmile_tenant_id');
+        const tenantName = localStorage.getItem('filesmile_tenant_name') || `Tenant #${tenantId}`;
+        
+        if (userEmail && tenantId) {
+            // Show credentials form directly
+            const result = await AuthFlow.showCredentialsForm(userEmail, tenantName, parseInt(tenantId));
+            
+            if (result) {
+                // Store new JWT token and credentials
+                ConfigHelper.setJwtToken(result.response.access_token);
+                ConfigHelper.setTenantId(result.response.tenant_id);
+                ConfigHelper.setUserInfo({
+                    user_id: result.response.user_id,
+                    email: result.response.email,
+                    tenant_id: result.response.tenant_id
+                });
+                
+                // Store credentials for future auto-reauthentication
+                localStorage.setItem('filesmile_erp_username', result.credentials.username);
+                localStorage.setItem('filesmile_erp_password', result.credentials.password);
+                
+                showStatus(ConfigHelper.t('credentialsUpdated'), 'success');
+                
+                // Reload data
+                await Promise.all([
+                    loadCompanies(),
+                    loadSearchGroups()
+                ]);
+            }
+        } else {
+            // Fall back to full login flow
+            await AuthFlow.startLoginFlow();
+        }
+    } catch (error) {
+        console.error('Re-authentication failed:', error);
+        showStatus(ConfigHelper.t('authFailed') + ': ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+/**
+ * Handle change tenant action
+ * Allows user to switch to a different tenant if they have access to multiple
+ */
+async function handleChangeTenant() {
+    toggleModal('settingsModal', false);
+    
+    showLoading(true);
+    try {
+        // Get user email
+        const userEmail = ConfigHelper.getUserEmail() || localStorage.getItem('filesmile_user_email');
+        
+        if (!userEmail) {
+            showStatus(ConfigHelper.t('noEmailFound'), 'error');
+            return;
+        }
+        
+        // Resolve tenants for this email
+        const tenantInfo = await apiClient.resolveTenant(userEmail);
+        
+        if (!tenantInfo.requires_selection || !tenantInfo.tenants || tenantInfo.tenants.length <= 1) {
+            // User only has access to one tenant
+            showStatus(ConfigHelper.t('singleTenantOnly'), 'error');
+            return;
+        }
+        
+        // Show tenant selection UI
+        const selectedTenant = await AuthFlow.showTenantSelectionUI(userEmail, tenantInfo.tenants);
+        
+        if (selectedTenant) {
+            // Clear current authentication
+            ConfigHelper.setJwtToken(null);
+            
+            // Store new tenant info
+            ConfigHelper.setTenantId(selectedTenant.tenant_id);
+            localStorage.setItem('filesmile_tenant_id', selectedTenant.tenant_id.toString());
+            localStorage.setItem('filesmile_tenant_name', selectedTenant.tenant_name);
+            
+            // Clear stored credentials since they might be different for new tenant
+            localStorage.removeItem('filesmile_erp_username');
+            localStorage.removeItem('filesmile_erp_password');
+            
+            // Show credentials form for new tenant
+            const result = await AuthFlow.showCredentialsForm(userEmail, selectedTenant.tenant_name, selectedTenant.tenant_id);
+            
+            if (result) {
+                // Store new JWT token and credentials
+                ConfigHelper.setJwtToken(result.response.access_token);
+                ConfigHelper.setTenantId(result.response.tenant_id);
+                ConfigHelper.setUserInfo({
+                    user_id: result.response.user_id,
+                    email: result.response.email,
+                    tenant_id: result.response.tenant_id
+                });
+                
+                // Store credentials for future auto-reauthentication
+                localStorage.setItem('filesmile_erp_username', result.credentials.username);
+                localStorage.setItem('filesmile_erp_password', result.credentials.password);
+                
+                showStatus(ConfigHelper.t('tenantChanged'), 'success');
+                
+                // Reload data for new tenant
+                await Promise.all([
+                    loadCompanies(),
+                    loadSearchGroups()
+                ]);
+            }
+        }
+    } catch (error) {
+        console.error('Change tenant failed:', error);
+        if (error.message.includes('TENANT_NOT_FOUND')) {
+            showStatus(ConfigHelper.t('tenantNotFound'), 'error');
+        } else {
+            showStatus(ConfigHelper.t('changeTenantFailed') + ': ' + error.message, 'error');
+        }
+    } finally {
+        showLoading(false);
+    }
+}
+
+/**
+ * Handle logout action
+ * Clears all stored data and reloads the add-in
+ */
+function handleLogout() {
+    if (confirm(ConfigHelper.t('logoutConfirm'))) {
+        toggleModal('settingsModal', false);
+        AuthFlow.logout();
+    }
 }

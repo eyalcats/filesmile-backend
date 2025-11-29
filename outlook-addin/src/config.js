@@ -72,6 +72,11 @@ const ConfigHelper = {
         Object.values(CONFIG.STORAGE_KEYS).forEach(key => {
             localStorage.removeItem(key);
         });
+        // Also clear auth-related items not in CONFIG.STORAGE_KEYS
+        localStorage.removeItem('filesmile_registration_complete');
+        localStorage.removeItem('filesmile_erp_username');
+        localStorage.removeItem('filesmile_erp_password');
+        localStorage.removeItem('filesmile_tenant_name');
     },
 
     /**
@@ -173,6 +178,26 @@ const TRANSLATIONS = {
         settings: 'Settings',
         info: 'Info',
         
+        // Settings Modal
+        accountInfo: 'Account Info',
+        email: 'Email:',
+        organization: 'Organization:',
+        actions: 'Actions',
+        reenterCredentials: 'Re-enter Credentials',
+        reenterCredentialsDesc: 'Update your ERP login details',
+        changeTenant: 'Change Organization',
+        changeTenantDesc: 'Switch to a different organization',
+        logout: 'Logout',
+        logoutDesc: 'Sign out and clear all data',
+        credentialsUpdated: 'Credentials updated successfully!',
+        authFailed: 'Authentication failed',
+        noEmailFound: 'No email found. Please restart the add-in.',
+        singleTenantOnly: 'You only have access to one organization.',
+        tenantChanged: 'Organization changed successfully!',
+        tenantNotFound: 'Organization not found.',
+        changeTenantFailed: 'Failed to change organization',
+        logoutConfirm: 'Are you sure you want to logout? This will clear all stored data.',
+        
         // Form labels
         company: 'Company',
         searchBy: 'Search By',
@@ -239,6 +264,26 @@ const TRANSLATIONS = {
         // Header
         settings: 'הגדרות',
         info: 'מידע',
+        
+        // Settings Modal
+        accountInfo: 'פרטי חשבון',
+        email: 'דוא"ל:',
+        organization: 'ארגון:',
+        actions: 'פעולות',
+        reenterCredentials: 'הזן מחדש פרטי התחברות',
+        reenterCredentialsDesc: 'עדכן את פרטי ההתחברות ל-ERP',
+        changeTenant: 'החלף ארגון',
+        changeTenantDesc: 'עבור לארגון אחר',
+        logout: 'התנתק',
+        logoutDesc: 'התנתק ונקה את כל הנתונים',
+        credentialsUpdated: 'פרטי ההתחברות עודכנו בהצלחה!',
+        authFailed: 'האימות נכשל',
+        noEmailFound: 'לא נמצא דוא"ל. אנא הפעל מחדש את התוסף.',
+        singleTenantOnly: 'יש לך גישה לארגון אחד בלבד.',
+        tenantChanged: 'הארגון הוחלף בהצלחה!',
+        tenantNotFound: 'הארגון לא נמצא.',
+        changeTenantFailed: 'החלפת הארגון נכשלה',
+        logoutConfirm: 'האם אתה בטוח שברצונך להתנתק? פעולה זו תמחק את כל הנתונים השמורים.',
         
         // Form labels
         company: 'חברה',

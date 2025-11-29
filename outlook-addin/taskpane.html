@@ -12,6 +12,7 @@
     <!-- App Header -->
     <div class="app-header">
         <!-- Language switcher will be added here dynamically -->
+        <span class="settings-icon" id="settingsBtn" title="Settings">⚙️</span>
     </div>
 
     <!-- Main Scrollable Container -->
@@ -182,6 +183,59 @@
     <div id="loadingOverlay" class="loading-overlay" style="display: none;">
         <div class="spinner"></div>
         <p data-i18n="processing">Processing...</p>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="settings">Settings</h3>
+                <span class="close-modal" id="closeSettingsModal">×</span>
+            </div>
+            <div class="modal-body settings-body">
+                <!-- User Info Section -->
+                <div class="settings-section">
+                    <div class="settings-section-title" data-i18n="accountInfo">Account Info</div>
+                    <div class="settings-info-row">
+                        <span class="settings-label" data-i18n="email">Email:</span>
+                        <span id="settingsUserEmail" class="settings-value">-</span>
+                    </div>
+                    <div class="settings-info-row">
+                        <span class="settings-label" data-i18n="organization">Organization:</span>
+                        <span id="settingsTenantName" class="settings-value">-</span>
+                    </div>
+                </div>
+
+                <!-- Actions Section -->
+                <div class="settings-section">
+                    <div class="settings-section-title" data-i18n="actions">Actions</div>
+                    
+                    <button id="btnReenterCredentials" class="settings-btn">
+                        <span class="settings-btn-icon">🔑</span>
+                        <span class="settings-btn-text">
+                            <span data-i18n="reenterCredentials">Re-enter Credentials</span>
+                            <span class="settings-btn-desc" data-i18n="reenterCredentialsDesc">Update your ERP login details</span>
+                        </span>
+                    </button>
+
+                    <button id="btnChangeTenant" class="settings-btn">
+                        <span class="settings-btn-icon">🏢</span>
+                        <span class="settings-btn-text">
+                            <span data-i18n="changeTenant">Change Organization</span>
+                            <span class="settings-btn-desc" data-i18n="changeTenantDesc">Switch to a different organization</span>
+                        </span>
+                    </button>
+
+                    <button id="btnLogout" class="settings-btn settings-btn-danger">
+                        <span class="settings-btn-icon">🚪</span>
+                        <span class="settings-btn-text">
+                            <span data-i18n="logout">Logout</span>
+                            <span class="settings-btn-desc" data-i18n="logoutDesc">Sign out and clear all data</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="src/config.js"></script>
