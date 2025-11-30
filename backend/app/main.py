@@ -197,10 +197,13 @@ from fastapi.responses import FileResponse
 @app.get("/taskpane.html")
 async def taskpane():
     """Serve the taskpane HTML file."""
-    if (outlook_addin_dir / "taskpane.html").exists():
-        return FileResponse(str(outlook_addin_dir / "taskpane.html"))
+    taskpane_path = outlook_addin_dir / "taskpane.html"
+    print(f"Taskpane requested. Path: {taskpane_path}, exists: {taskpane_path.exists()}")
+    if taskpane_path.exists():
+        return FileResponse(str(taskpane_path))
     else:
-        return {"error": "Taskpane not available in backend-only deployment"}
+        print(f"❌ Taskpane not found at {taskpane_path}")
+        return {"error": f"Taskpane not available. Looked at: {taskpane_path}"}
 
 
 @app.get("/commands.html")
