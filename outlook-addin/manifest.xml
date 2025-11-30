@@ -13,12 +13,12 @@
   <DisplayName DefaultValue="File-Smile"/>
   <Description DefaultValue="Attach emails and attachments to Priority ERP documents"/>
 
-  <IconUrl DefaultValue="https://filesmile-backend.onrender.com/assets/icon-64.png"/>
-  <HighResolutionIconUrl DefaultValue="https://filesmile-backend.onrender.com/assets/icon-128.png"/>
-  <SupportUrl DefaultValue="https://filesmile-backend.onrender.com/support"/>
+  <IconUrl DefaultValue="https://filesmile-docker.onrender.com/assets/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://filesmile-docker.onrender.com/assets/icon-128.png"/>
+  <SupportUrl DefaultValue="https://filesmile-docker.onrender.com/support"/>
 
   <AppDomains>
-    <AppDomain>https://filesmile-backend.onrender.com</AppDomain>
+    <AppDomain>https://filesmile-docker.onrender.com</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -34,7 +34,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://filesmile-backend.onrender.com/taskpane.html"/>
+        <SourceLocation DefaultValue="https://filesmile-docker.onrender.com/taskpane.html"/>
         <RequestedHeight>450</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -92,13 +92,13 @@
 
       <Resources>
         <bt:Images>
-          <bt:Image id="Icon.16x16" DefaultValue="https://filesmile-backend.onrender.com/assets/icon-16.png"/>
-          <bt:Image id="Icon.32x32" DefaultValue="https://filesmile-backend.onrender.com/assets/icon-32.png"/>
-          <bt:Image id="Icon.80x80" DefaultValue="https://filesmile-backend.onrender.com/assets/icon-80.png"/>
+          <bt:Image id="Icon.16x16" DefaultValue="https://filesmile-docker.onrender.com/assets/icon-16.png"/>
+          <bt:Image id="Icon.32x32" DefaultValue="https://filesmile-docker.onrender.com/assets/icon-32.png"/>
+          <bt:Image id="Icon.80x80" DefaultValue="https://filesmile-docker.onrender.com/assets/icon-80.png"/>
         </bt:Images>
         <bt:Urls>
-          <bt:Url id="Commands.Url" DefaultValue="https://filesmile-backend.onrender.com/commands.html"/>
-          <bt:Url id="Taskpane.Url" DefaultValue="https://filesmile-backend.onrender.com/taskpane.html"/>
+          <bt:Url id="Commands.Url" DefaultValue="https://filesmile-docker.onrender.com/commands.html"/>
+          <bt:Url id="Taskpane.Url" DefaultValue="https://filesmile-docker.onrender.com/taskpane.html"/>
         </bt:Urls>
         <bt:ShortStrings>
           <bt:String id="GroupLabel" DefaultValue="FileSmile"/>
