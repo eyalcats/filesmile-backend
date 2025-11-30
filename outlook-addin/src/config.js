@@ -259,7 +259,23 @@ const TRANSLATIONS = {
         emailAttachedSuccess: 'Email attached successfully!',
         uploadFailed: 'Upload failed',
         uploadedFilesSuccess: 'Uploaded {count} files successfully!',
-        documents: 'Documents'
+        documents: 'Documents',
+        
+        // Auth Flow
+        selectOrganization: 'Select Your Organization',
+        emailDomainMultiOrg: 'Your email domain is connected to multiple organizations. Please select the one you want to use.',
+        selectAnOrganization: 'Select an organization...',
+        continue: 'Continue',
+        erpLoginRequired: 'ERP Login Required',
+        enterErpCredentials: 'Please enter your Priority ERP credentials to continue.',
+        erpUsername: 'ERP Username',
+        erpPassword: 'ERP Password/Token',
+        enterErpUsername: 'Enter your ERP username',
+        enterErpPassword: 'Enter your ERP password',
+        login: 'Login',
+        validating: 'Validating...',
+        invalidErpCredentials: 'Invalid ERP credentials. Please check your username and password and try again.',
+        authenticationFailed: 'Authentication failed. Please try again.'
     },
     he: {
         // Header
@@ -346,6 +362,22 @@ const TRANSLATIONS = {
         emailAttachedSuccess: 'הדוא"ל צורף בהצלחה!',
         uploadFailed: 'העלאה נכשלה',
         uploadedFilesSuccess: 'הועלו {count} קבצים בהצלחה!',
-        documents: 'מסמכים'
+        documents: 'מסמכים',
+        
+        // Auth Flow
+        selectOrganization: 'בחר את הארגון שלך',
+        emailDomainMultiOrg: 'הדומיין של הדוא"ל שלך מחובר למספר ארגונים. אנא בחר את הארגון שברצונך להשתמש בו.',
+        selectAnOrganization: 'בחר ארגון...',
+        continue: 'המשך',
+        erpLoginRequired: 'נדרשת התחברות ל-ERP',
+        enterErpCredentials: 'אנא הזן את פרטי ההתחברות שלך ל-Priority ERP כדי להמשיך.',
+        erpUsername: 'שם משתמש ERP',
+        erpPassword: 'סיסמה/טוקן ERP',
+        enterErpUsername: 'הזן את שם המשתמש שלך ב-ERP',
+        enterErpPassword: 'הזן את הסיסמה שלך ב-ERP',
+        login: 'התחבר',
+        validating: 'מאמת...',
+        invalidErpCredentials: 'פרטי התחברות ל-ERP שגויים. אנא בדוק את שם המשתמש והסיסמה ונסה שוב.',
+        authenticationFailed: 'האימות נכשל. אנא נסה שוב.'
     }
 };

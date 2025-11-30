@@ -238,6 +238,11 @@ class AuthFlow {
      */
     static async showCredentialsForm(email, tenantName, tenantId) {
         return new Promise((resolve) => {
+            // Get current language and direction
+            const lang = ConfigHelper.getLanguage();
+            const isRTL = lang === 'he';
+            const dir = isRTL ? 'rtl' : 'ltr';
+            
             // Create modal overlay
             const overlay = document.createElement('div');
             overlay.style.cssText = `
@@ -261,41 +266,43 @@ class AuthFlow {
                 max-width: 400px;
                 width: 90%;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                direction: ${dir};
+                text-align: ${isRTL ? 'right' : 'left'};
             `;
 
             modal.innerHTML = `
-                <h3 style="margin-top: 0;">🔐 ERP Login Required</h3>
+                <h3 style="margin-top: 0;">🔐 ${ConfigHelper.t('erpLoginRequired')}</h3>
                 <p style="color: #666; font-size: 14px;">
-                    <strong>Organization:</strong> ${tenantName}<br>
-                    <strong>Email:</strong> ${email}
+                    <strong>${ConfigHelper.t('organization')}</strong> ${tenantName}<br>
+                    <strong>${ConfigHelper.t('email')}</strong> ${email}
                 </p>
                 <p style="color: #666; font-size: 13px;">
-                    Please enter your Priority ERP credentials to continue.
+                    ${ConfigHelper.t('enterErpCredentials')}
                 </p>
                 <div id="error-message" style="display: none; margin-bottom: 12px; padding: 8px; background: #ffebee; border: 1px solid #f44336; border-radius: 4px; color: #c62828; font-size: 13px;"></div>
                 <form id="erp-credentials-form" autocomplete="off">
                     <div style="margin-bottom: 12px;">
                         <label style="display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500;">
-                            ERP Username *
+                            ${ConfigHelper.t('erpUsername')} *
                         </label>
                         <input
                             type="text"
                             id="erp-username-input"
                             required
-                            placeholder="Enter your ERP username"
+                            placeholder="${ConfigHelper.t('enterErpUsername')}"
                             autocomplete="off"
                             style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"
                         />
                     </div>
                     <div style="margin-bottom: 16px;">
                         <label style="display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500;">
-                            ERP Password/Token *
+                            ${ConfigHelper.t('erpPassword')} *
                         </label>
                         <input
                             type="password"
                             id="erp-password-input"
                             required
-                            placeholder="Enter your ERP password"
+                            placeholder="${ConfigHelper.t('enterErpPassword')}"
                             autocomplete="new-password"
                             style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"
                         />
@@ -306,14 +313,14 @@ class AuthFlow {
                             id="cancel-btn"
                             style="padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;"
                         >
-                            Cancel
+                            ${ConfigHelper.t('cancel')}
                         </button>
                         <button
                             type="submit"
                             id="login-btn"
                             style="padding: 8px 16px; border: none; background: linear-gradient(135deg, #FDB913 0%, #FFD54F 100%); color: #2C2C2C; border-radius: 4px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);"
                         >
-                            Login
+                            ${ConfigHelper.t('login')}
                         </button>
                     </div>
                 </form>
@@ -340,7 +347,7 @@ class AuthFlow {
                 if (username && password) {
                     // Disable button and show loading state
                     loginBtn.disabled = true;
-                    loginBtn.textContent = 'Validating...';
+                    loginBtn.textContent = ConfigHelper.t('validating');
                     errorMessage.style.display = 'none';
 
                     try {
@@ -362,16 +369,16 @@ class AuthFlow {
                     } catch (error) {
                         // Handle 401 Unauthorized specifically
                         if (error.status === 401) {
-                            errorMessage.textContent = '❌ Invalid ERP credentials. Please check your username and password and try again.';
+                            errorMessage.textContent = '❌ ' + ConfigHelper.t('invalidErpCredentials');
                             errorMessage.style.display = 'block';
                         } else {
-                            errorMessage.textContent = `❌ ${error.message || 'Authentication failed. Please try again.'}`;
+                            errorMessage.textContent = `❌ ${error.message || ConfigHelper.t('authenticationFailed')}`;
                             errorMessage.style.display = 'block';
                         }
                         
                         // Re-enable button and restore text
                         loginBtn.disabled = false;
-                        loginBtn.textContent = 'Login';
+                        loginBtn.textContent = ConfigHelper.t('login');
                         
                         // Focus back to username field for retry
                         modal.querySelector('#erp-username-input').focus();
@@ -395,6 +402,11 @@ class AuthFlow {
      */
     static async showTenantSelectionUI(email, tenants) {
         return new Promise((resolve) => {
+            // Get current language and direction
+            const lang = ConfigHelper.getLanguage();
+            const isRTL = lang === 'he';
+            const dir = isRTL ? 'rtl' : 'ltr';
+            
             // Create modal overlay
             const overlay = document.createElement('div');
             overlay.style.cssText = `
@@ -418,6 +430,8 @@ class AuthFlow {
                 max-width: 400px;
                 width: 90%;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                direction: ${dir};
+                text-align: ${isRTL ? 'right' : 'left'};
             `;
 
             const tenantOptions = tenants.map(t => 
@@ -425,24 +439,24 @@ class AuthFlow {
             ).join('');
 
             modal.innerHTML = `
-                <h3 style="margin-top: 0;">🏢 Select Your Organization</h3>
+                <h3 style="margin-top: 0;">🏢 ${ConfigHelper.t('selectOrganization')}</h3>
                 <p style="color: #666; font-size: 14px;">
-                    <strong>Email:</strong> ${email}
+                    <strong>${ConfigHelper.t('email')}</strong> ${email}
                 </p>
                 <p style="color: #666; font-size: 13px;">
-                    Your email domain is connected to multiple organizations. Please select the one you want to use.
+                    ${ConfigHelper.t('emailDomainMultiOrg')}
                 </p>
                 <form id="tenant-selection-form">
                     <div style="margin-bottom: 16px;">
                         <label style="display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500;">
-                            Organization *
+                            ${ConfigHelper.t('organization')} *
                         </label>
                         <select
                             id="tenant-select"
                             required
                             style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px;"
                         >
-                            <option value="">Select an organization...</option>
+                            <option value="">${ConfigHelper.t('selectAnOrganization')}</option>
                             ${tenantOptions}
                         </select>
                     </div>
@@ -452,14 +466,14 @@ class AuthFlow {
                             id="cancel-btn"
                             style="padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;"
                         >
-                            Cancel
+                            ${ConfigHelper.t('cancel')}
                         </button>
                         <button
                             type="submit"
                             id="continue-btn"
                             style="padding: 8px 16px; border: none; background: linear-gradient(135deg, #FDB913 0%, #FFD54F 100%); color: #2C2C2C; border-radius: 4px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);"
                         >
-                            Continue
+                            ${ConfigHelper.t('continue')}
                         </button>
                     </div>
                 </form>
