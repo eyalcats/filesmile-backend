@@ -213,6 +213,41 @@ async def commands():
         return {"error": "Commands not available in backend-only deployment"}
 
 
+# Serve frontend admin panel
+# In Docker: /app/frontend, locally: backend/../frontend
+frontend_dir = backend_dir / "frontend" if (backend_dir / "frontend").exists() else backend_dir.parent / "frontend"
+
+# Mount frontend static files FIRST (before route handlers)
+if frontend_dir.exists():
+    if (frontend_dir / "css").exists():
+        app.mount("/admin/css", StaticFiles(directory=str(frontend_dir / "css")), name="admin-css")
+    if (frontend_dir / "js").exists():
+        app.mount("/admin/js", StaticFiles(directory=str(frontend_dir / "js")), name="admin-js")
+    if (frontend_dir / "assets").exists():
+        app.mount("/admin/assets", StaticFiles(directory=str(frontend_dir / "assets")), name="admin-assets")
+    print("✅ Mounted /admin frontend panel static files")
+
+
+@app.get("/admin")
+@app.get("/admin/")
+async def admin_panel():
+    """Serve the admin panel index page."""
+    if (frontend_dir / "index.html").exists():
+        return FileResponse(str(frontend_dir / "index.html"))
+    else:
+        return {"error": "Admin panel not available"}
+
+
+@app.get("/admin/dashboard")
+@app.get("/admin/dashboard.html")
+async def admin_dashboard():
+    """Serve the admin dashboard page."""
+    if (frontend_dir / "dashboard.html").exists():
+        return FileResponse(str(frontend_dir / "dashboard.html"))
+    else:
+        return {"error": "Admin dashboard not available"}
+
+
 if __name__ == "__main__":
     import uvicorn
     from pathlib import Path

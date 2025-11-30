@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+ENV
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Environment files (secrets - pass via docker-compose)
+.env
+.env.local
+.env.*.local
+
+# Development files
+*.log
+*.sqlite
+*.db
+
+# Certificates (mount separately if needed)
+certs/
+*.pem
+*.crt
+*.key
+
+# Tests
+tests/
+pytest.ini
+.coverage
+
+# Documentation
+*.md
+docs/

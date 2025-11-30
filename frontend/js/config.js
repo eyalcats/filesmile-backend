@@ -7,7 +7,10 @@
 
 const CONFIG = {
     // API Configuration
-    API_BASE_URL: 'https://filesmile-backend.onrender.com',
+    // Use relative URL when served from same origin, or set explicit URL for external API
+    API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? '' 
+        : 'https://filesmile-backend.onrender.com',
     API_VERSION: '/api/v1',
     
     // Get full API URL
