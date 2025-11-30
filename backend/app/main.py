@@ -94,24 +94,23 @@ app.include_router(admin.router, prefix=settings.api_prefix, tags=["admin"])
 # Get paths relative to this file
 import pathlib
 backend_dir = pathlib.Path(__file__).parent.parent
-outlook_addin_dir = backend_dir.parent / "outlook-addin"
+# In Docker: /app/outlook-addin, locally: backend/../outlook-addin
+outlook_addin_dir = backend_dir / "outlook-addin" if (backend_dir / "outlook-addin").exists() else backend_dir.parent / "outlook-addin"
 
 # Mount assets from backend directory (for Render deployment)
 import os
 print(f"Current working directory: {os.getcwd()}")
 print(f"Backend dir path: {backend_dir}")
-print(f"Assets dir path: {backend_dir / 'assets'}")
-print(f"Assets dir exists: {(backend_dir / 'assets').exists()}")
-if (backend_dir / 'assets').exists():
-    print(f"Files in assets dir: {os.listdir(str(backend_dir / 'assets'))}")
+print(f"Outlook addin dir path: {outlook_addin_dir}")
+print(f"Outlook addin dir exists: {outlook_addin_dir.exists()}")
 
-if (backend_dir / "assets").exists():
+# Mount assets - prefer outlook-addin assets (has all icons)
+if (outlook_addin_dir / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(outlook_addin_dir / "assets")), name="assets")
+    print(f"✅ Mounted /assets from outlook-addin directory: {outlook_addin_dir / 'assets'}")
+elif (backend_dir / "assets").exists():
     app.mount("/assets", StaticFiles(directory=str(backend_dir / "assets")), name="assets")
     print("✅ Mounted /assets from backend directory")
-# Fallback to outlook-addin directory for local development
-elif (outlook_addin_dir / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=str(outlook_addin_dir / "assets")), name="assets")
-    print("✅ Mounted /assets from outlook-addin directory")
 else:
     print("❌ WARNING: No assets directory found for mounting /assets")
 
