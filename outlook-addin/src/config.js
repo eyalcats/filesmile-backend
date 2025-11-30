@@ -149,6 +149,11 @@ const ConfigHelper = {
         const stored = localStorage.getItem(CONFIG.STORAGE_KEYS.LANGUAGE);
         if (stored) return stored;
         
+        // Check if document is already set to RTL (set by taskpane.js)
+        if (document.dir === 'rtl' || document.documentElement.dir === 'rtl') {
+            return 'he';
+        }
+        
         // Detect browser language
         const browserLang = navigator.language || navigator.userLanguage;
         if (browserLang.startsWith('he')) return 'he';

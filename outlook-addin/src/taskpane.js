@@ -66,7 +66,10 @@ const translations = {
 // Current language (loaded from storage to prevent LTR→RTL jump)
 const savedLang = localStorage.getItem('filesmile_language');
 console.log('DEBUG: Loading language from localStorage:', savedLang);
-let currentLang = savedLang || 'en'; // Use same key as ConfigHelper
+// Default to Hebrew if browser language is Hebrew, otherwise English
+const browserLang = navigator.language || navigator.userLanguage || '';
+const defaultLang = browserLang.startsWith('he') ? 'he' : 'he'; // Default to Hebrew for this app
+let currentLang = savedLang || defaultLang;
 console.log('DEBUG: currentLang set to:', currentLang);
 
 // Get translation function
@@ -126,10 +129,9 @@ function switchLanguage(lang) {
     currentLang = lang;
     // Save to localStorage to persist across sessions
     localStorage.setItem('filesmile_language', lang);
+    // Also update ConfigHelper so auth modals use correct language
+    ConfigHelper.setLanguage(lang);
     console.log('DEBUG: Saved language to localStorage:', lang);
-    // Verify it was saved
-    const verify = localStorage.getItem('filesmile_language');
-    console.log('DEBUG: Verified saved language:', verify);
     updateUIText();
     // Update language switcher buttons
     const switcherButtons = document.querySelectorAll('.language-switcher button');
@@ -140,8 +142,6 @@ function switchLanguage(lang) {
             btn.classList.add('active');
         }
     });
-    // Save preference
-    localStorage.setItem('filesmile_lang', lang);
 }
 
 // Initialize Office.js or run directly in browser
@@ -192,10 +192,11 @@ async function initializeAddIn() {
     // Language is already loaded at the top of the file, no need to reload here
     // The currentLang variable already has the correct saved language
     
-    // Apply translations after DOM is loaded
-    setTimeout(() => {
-        updateUIText();
-    }, 100);
+    // Apply translations BEFORE auth flow so modals use correct language
+    updateUIText();
+    
+    // Also sync to ConfigHelper so auth-flow.js can access the language
+    ConfigHelper.setLanguage(currentLang);
     
     // Add language switcher to header
     addLanguageSwitcher();
