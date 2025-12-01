@@ -222,3 +222,22 @@ class UpdateUserTenantRequest(BaseModel):
     erp_username: Optional[str] = Field(None, description="ERP username for this tenant")
     erp_password_or_token: Optional[str] = Field(None, description="ERP password/token for this tenant")
     is_active: Optional[bool] = Field(None, description="Active status for this tenant")
+
+
+# ============================================================================
+# Credential Validation Schemas
+# ============================================================================
+
+class ValidateCredentialsRequest(BaseModel):
+    """Request to validate ERP admin credentials."""
+    erp_base_url: str = Field(..., description="ERP base URL")
+    erp_company: str = Field(..., description="ERP company code")
+    erp_admin_username: str = Field(..., description="ERP admin username")
+    erp_admin_password_or_token: str = Field(..., description="ERP admin password/token")
+    erp_tabula_ini: Optional[str] = Field(default="tabula.ini", description="Tabula INI file")
+
+
+class ValidateCredentialsResponse(BaseModel):
+    """Response for credential validation."""
+    valid: bool = Field(..., description="Whether credentials are valid")
+    message: str = Field(..., description="Validation result message")

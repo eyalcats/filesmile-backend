@@ -6,7 +6,7 @@
            xsi:type="MailApp">
 
   <Id>9841e3c9-dae5-49e8-a78a-75921ad4f47b</Id>
-  <Version>1.0.0.2</Version>
+  <Version>1.0.0.3</Version>
   <ProviderName>Your Organization</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
 

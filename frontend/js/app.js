@@ -287,6 +287,80 @@ const App = {
         this.openDeleteModal();
     },
     
+    /**
+     * Validate ERP admin credentials from the tenant form
+     */
+    async validateCredentials() {
+        const form = document.getElementById('tenantForm');
+        if (!form) return;
+        
+        const resultSpan = document.getElementById('validateCredentialsResult');
+        const validateBtn = document.getElementById('validateCredentialsBtn');
+        
+        // Get form values
+        const erp_base_url = form.querySelector('#erp_base_url').value;
+        const erp_company = form.querySelector('#erp_company').value;
+        const erp_admin_username = form.querySelector('#erp_admin_username').value;
+        const erp_admin_password_or_token = form.querySelector('#erp_admin_password_or_token').value;
+        const erp_tabula_ini = form.querySelector('#erp_tabula_ini').value || 'tabula.ini';
+        
+        // Validate required fields
+        if (!erp_base_url || !erp_company || !erp_admin_username) {
+            resultSpan.innerHTML = '<span style="color: #e74c3c;">Please fill in ERP Base URL, Company, and Admin Username</span>';
+            return;
+        }
+        
+        // For editing existing tenant, password might be empty (unchanged)
+        if (!erp_admin_password_or_token && !this.currentEditId) {
+            resultSpan.innerHTML = '<span style="color: #e74c3c;">Please enter Admin Password/Token</span>';
+            return;
+        }
+        
+        // If editing and no password provided, we can't validate
+        if (!erp_admin_password_or_token && this.currentEditId) {
+            resultSpan.innerHTML = '<span style="color: #e74c3c;">Enter password to validate credentials</span>';
+            return;
+        }
+        
+        // Show loading state
+        validateBtn.disabled = true;
+        validateBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 6px; vertical-align: middle; animation: spin 1s linear infinite;">
+                <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32"></circle>
+            </svg>
+            Validating...
+        `;
+        resultSpan.innerHTML = '';
+        
+        try {
+            const response = await API.validateCredentials({
+                erp_base_url,
+                erp_company,
+                erp_admin_username,
+                erp_admin_password_or_token,
+                erp_tabula_ini
+            });
+            
+            if (response.valid) {
+                resultSpan.innerHTML = `<span style="color: #27ae60;">✓ ${response.message}</span>`;
+            } else {
+                resultSpan.innerHTML = `<span style="color: #e74c3c;">✗ ${response.message}</span>`;
+            }
+        } catch (error) {
+            resultSpan.innerHTML = `<span style="color: #e74c3c;">✗ ${error.message || 'Validation failed'}</span>`;
+        } finally {
+            // Restore button
+            validateBtn.disabled = false;
+            validateBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 6px; vertical-align: middle;">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Validate Credentials
+            `;
+        }
+    },
+    
     // ==================== DOMAINS ====================
     
     /**
@@ -738,6 +812,17 @@ const App = {
                         <label for="erp_admin_password_or_token">Admin Password/Token</label>
                         <input type="password" id="erp_admin_password_or_token" name="erp_admin_password_or_token" placeholder="${tenant.id ? '(unchanged)' : 'ERP admin password'}">
                     </div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="button" class="btn btn-secondary" id="validateCredentialsBtn" onclick="App.validateCredentials()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 6px; vertical-align: middle;">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        Validate Credentials
+                    </button>
+                    <span id="validateCredentialsResult" class="form-help" style="margin-left: 10px;"></span>
                 </div>
                 
                 <div class="form-group">

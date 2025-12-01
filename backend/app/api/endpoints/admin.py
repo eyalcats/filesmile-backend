@@ -32,6 +32,9 @@ from app.models.admin_schemas import (
     # Auth schemas
     AdminLoginRequest,
     AdminLoginResponse,
+    # Credential validation schemas
+    ValidateCredentialsRequest,
+    ValidateCredentialsResponse,
 )
 try:
     from app.utils.encryption import encrypt_value, decrypt_value
@@ -742,3 +745,52 @@ async def remove_user_tenant(
     db.delete(user_tenant)
     db.commit()
     return None
+
+
+# ============================================================================
+# Credential Validation
+# ============================================================================
+
+@router.post("/validate-credentials", response_model=ValidateCredentialsResponse)
+async def validate_erp_credentials(request: ValidateCredentialsRequest):
+    """
+    Validate ERP admin credentials by testing connection to Priority ERP.
+    
+    This endpoint creates a temporary PriorityClient and attempts to authenticate
+    with the provided credentials.
+    """
+    from app.services.priority_client import PriorityClient
+    
+    try:
+        # Create a temporary client with the provided credentials
+        client = PriorityClient(
+            username=request.erp_admin_username,
+            password=request.erp_admin_password_or_token,
+            company=request.erp_company,
+            base_url=request.erp_base_url,
+            tabula_ini=request.erp_tabula_ini or "tabula.ini"
+        )
+        
+        # Validate credentials
+        await client.validate_credentials()
+        
+        return ValidateCredentialsResponse(
+            valid=True,
+            message="Credentials validated successfully. Connection to Priority ERP established."
+        )
+        
+    except Exception as e:
+        error_message = str(e)
+        
+        # Provide more user-friendly error messages
+        if "401" in error_message or "authentication" in error_message.lower():
+            error_message = "Invalid credentials: authentication failed"
+        elif "connection" in error_message.lower() or "connect" in error_message.lower():
+            error_message = f"Connection failed: unable to reach the ERP server at {request.erp_base_url}"
+        elif "timeout" in error_message.lower():
+            error_message = "Connection timed out: the ERP server did not respond in time"
+        
+        return ValidateCredentialsResponse(
+            valid=False,
+            message=error_message
+        )

@@ -311,5 +311,19 @@ const API = {
         return this.request(CONFIG.ENDPOINTS.USER_TENANT(userId, tenantId), {
             method: 'DELETE'
         });
+    },
+    
+    // ==================== CREDENTIAL VALIDATION ====================
+    
+    /**
+     * Validate ERP admin credentials
+     * @param {Object} data - Credential data (erp_base_url, erp_company, erp_admin_username, erp_admin_password_or_token, erp_tabula_ini)
+     * @returns {Promise<Object>} - Validation result {valid: boolean, message: string}
+     */
+    async validateCredentials(data) {
+        return this.request(CONFIG.ENDPOINTS.VALIDATE_CREDENTIALS, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
     }
 };

@@ -39,6 +39,9 @@ const CONFIG = {
         // User-Tenant associations
         USER_TENANTS: (userId) => `/admin/users/${userId}/tenants`,
         USER_TENANT: (userId, tenantId) => `/admin/users/${userId}/tenants/${tenantId}`,
+        
+        // Credential validation
+        VALIDATE_CREDENTIALS: '/admin/validate-credentials',
     },
     
     // Storage keys
