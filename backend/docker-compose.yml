@@ -15,19 +15,20 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - DATABASE_URL=sqlite:////app/data/filesmile.db
-    volumes:
-      # Persist SQLite database (mounted from host)
-      - ./db:/app/data
-      # Mount assets directory
-      - ./assets:/app/assets:ro
-      # Mount outlook-addin for serving static files
-      - ../outlook-addin:/app/outlook-addin:ro
-      # Mount frontend admin panel
-      - ../frontend:/app/frontend:ro
+      - DATABASE_URL=sqlite:////app/db/filesmile.db
+      - ALLOWED_ORIGINS=*
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http filesmile-api:8002 --authtoken ${NGROK_AUTHTOKEN} --domain filesmile.ngrok.app
+    ports:
+      - "4040:4040"
+    depends_on:
+      - filesmile-api
+    restart: unless-stopped
