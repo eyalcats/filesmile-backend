@@ -7,10 +7,8 @@
 
 const CONFIG = {
     // API Configuration
-    // Use relative URL when served from same origin, or set explicit URL for external API
-    API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? '' 
-        : 'https://filesmile-docker.onrender.com',
+    // Use relative URL since frontend is served from same backend
+    API_BASE_URL: '',
     API_VERSION: '/api/v1',
     
     // Get full API URL
