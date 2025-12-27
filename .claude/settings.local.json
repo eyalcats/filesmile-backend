@@ -12,7 +12,11 @@
       "Bash(openssl version:*)",
       "Bash(openssl req:*)",
       "Bash(powershell -Command:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cd:*)",
+      "Bash(cat:*)",
+      "Bash(wc:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []

@@ -15,10 +15,10 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - DATABASE_URL=${DATABASE_URL:-sqlite:///./filesmile.db}
+      - DATABASE_URL=sqlite:////app/data/filesmile.db
     volumes:
-      # Persist SQLite database (if using SQLite)
-      - filesmile-data:/app/data
+      # Persist SQLite database (mounted from host)
+      - ./db:/app/data
       # Mount assets directory
       - ./assets:/app/assets:ro
       # Mount outlook-addin for serving static files
@@ -31,22 +31,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
-  # Optional: PostgreSQL database
-  # Uncomment if you want to run PostgreSQL in Docker too
-  # postgres:
-  #   image: postgres:15-alpine
-  #   container_name: filesmile-db
-  #   restart: unless-stopped
-  #   environment:
-  #     - POSTGRES_USER=filesmile
-  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-  #     - POSTGRES_DB=filesmile
-  #   volumes:
-  #     - postgres-data:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
-
-volumes:
-  filesmile-data:
-  # postgres-data:
