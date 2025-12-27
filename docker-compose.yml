@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     ports:
       - "8002:8002"
+    volumes:
+      - filesmile-db:/app/db
     environment:
       - API_TITLE=FileSmile API
       - API_VERSION=2.0.0
@@ -32,3 +34,7 @@ services:
     depends_on:
       - filesmile-api
     restart: unless-stopped
+
+volumes:
+  filesmile-db:
+    name: filesmile-database
