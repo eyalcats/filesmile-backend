@@ -10,10 +10,12 @@ import os
 # Add the parent directory to Python path to resolve app module imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 from contextlib import asynccontextmanager
+import httpx
 from app.core.config import settings
 from app.api.endpoints import search, attachments, auth, multitenant_auth, admin
 from app.services.priority_client import PriorityClientFactory
@@ -248,6 +250,45 @@ async def admin_dashboard():
         return FileResponse(str(frontend_dir / "dashboard.html"))
     else:
         return {"error": "Admin dashboard not available"}
+
+
+# Scanner app reverse proxy - forwards requests to scanner-app container
+SCANNER_APP_URL = os.getenv("SCANNER_APP_URL", "http://scanner-app:3001")
+
+@app.api_route("/scanner/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
+async def proxy_scanner(request: Request, path: str):
+    """Reverse proxy for scanner app - accessible via /scanner/*"""
+    async with httpx.AsyncClient() as client:
+        # Build target URL
+        target_url = f"{SCANNER_APP_URL}/{path}"
+        if request.query_params:
+            target_url += f"?{request.query_params}"
+
+        # Forward the request
+        try:
+            response = await client.request(
+                method=request.method,
+                url=target_url,
+                headers={k: v for k, v in request.headers.items() if k.lower() not in ["host", "content-length"]},
+                content=await request.body() if request.method in ["POST", "PUT", "PATCH"] else None,
+                timeout=30.0
+            )
+
+            # Return proxied response
+            return StreamingResponse(
+                iter([response.content]),
+                status_code=response.status_code,
+                headers={k: v for k, v in response.headers.items() if k.lower() not in ["content-encoding", "transfer-encoding", "content-length"]},
+                media_type=response.headers.get("content-type")
+            )
+        except httpx.RequestError as e:
+            return {"error": f"Scanner app unavailable: {str(e)}"}
+
+
+@app.get("/scanner")
+async def proxy_scanner_root(request: Request):
+    """Redirect /scanner to /scanner/"""
+    return await proxy_scanner(request, "")
 
 
 if __name__ == "__main__":
