@@ -147,10 +147,26 @@ function switchLanguage(lang) {
 // Initialize Office.js or run directly in browser
 if (typeof Office !== 'undefined') {
     Office.onReady((info) => {
+        console.log('Office.onReady called with:', info);
+        console.log('Host:', info.host, 'Platform:', info.platform);
+
+        // Log mailbox availability for debugging
+        if (!Office.context.mailbox) {
+            console.warn('Mailbox context not available - manual email input will be used');
+            console.log('Office.context keys:', Object.keys(Office.context || {}));
+        } else {
+            console.log('Mailbox context available');
+            if (Office.context.mailbox.userProfile) {
+                console.log('User email:', Office.context.mailbox.userProfile.emailAddress);
+            }
+        }
+
+        // Proceed with initialization - auth flow has fallback for missing mailbox
         initializeAddIn();
     });
 } else {
     // Running outside of Outlook (in browser for testing)
+    console.warn('Office.js not loaded - running in browser mode');
     initializeAddIn();
 }
 

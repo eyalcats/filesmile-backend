@@ -45,10 +45,16 @@ class AuthFlow {
      */
     static async startLoginFlow() {
         try {
-            // Step 1: Get user email from Outlook
-            const userEmail = await this.getUserEmail();
+            // Step 1: Get user email from Outlook (or manual input as fallback)
+            let userEmail = await this.getUserEmail();
+
             if (!userEmail) {
-                throw new Error('Could not retrieve user email from Outlook');
+                console.warn('Could not get email from Outlook, showing manual input');
+                // Fallback: ask user to enter email manually
+                userEmail = await this.showEmailInputForm();
+                if (!userEmail) {
+                    return false; // User cancelled
+                }
             }
 
             ConfigHelper.setUserEmail(userEmail);
@@ -207,25 +213,193 @@ class AuthFlow {
     static async getUserEmail() {
         return new Promise((resolve) => {
             try {
+                // Check if Office.js is available
+                if (typeof Office === 'undefined') {
+                    console.warn('Office.js not loaded - running outside Outlook');
+                    resolve(null);
+                    return;
+                }
+
+                // Check if Office.context is available
+                if (!Office.context) {
+                    console.warn('Office.context is undefined - Office.js may not be fully initialized');
+                    resolve(null);
+                    return;
+                }
+
+                // Check if mailbox context is available
+                if (!Office.context.mailbox) {
+                    console.warn('Office.context.mailbox is undefined - add-in may not be loaded in mail context');
+                    console.log('Office.context.host:', Office.context.host);
+                    console.log('Office.context.platform:', Office.context.platform);
+                    resolve(null);
+                    return;
+                }
+
                 // Try to get email from user profile
-                const email = Office.context.mailbox.userProfile.emailAddress;
-                if (email) {
+                if (Office.context.mailbox.userProfile && Office.context.mailbox.userProfile.emailAddress) {
+                    const email = Office.context.mailbox.userProfile.emailAddress;
                     resolve(email);
                     return;
                 }
 
-                // Fallback: try to get from mailbox
+                // Fallback: try to get from current mail item
                 if (Office.context.mailbox.item && Office.context.mailbox.item.from) {
                     resolve(Office.context.mailbox.item.from.emailAddress);
                     return;
                 }
 
                 // If all else fails
+                console.warn('Could not get user email from any source');
                 resolve(null);
             } catch (error) {
                 console.error('Error getting user email:', error);
                 resolve(null);
             }
+        });
+    }
+
+    /**
+     * Show manual email input form (fallback when Outlook context unavailable)
+     * @returns {Promise<string|null>} - Email address or null if cancelled
+     */
+    static async showEmailInputForm() {
+        return new Promise((resolve) => {
+            const lang = ConfigHelper.getLanguage();
+            const isRTL = lang === 'he';
+            const dir = isRTL ? 'rtl' : 'ltr';
+
+            const messages = {
+                en: {
+                    title: 'Login',
+                    subtitle: 'Enter your email to login',
+                    emailLabel: 'Email',
+                    emailPlaceholder: 'your.email@company.com',
+                    login: 'Login',
+                    cancel: 'Cancel',
+                    invalidEmail: 'Please enter a valid email address'
+                },
+                he: {
+                    title: 'התחברות',
+                    subtitle: 'הזן את האימייל שלך להתחברות',
+                    emailLabel: 'אימייל',
+                    emailPlaceholder: 'your.email@company.com',
+                    login: 'התחבר',
+                    cancel: 'ביטול',
+                    invalidEmail: 'אנא הזן כתובת אימייל תקינה'
+                }
+            };
+            const t = messages[lang] || messages.en;
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 24px;
+                max-width: 340px;
+                width: 90%;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+                direction: ${dir};
+            `;
+
+            modal.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #333;">${t.title}</h2>
+                    <p style="margin: 0; font-size: 13px; color: #666;">${t.subtitle}</p>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: #333;">${t.emailLabel}</label>
+                    <input type="email" id="email-input" placeholder="${t.emailPlaceholder}" style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 1px solid #ddd;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        box-sizing: border-box;
+                        direction: ltr;
+                        text-align: left;
+                    ">
+                    <p id="email-error" style="display: none; margin: 6px 0 0 0; font-size: 12px; color: #d32f2f;">${t.invalidEmail}</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="cancel-btn" style="
+                        flex: 1;
+                        padding: 12px;
+                        background: #f5f5f5;
+                        color: #333;
+                        border: 1px solid #ddd;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        cursor: pointer;
+                    ">${t.cancel}</button>
+                    <button id="login-btn" style="
+                        flex: 1;
+                        padding: 12px;
+                        background: #FFC107;
+                        color: #000;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        cursor: pointer;
+                    ">${t.login}</button>
+                </div>
+            `;
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            const emailInput = modal.querySelector('#email-input');
+            const emailError = modal.querySelector('#email-error');
+            const loginBtn = modal.querySelector('#login-btn');
+            const cancelBtn = modal.querySelector('#cancel-btn');
+
+            // Focus input
+            setTimeout(() => emailInput.focus(), 100);
+
+            // Email validation regex
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            const validateAndSubmit = () => {
+                const email = emailInput.value.trim();
+                if (!emailRegex.test(email)) {
+                    emailError.style.display = 'block';
+                    emailInput.style.borderColor = '#d32f2f';
+                    return;
+                }
+                document.body.removeChild(overlay);
+                resolve(email);
+            };
+
+            loginBtn.addEventListener('click', validateAndSubmit);
+
+            emailInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') validateAndSubmit();
+            });
+
+            emailInput.addEventListener('input', () => {
+                emailError.style.display = 'none';
+                emailInput.style.borderColor = '#ddd';
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                document.body.removeChild(overlay);
+                resolve(null);
+            });
         });
     }
 
@@ -510,7 +684,26 @@ class AuthFlow {
      */
     static async showTenantNotFoundUI(email) {
         const domain = email.split('@')[1];
-        alert(`❌ No organization found for domain: ${domain}\n\nPlease contact your IT administrator to set up multi-tenant access for your organization.`);
+        const lang = ConfigHelper.getLanguage();
+        const isRTL = lang === 'he';
+
+        const messages = {
+            en: {
+                title: 'Organization Not Found',
+                message: `No organization found for domain: ${domain}`,
+                instruction: 'Please contact your IT administrator to set up access for your organization.',
+                close: 'Close'
+            },
+            he: {
+                title: 'הארגון לא נמצא',
+                message: `לא נמצא ארגון עבור הדומיין: ${domain}`,
+                instruction: 'אנא פנה למנהל המערכת שלך כדי להגדיר גישה עבור הארגון שלך.',
+                close: 'סגור'
+            }
+        };
+        const t = messages[lang] || messages.en;
+
+        await this.showErrorModal(t.title, t.message, t.instruction, t.close, isRTL);
     }
 
     /**
@@ -518,7 +711,97 @@ class AuthFlow {
      * @param {string} message - Error message
      */
     static async showErrorUI(message) {
-        alert(`❌ Authentication Error\n\n${message}\n\nPlease try again or contact support.`);
+        const lang = ConfigHelper.getLanguage();
+        const isRTL = lang === 'he';
+
+        const messages = {
+            en: {
+                title: 'Authentication Error',
+                instruction: 'Please try again or contact support.',
+                close: 'Close'
+            },
+            he: {
+                title: 'שגיאת אימות',
+                instruction: 'אנא נסה שוב או פנה לתמיכה.',
+                close: 'סגור'
+            }
+        };
+        const t = messages[lang] || messages.en;
+
+        await this.showErrorModal(t.title, message, t.instruction, t.close, isRTL);
+    }
+
+    /**
+     * Show error modal dialog (replacement for alert())
+     * @param {string} title - Modal title
+     * @param {string} message - Error message
+     * @param {string} instruction - Additional instruction
+     * @param {string} closeText - Close button text
+     * @param {boolean} isRTL - Right-to-left layout
+     */
+    static async showErrorModal(title, message, instruction, closeText, isRTL = false) {
+        return new Promise((resolve) => {
+            const dir = isRTL ? 'rtl' : 'ltr';
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                border-radius: 8px;
+                padding: 24px;
+                max-width: 350px;
+                width: 90%;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                direction: ${dir};
+                text-align: ${isRTL ? 'right' : 'left'};
+            `;
+
+            modal.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                    <span style="font-size: 24px;">❌</span>
+                    <h3 style="margin: 0; color: #d32f2f; font-size: 18px;">${title}</h3>
+                </div>
+                <p style="margin: 0 0 12px 0; color: #333; font-size: 14px; line-height: 1.5;">${message}</p>
+                <p style="margin: 0 0 20px 0; color: #666; font-size: 13px; line-height: 1.4;">${instruction}</p>
+                <button id="error-close-btn" style="
+                    width: 100%;
+                    padding: 12px;
+                    background: #d32f2f;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                ">${closeText}</button>
+            `;
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            const closeModal = () => {
+                document.body.removeChild(overlay);
+                resolve();
+            };
+
+            modal.querySelector('#error-close-btn').addEventListener('click', closeModal);
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeModal();
+            });
+        });
     }
 
     /**
