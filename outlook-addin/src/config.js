@@ -6,7 +6,7 @@ const CONFIG = {
     // API Configuration (relative path since backend serves frontend)
     API_BASE_URL: '/api/v1',
 
-    // Storage keys for local settings
+    // Storage keys for local settings (shared with scanner-app)
     STORAGE_KEYS: {
         API_KEY: 'filesmile_api_key', // Legacy - for backward compatibility
         JWT_TOKEN: 'filesmile_jwt_token', // New - multi-tenant JWT
@@ -15,7 +15,8 @@ const CONFIG = {
         USER_INFO: 'filesmile_user_info',
         LAST_SEARCH_GROUP: 'filesmile_last_group',
         SELECTED_COMPANY: 'filesmile_selected_company',
-        LANGUAGE: 'filesmile_language'
+        LANGUAGE: 'filesmile_language',
+        LAST_DOC_TYPE: 'filesmile_last_doc_type'
     },
 
     // File size limits (in bytes)

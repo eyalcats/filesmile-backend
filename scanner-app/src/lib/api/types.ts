@@ -94,6 +94,13 @@ export interface SearchResponse {
   errors: Record<string, string>;
 }
 
+export interface FormPrefixInfo {
+  ENAME: string;
+  TITLE: string;
+  SUBENAME?: string;
+  PREFIX: string;
+}
+
 // ============================================================================
 // Attachment Types
 // ============================================================================

@@ -21,12 +21,14 @@ export interface ScanSettings {
   autoFeeder: boolean;
 }
 
+export interface ScannedImage {
+  data: string;
+  width: number;
+  height: number;
+}
+
 export interface ScanResult {
-  images: {
-    data: string;
-    width: number;
-    height: number;
-  }[];
+  images: ScannedImage[];
 }
 
 // VintaSoft SDK global types

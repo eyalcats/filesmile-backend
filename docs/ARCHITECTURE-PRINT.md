@@ -1,0 +1,538 @@
+# FileSmile Architecture Documentation
+
+This document describes the FileSmile platform architecture for both development (Portainer) and production (Azure) environments.
+
+---
+
+## Table of Contents
+
+1. [System Overview](#1-system-overview)
+2. [Development Environment (Portainer)](#2-development-environment-portainer)
+3. [Production Environment (Azure)](#3-production-environment-azure)
+4. [Services & Components](#4-services--components)
+5. [Environment Variables](#5-environment-variables)
+6. [Deployment Procedures](#6-deployment-procedures)
+7. [Security Considerations](#7-security-considerations)
+
+---
+
+## 1. System Overview
+
+FileSmile is a multi-tenant email-to-Priority ERP integration platform. It enables users to attach emails, email attachments, and scanned documents directly to Priority ERP documents.
+
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            CLIENT APPLICATIONS                               │
+├──────────────────┬──────────────────┬─────────────────┬────────────────────┤
+│  Outlook Add-in  │   Gmail Add-on   │  Scanner App    │  Admin Dashboard   │
+│   (Office.js)    │  (Apps Script)   │   (Next.js)     │   (Static HTML)    │
+└────────┬─────────┴────────┬─────────┴────────┬────────┴─────────┬──────────┘
+         │                  │                  │                  │
+         │                  │     HTTPS        │                  │
+         └──────────────────┴────────┬─────────┴──────────────────┘
+                                     │
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          FILESMILE PLATFORM                                  │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    Traefik Reverse Proxy                             │   │
+│  │                        :80 / :443                                    │   │
+│  └───────────────┬─────────────────────────────────┬───────────────────┘   │
+│                  │                                 │                        │
+│          /api/*  │                      /scanner/* │                        │
+│                  ▼                                 ▼                        │
+│  ┌───────────────────────────┐     ┌───────────────────────────┐          │
+│  │    FastAPI Backend        │     │    Scanner App Server     │          │
+│  │        :8002              │◄────│         :3001             │          │
+│  └─────────────┬─────────────┘     └───────────────────────────┘          │
+│                │                                                           │
+│                ▼                                                           │
+│  ┌───────────────────────────┐                                            │
+│  │      PostgreSQL           │                                            │
+│  │        :5432              │                                            │
+│  └───────────────────────────┘                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                     │
+                                     │ OData API
+                                     ▼
+                        ┌───────────────────────────┐
+                        │      Priority ERP         │
+                        │   (On-Premise / Cloud)    │
+                        └───────────────────────────┘
+```
+
+### Component Descriptions
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **FastAPI Backend** | Python 3.11, FastAPI, SQLAlchemy | Core API server - handles authentication, document search, attachment uploads, serves static frontend and Outlook add-in |
+| **Scanner App** | Next.js 16, TypeScript, Zustand | Web application for document scanning via TWAIN and barcode-based document matching |
+| **Traefik** | Traefik v3.0 | Reverse proxy with automatic SSL, routing, and load balancing |
+| **PostgreSQL** | PostgreSQL 16 | Multi-tenant database for users, tenants, and encrypted credentials |
+| **Outlook Add-in** | Office.js, vanilla JS | Email attachment integration for Microsoft Outlook |
+| **Gmail Add-on** | Google Apps Script | Email attachment integration for Gmail |
+| **Admin Dashboard** | Static HTML/CSS/JS | Tenant and user management interface |
+
+---
+
+## 2. Development Environment (Portainer)
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PORTAINER STACK: filesmile-dev                           │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                 Docker Network: filesmile-net                          │ │
+│  │                                                                        │ │
+│  │   ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐      │ │
+│  │   │    traefik      │  │  filesmile-api  │  │   scanner-app   │      │ │
+│  │   │  :80 :443 :8080 │  │     :8002       │  │     :3001       │      │ │
+│  │   └────────┬────────┘  └────────┬────────┘  └─────────────────┘      │ │
+│  │            │                    │                                     │ │
+│  │            │           ┌────────┴────────┐                           │ │
+│  │            │           │    postgres     │                           │ │
+│  │            │           │     :5432       │                           │ │
+│  │            │           └────────┬────────┘                           │ │
+│  └────────────┼────────────────────┼────────────────────────────────────┘ │
+│               │                    │                                       │
+│  ┌────────────┴────────┐  ┌───────┴────────┐  ┌────────────────┐         │
+│  │   traefik-certs     │  │  postgres-data  │  │  filesmile-db  │         │
+│  │      (volume)       │  │    (volume)     │  │    (volume)    │         │
+│  └─────────────────────┘  └─────────────────┘  └────────────────┘         │
+└─────────────────────────────────────────────────────────────────────────────┘
+                    ▲
+                    │ http://filesmile.local
+                    │
+            ┌───────┴───────┐
+            │   Developer   │
+            │  Workstation  │
+            └───────────────┘
+```
+
+### Stack Configuration
+
+The development stack runs in Portainer using `docker-compose.portainer.yml`:
+
+| Service | Container | Exposed Ports | Internal Port |
+|---------|-----------|---------------|---------------|
+| Traefik | traefik | 80, 443, 8080 (dashboard) | - |
+| FastAPI Backend | filesmile-api | - | 8002 |
+| Scanner App | scanner-app | - | 3001 |
+| PostgreSQL | postgres | 5432 (optional) | 5432 |
+
+### Network Configuration
+
+- **Network**: `filesmile-net` (bridge)
+- **DNS**: Use container names for inter-service communication
+- **External access**: Only through Traefik on ports 80/443
+
+### Volume Mounts
+
+| Volume | Container | Mount Path | Purpose |
+|--------|-----------|------------|---------|
+| `postgres-data` | postgres | /var/lib/postgresql/data | Database persistence |
+| `traefik-certs` | traefik | /letsencrypt | SSL certificates |
+| `filesmile-db` | filesmile-api | /app/db | SQLite fallback / seed data |
+
+---
+
+## 3. Production Environment (Azure)
+
+### Architecture Diagram
+
+```
+                              ┌───────────────┐
+                              │    Users /    │
+                              │   Clients     │
+                              └───────┬───────┘
+                                      │
+                                      │ HTTPS (*.yourdomain.com)
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         AZURE SUBSCRIPTION                                   │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │              Resource Group: rg-filesmile-prod                         │ │
+│  │                                                                        │ │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │ │
+│  │  │            Container Apps Environment: cae-filesmile            │  │ │
+│  │  │                                                                 │  │ │
+│  │  │  ┌─────────────┐  ┌─────────────────┐  ┌─────────────────┐    │  │ │
+│  │  │  │   Traefik   │  │  filesmile-api  │  │   scanner-app   │    │  │ │
+│  │  │  │ Container   │─▶│   Container     │◀─│   Container     │    │  │ │
+│  │  │  │    App      │  │      App        │  │      App        │    │  │ │
+│  │  │  └─────────────┘  └────────┬────────┘  └─────────────────┘    │  │ │
+│  │  │                            │                                   │  │ │
+│  │  └────────────────────────────┼───────────────────────────────────┘  │ │
+│  │                               │                                       │ │
+│  │                               ▼                                       │ │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │ │
+│  │  │                    Virtual Network: vnet-filesmile              │  │ │
+│  │  └─────────────────────────────────────────────────────────────────┘  │ │
+│  │                               │                                       │ │
+│  │         ┌─────────────────────┼─────────────────────┐                │ │
+│  │         ▼                     ▼                     ▼                │ │
+│  │  ┌─────────────┐    ┌─────────────────┐    ┌─────────────┐          │ │
+│  │  │   Azure     │    │ Azure Database  │    │   Azure     │          │ │
+│  │  │ Container   │    │ for PostgreSQL  │    │  Key Vault  │          │ │
+│  │  │  Registry   │    │ Flexible Server │    │             │          │ │
+│  │  │             │    │                 │    │ kv-filesmile│          │ │
+│  │  │filesmilecr  │    │ psql-filesmile  │    │             │          │ │
+│  │  └─────────────┘    └─────────────────┘    └─────────────┘          │ │
+│  │                                                                      │ │
+│  └──────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      │ OData API
+                                      ▼
+                        ┌───────────────────────────┐
+                        │      Priority ERP         │
+                        │   (On-Premise / Cloud)    │
+                        └───────────────────────────┘
+```
+
+### Azure Resources
+
+| Resource | Type | SKU/Tier | Purpose |
+|----------|------|----------|---------|
+| `rg-filesmile-prod` | Resource Group | - | Container for all resources |
+| `cae-filesmile` | Container Apps Environment | Consumption | Hosts all container apps |
+| `ca-filesmile-api` | Container App | Consumption | FastAPI backend |
+| `ca-scanner-app` | Container App | Consumption | Next.js scanner app |
+| `ca-traefik` | Container App | Consumption | Reverse proxy (optional*) |
+| `filesmilecr` | Container Registry | Basic | Docker image storage |
+| `psql-filesmile` | PostgreSQL Flexible Server | Burstable B1ms | Production database |
+| `kv-filesmile` | Key Vault | Standard | Secrets management |
+| `vnet-filesmile` | Virtual Network | - | Network isolation |
+
+> *Note: Azure Container Apps has built-in ingress. Traefik is optional but provides consistent dev/prod parity.
+
+### Container Apps Configuration
+
+```yaml
+# Example: filesmile-api Container App
+resources:
+  cpu: 0.5
+  memory: 1Gi
+
+scale:
+  minReplicas: 1
+  maxReplicas: 5
+  rules:
+    - name: http-scaling
+      http:
+        metadata:
+          concurrentRequests: 50
+
+ingress:
+  external: true
+  targetPort: 8002
+  transport: http
+```
+
+### Database Configuration
+
+| Setting | Value |
+|---------|-------|
+| Version | PostgreSQL 16 |
+| SKU | Burstable B1ms (1 vCore, 2GB RAM) |
+| Storage | 32 GB |
+| Backup | Geo-redundant, 7 days retention |
+| Connection | SSL required |
+| Firewall | Allow Azure services + VNet |
+
+---
+
+## 4. Services & Components
+
+### Service Matrix
+
+| Service | Image | Port | Health Check | Dependencies |
+|---------|-------|------|--------------|--------------|
+| **filesmile-api** | `filesmilecr.azurecr.io/filesmile-api:latest` | 8002 | `GET /health` | PostgreSQL |
+| **scanner-app** | `filesmilecr.azurecr.io/scanner-app:latest` | 3001 | `GET /` | filesmile-api |
+| **traefik** | `traefik:v3.0` | 80, 443, 8080 | Built-in | - |
+| **postgres** | `postgres:16-alpine` | 5432 | `pg_isready` | - |
+
+### API Endpoints Structure
+
+```
+https://api.yourdomain.com/
+├── /api/v1/
+│   ├── /auth/           # Authentication (JWT)
+│   │   ├── POST /tenant/resolve
+│   │   ├── POST /login
+│   │   ├── POST /register
+│   │   └── POST /switch-tenant
+│   ├── /search/         # Document search
+│   │   ├── GET  /companies
+│   │   ├── GET  /groups
+│   │   ├── POST /documents
+│   │   └── GET  /form-prefixes
+│   ├── /attachments/    # File operations
+│   │   ├── POST /upload
+│   │   ├── GET  /list
+│   │   └── DELETE /{id}
+│   └── /admin/          # Tenant management
+├── /health              # Health check
+├── /docs                # Swagger UI
+└── /                    # Admin dashboard (static)
+```
+
+### Scanner App Routes
+
+```
+https://scanner.yourdomain.com/
+├── /                    # Main scanner interface
+├── /en/                 # English locale
+├── /he/                 # Hebrew locale
+└── /_next/              # Next.js assets
+```
+
+---
+
+## 5. Environment Variables
+
+### Backend (filesmile-api)
+
+| Variable | Required | Development | Production | Description |
+|----------|----------|-------------|------------|-------------|
+| `DATABASE_URL` | Yes | `postgresql://filesmile:password@postgres:5432/filesmile` | `postgresql://...@psql-filesmile.postgres.database.azure.com:5432/filesmile?sslmode=require` | Database connection string |
+| `SECRET_KEY` | Yes | Generate with `openssl rand -hex 32` | Azure Key Vault | FastAPI session secret |
+| `JWT_SECRET_KEY` | Yes | Generate with `openssl rand -hex 32` | Azure Key Vault | JWT signing key |
+| `ENCRYPTION_KEY` | Yes | Generate with `openssl rand -hex 32` | Azure Key Vault | ERP credential encryption |
+| `API_TITLE` | No | `FileSmile API (Dev)` | `FileSmile API` | API title in docs |
+| `API_VERSION` | No | `2.0.0` | `2.0.0` | API version |
+| `DEBUG` | No | `True` | `False` | Debug mode |
+| `ALLOWED_ORIGINS` | Yes | `*` | `https://yourdomain.com,https://scanner.yourdomain.com` | CORS allowed origins |
+
+### Scanner App (scanner-app)
+
+| Variable | Required | Development | Production | Description |
+|----------|----------|-------------|------------|-------------|
+| `NEXT_PUBLIC_API_URL` | Yes | `http://localhost:8002/api/v1` | `https://api.yourdomain.com/api/v1` | Backend API URL |
+| `NEXT_PUBLIC_VINTASOFT_REG_USER` | No | VintaSoft license | VintaSoft license | Scanner SDK user |
+| `NEXT_PUBLIC_VINTASOFT_REG_CODE` | No | VintaSoft license | VintaSoft license | Scanner SDK code |
+| `NEXT_PUBLIC_VINTASOFT_REG_URL` | No | VintaSoft license | VintaSoft license | Scanner SDK URL |
+| `NEXT_PUBLIC_VINTASOFT_EXPIRATION` | No | VintaSoft license | VintaSoft license | License expiration |
+
+### PostgreSQL (Development Only)
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `POSTGRES_USER` | `filesmile` | Database user |
+| `POSTGRES_PASSWORD` | `filesmile_dev_password` | Database password |
+| `POSTGRES_DB` | `filesmile` | Database name |
+
+### Traefik
+
+| Variable | Development | Production | Description |
+|----------|-------------|------------|-------------|
+| `TRAEFIK_DASHBOARD` | `true` | `false` | Enable dashboard |
+| `ACME_EMAIL` | - | `admin@yourdomain.com` | Let's Encrypt email |
+
+---
+
+## 6. Deployment Procedures
+
+### 6.1 Development (Portainer)
+
+#### Prerequisites
+- Docker installed on server
+- Portainer running
+- Git repository access
+
+#### Steps
+
+1. **Clone Repository**
+   ```bash
+   git clone https://github.com/your-org/FileSmileJS.git
+   cd FileSmileJS
+   ```
+
+2. **Build Images**
+   ```bash
+   # Build API image
+   docker build -t filesmile-api:latest -f Dockerfile .
+
+   # Build Scanner App image
+   docker build -t scanner-app:latest -f scanner-app/Dockerfile ./scanner-app
+   ```
+
+3. **Create Environment File**
+   ```bash
+   cp .env.example .env
+   # Edit .env with development values
+   ```
+
+4. **Deploy via Portainer**
+   - Go to Portainer → Stacks → Add Stack
+   - Upload `docker-compose.portainer.yml`
+   - Set environment variables
+   - Deploy
+
+5. **Verify Deployment**
+   ```bash
+   curl http://localhost/health
+   curl http://localhost/api/v1/docs
+   curl http://localhost:3001/
+   ```
+
+### 6.2 Production (Azure)
+
+#### Prerequisites
+- Azure CLI installed and authenticated
+- Azure subscription with required permissions
+- Container Registry created
+
+#### Steps
+
+1. **Build and Push Images**
+   ```bash
+   # Login to Azure Container Registry
+   az acr login --name filesmilecr
+
+   # Build and push API
+   docker build -t filesmilecr.azurecr.io/filesmile-api:v1.0.0 -f Dockerfile .
+   docker push filesmilecr.azurecr.io/filesmile-api:v1.0.0
+
+   # Build and push Scanner App
+   docker build -t filesmilecr.azurecr.io/scanner-app:v1.0.0 -f scanner-app/Dockerfile ./scanner-app
+   docker push filesmilecr.azurecr.io/scanner-app:v1.0.0
+   ```
+
+2. **Create Azure Resources** (via Portal or CLI)
+   - Resource Group
+   - Container Apps Environment
+   - PostgreSQL Flexible Server
+   - Key Vault with secrets
+
+3. **Deploy Container Apps**
+   ```bash
+   # Deploy API
+   az containerapp create \
+     --name ca-filesmile-api \
+     --resource-group rg-filesmile-prod \
+     --environment cae-filesmile \
+     --image filesmilecr.azurecr.io/filesmile-api:v1.0.0 \
+     --target-port 8002 \
+     --ingress external \
+     --secrets database-url=keyvaultref:... \
+     --env-vars DATABASE_URL=secretref:database-url
+
+   # Deploy Scanner App
+   az containerapp create \
+     --name ca-scanner-app \
+     --resource-group rg-filesmile-prod \
+     --environment cae-filesmile \
+     --image filesmilecr.azurecr.io/scanner-app:v1.0.0 \
+     --target-port 3001 \
+     --ingress external
+   ```
+
+4. **Configure Custom Domain**
+   - Add CNAME records in DNS
+   - Configure custom domain in Container Apps
+   - Enable managed certificate
+
+5. **Verify Deployment**
+   ```bash
+   curl https://api.yourdomain.com/health
+   curl https://scanner.yourdomain.com/
+   ```
+
+---
+
+## 7. Security Considerations
+
+### Authentication Flow
+
+```
+┌──────┐      ┌────────────┐      ┌─────────────┐      ┌──────────┐      ┌─────────────┐
+│ User │      │ Client App │      │ FileSmile   │      │PostgreSQL│      │ Priority ERP│
+└──┬───┘      └─────┬──────┘      │    API      │      └────┬─────┘      └──────┬──────┘
+   │                │             └──────┬──────┘           │                   │
+   │ Enter email    │                    │                  │                   │
+   │───────────────▶│                    │                  │                   │
+   │                │ POST /auth/tenant/ │                  │                   │
+   │                │     resolve        │                  │                   │
+   │                │───────────────────▶│                  │                   │
+   │                │                    │ Lookup tenant    │                   │
+   │                │                    │     by domain    │                   │
+   │                │                    │─────────────────▶│                   │
+   │                │                    │◀─────────────────│                   │
+   │                │                    │  Tenant info     │                   │
+   │                │◀───────────────────│                  │                   │
+   │                │   Tenant options   │                  │                   │
+   │◀───────────────│                    │                  │                   │
+   │                │                    │                  │                   │
+   │ Enter ERP      │                    │                  │                   │
+   │ credentials    │                    │                  │                   │
+   │───────────────▶│                    │                  │                   │
+   │                │ POST /auth/register│                  │                   │
+   │                │───────────────────▶│                  │                   │
+   │                │                    │ Validate credentials                 │
+   │                │                    │─────────────────────────────────────▶│
+   │                │                    │◀─────────────────────────────────────│
+   │                │                    │        Success                       │
+   │                │                    │                  │                   │
+   │                │                    │ Store encrypted  │                   │
+   │                │                    │   credentials    │                   │
+   │                │                    │─────────────────▶│                   │
+   │                │◀───────────────────│                  │                   │
+   │                │     JWT token      │                  │                   │
+   │◀───────────────│                    │                  │                   │
+   │                │                    │                  │                   │
+   │                │ GET /search/docs   │                  │                   │
+   │                │ [Bearer JWT]       │                  │                   │
+   │                │───────────────────▶│                  │                   │
+   │                │                    │ Get encrypted    │                   │
+   │                │                    │   credentials    │                   │
+   │                │                    │─────────────────▶│                   │
+   │                │                    │◀─────────────────│                   │
+   │                │                    │                  │                   │
+   │                │                    │ Query documents                      │
+   │                │                    │─────────────────────────────────────▶│
+   │                │                    │◀─────────────────────────────────────│
+   │                │                    │      Results                         │
+   │                │◀───────────────────│                  │                   │
+   │◀───────────────│    Documents       │                  │                   │
+   │                │                    │                  │                   │
+```
+
+### Security Checklist
+
+- [ ] All secrets stored in Azure Key Vault (production)
+- [ ] PostgreSQL SSL connection required
+- [ ] CORS restricted to known origins
+- [ ] JWT tokens expire after 24 hours
+- [ ] ERP credentials encrypted with Fernet (AES-128)
+- [ ] Non-root container users
+- [ ] Network isolation via VNet
+- [ ] HTTPS enforced (redirect HTTP → HTTPS)
+- [ ] Container vulnerability scanning enabled
+
+### Backup & Recovery
+
+| Component | Backup Method | Retention | RTO |
+|-----------|--------------|-----------|-----|
+| PostgreSQL | Azure automated backup | 7 days | 1 hour |
+| Encryption keys | Key Vault soft-delete | 90 days | N/A |
+| Container images | ACR geo-replication | - | Minutes |
+
+---
+
+## Appendix: File Reference
+
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Root Dockerfile for API |
+| `scanner-app/Dockerfile` | Dockerfile for Scanner App |
+| `docker-compose.yml` | Development compose (local) |
+| `docker-compose.portainer.yml` | Portainer-ready full stack |
+| `.env.example` | Environment template |
+| `entrypoint.sh` | API container entrypoint |

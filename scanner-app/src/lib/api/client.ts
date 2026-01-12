@@ -9,9 +9,11 @@ import {
   SearchGroup,
   SearchRequest,
   SearchResponse,
+  Document,
   ExtFile,
   AttachmentUploadRequest,
   AttachmentUploadResponse,
+  FormPrefixInfo,
   ApiException,
 } from './types';
 
@@ -68,7 +70,17 @@ class ApiClient {
 
       try {
         const errorBody = await response.json();
-        errorMessage = errorBody.detail || errorMessage;
+        // Handle different error formats
+        if (typeof errorBody.detail === 'string') {
+          errorMessage = errorBody.detail;
+        } else if (Array.isArray(errorBody.detail)) {
+          // FastAPI validation errors return an array
+          errorMessage = errorBody.detail.map((e: { msg?: string; loc?: string[] }) =>
+            `${e.loc?.join('.')}: ${e.msg}`
+          ).join('; ');
+        } else if (errorBody.detail) {
+          errorMessage = JSON.stringify(errorBody.detail);
+        }
         errorCode = response.headers.get('X-Error-Code') || undefined;
       } catch {
         // Ignore JSON parse errors
@@ -211,6 +223,24 @@ class ApiClient {
     });
   }
 
+  /**
+   * Get all form prefixes for barcode matching
+   * Called once when barcode mode is activated, then cached locally
+   */
+  async getAllFormPrefixes(): Promise<FormPrefixInfo[]> {
+    return this.request<FormPrefixInfo[]>('/search/form-prefixes');
+  }
+
+  /**
+   * Find a document by form name and document number
+   * Used for barcode-based document lookup
+   */
+  async findDocumentByNumber(formName: string, docNumber: string): Promise<Document> {
+    const encodedFormName = encodeURIComponent(formName);
+    const encodedDocNumber = encodeURIComponent(docNumber);
+    return this.request<Document>(`/search/document/${encodedFormName}/${encodedDocNumber}`);
+  }
+
   // ==========================================================================
   // Attachment Endpoints
   // ==========================================================================
@@ -276,6 +306,29 @@ class ApiClient {
       `/attachments/${form}/${encodedFormKey}/${attachmentId}?ext_files_form=${extFilesForm}`,
       { method: 'DELETE' }
     );
+  }
+
+  /**
+   * Download an attachment as Blob
+   */
+  async downloadAttachment(
+    form: string,
+    formKey: string,
+    attachmentId: number,
+    extFilesForm: string = 'EXTFILES'
+  ): Promise<Blob> {
+    const encodedFormKey = encodeURIComponent(formKey);
+    const url = `${this.baseUrl}/attachments/download/${form}/${encodedFormKey}/${attachmentId}?ext_files_form=${extFilesForm}`;
+
+    const response = await fetch(url, {
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new ApiException('Failed to download attachment', response.status);
+    }
+
+    return response.blob();
   }
 }
 

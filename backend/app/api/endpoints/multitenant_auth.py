@@ -16,7 +16,8 @@ from app.models.schemas import (
     TenantInfo,
     UserRegisterRequest,
     UserRegisterResponse,
-    SwitchTenantRequest
+    SwitchTenantRequest,
+    UserLoginRequest
 )
 from app.core.auth import JWTService
 from app.core.config import settings
@@ -434,7 +435,175 @@ async def switch_tenant(
     )
     
     expires_in = int((expires_at - user.created_at).total_seconds())
-    
+
+    return UserRegisterResponse(
+        access_token=access_token,
+        token_type="bearer",
+        tenant_id=tenant.id,
+        user_id=user.id,
+        email=user.email,
+        expires_in=expires_in
+    )
+
+
+@router.post("/login", response_model=UserRegisterResponse)
+async def login_user(
+    request: UserLoginRequest,
+    db: Session = Depends(get_db)
+) -> UserRegisterResponse:
+    """
+    Login with email only for pre-configured users.
+
+    This endpoint is for users whose ERP credentials have been pre-configured
+    in the admin dashboard. Login requires only the user's email address.
+
+    Flow:
+    1. Resolve tenant from email domain (or use provided tenant_id)
+    2. Find user by email
+    3. Find user-tenant association with stored credentials
+    4. Validate stored credentials against ERP
+    5. Generate and return JWT token
+
+    Args:
+        request: Login request with email and optional tenant_id
+        db: Database session
+
+    Returns:
+        JWT access token and user info
+
+    Raises:
+        404: If user not found or no stored credentials
+        401: If stored credentials are invalid
+        400: If tenant selection is required
+    """
+    print(f"DEBUG: Login request - email: {request.email}, tenant_id: {request.tenant_id}")
+
+    # Step 1: Resolve tenant from email domain
+    try:
+        domain = get_domain_from_email(request.email)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email format"
+        )
+
+    # Determine tenant
+    if request.tenant_id:
+        # Verify the tenant_id is valid for this domain
+        tenant_domain = db.query(TenantDomain).filter(
+            TenantDomain.domain == domain,
+            TenantDomain.tenant_id == request.tenant_id
+        ).first()
+
+        if not tenant_domain:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Selected tenant is not valid for this email domain"
+            )
+
+        tenant = db.query(Tenant).filter(
+            Tenant.id == request.tenant_id,
+            Tenant.is_active == True
+        ).first()
+    else:
+        # No tenant_id provided - check if domain has single or multiple tenants
+        tenant_domains = db.query(TenantDomain).filter(
+            TenantDomain.domain == domain
+        ).all()
+
+        if not tenant_domains:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No tenant configured for this email domain"
+            )
+
+        if len(tenant_domains) > 1:
+            # Multiple tenants - user must select one
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="TENANT_SELECTION_REQUIRED",
+                headers={"X-Error-Code": "TENANT_SELECTION_REQUIRED"}
+            )
+
+        # Single tenant
+        tenant = db.query(Tenant).filter(
+            Tenant.id == tenant_domains[0].tenant_id,
+            Tenant.is_active == True
+        ).first()
+
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tenant not found or inactive"
+        )
+
+    # Step 2: Find user by email
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="USER_NOT_FOUND",
+            headers={"X-Error-Code": "USER_NOT_FOUND"}
+        )
+
+    # Step 3: Find user-tenant association with stored credentials
+    user_tenant = db.query(UserTenant).filter(
+        UserTenant.user_id == user.id,
+        UserTenant.tenant_id == tenant.id,
+        UserTenant.is_active == True
+    ).first()
+
+    if not user_tenant or not user_tenant.erp_username or not user_tenant.erp_password_or_token:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="NO_STORED_CREDENTIALS",
+            headers={"X-Error-Code": "NO_STORED_CREDENTIALS"}
+        )
+
+    # Step 4: Decrypt stored credentials
+    try:
+        erp_username = decrypt_value(user_tenant.erp_username)
+        erp_password = decrypt_value(user_tenant.erp_password_or_token)
+    except Exception as e:
+        print(f"DEBUG: Failed to decrypt credentials: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="CREDENTIAL_DECRYPTION_FAILED",
+            headers={"X-Error-Code": "CREDENTIAL_DECRYPTION_FAILED"}
+        )
+
+    # Step 5: Validate credentials against ERP
+    try:
+        print(f"DEBUG: Validating stored credentials for login")
+        validation_client = PriorityClient(
+            username=erp_username,
+            password=erp_password,
+            company=tenant.erp_company,
+            base_url=tenant.erp_base_url,
+            tabula_ini=tenant.erp_tabula_ini
+        )
+
+        await validation_client.validate_credentials()
+        await validation_client.close()
+        print("DEBUG: Stored credentials validated successfully!")
+
+    except Exception as e:
+        print(f"DEBUG: Stored credentials validation failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="STORED_CREDENTIALS_INVALID",
+            headers={"X-Error-Code": "STORED_CREDENTIALS_INVALID"}
+        )
+
+    # Step 6: Generate JWT token
+    access_token, expires_at = JWTService.create_user_jwt(
+        user_id=user.id,
+        tenant_id=tenant.id,
+        email=user.email
+    )
+
+    expires_in = int((expires_at - user.created_at).total_seconds())
+
     return UserRegisterResponse(
         access_token=access_token,
         token_type="bearer",

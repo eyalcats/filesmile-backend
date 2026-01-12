@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { FileText, ScanLine } from 'lucide-react';
+import { FileText, Barcode } from 'lucide-react';
 import { useSettingsStore, type AppMode } from '@/stores/settings-store';
 import { cn } from '@/lib/utils';
 
@@ -11,14 +11,14 @@ export function ModeToggle() {
 
   const modes: { value: AppMode; label: string; icon: React.ReactNode }[] = [
     {
-      value: 'file',
-      label: t('fileMode'),
+      value: 'document',
+      label: t('documentMode'),
       icon: <FileText className="h-4 w-4" />,
     },
     {
-      value: 'scan',
-      label: t('scanMode'),
-      icon: <ScanLine className="h-4 w-4" />,
+      value: 'barcode',
+      label: t('barcodeMode'),
+      icon: <Barcode className="h-4 w-4" />,
     },
   ];
 

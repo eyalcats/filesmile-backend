@@ -8,7 +8,7 @@ Supports both authentication methods:
 """
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, status, Request
-from app.models.schemas import SearchGroup, SearchRequest, SearchResponse, Doc, Company
+from app.models.schemas import SearchGroup, SearchRequest, SearchResponse, Doc, Company, FormPrefixInfo
 from app.services.priority_client import PriorityClient, PriorityClientFactory
 from app.services.search_service import SearchService
 from app.services.auth_helper import AuthHelper
@@ -215,4 +215,41 @@ async def get_companies(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve companies: {str(e)}"
+        )
+
+
+@router.get("/form-prefixes", response_model=List[FormPrefixInfo])
+async def get_form_prefixes(
+    http_request: Request,
+    current_user: CurrentUser = Depends(get_current_user)
+) -> List[FormPrefixInfo]:
+    """
+    Get all forms with barcode prefixes configured.
+
+    Returns all forms from SOF_FSFORMS that have a PREFIX field defined.
+    This allows the frontend to cache the prefix->form mapping and match
+    barcodes locally without making per-barcode API calls.
+
+    Returns:
+        List of FormPrefixInfo with ENAME, TITLE, SUBENAME, and PREFIX
+
+    Raises:
+        HTTPException: If retrieval fails
+    """
+    try:
+        # Create Priority client using admin credentials for GET operation
+        client = AuthHelper.create_priority_client(current_user, http_request, use_admin_credentials=True)
+
+        search_service = SearchService(client)
+        prefixes = await search_service.get_all_form_prefixes()
+
+        await client.close()
+
+        return prefixes
+
+    except Exception as e:
+        logger.error(f"get_form_prefixes failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve form prefixes: {str(e)}"
         )

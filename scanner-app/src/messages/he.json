@@ -4,8 +4,8 @@
     "subtitle": "סריקה והצמדת קבצים ל-Priority"
   },
   "header": {
-    "fileMode": "טיפול בקבצים",
-    "scanMode": "טיפול בסריקות",
+    "documentMode": "טיפול במסמכים",
+    "barcodeMode": "טיפול בברקודים",
     "settings": "הגדרות",
     "logout": "התנתק"
   },
@@ -69,6 +69,7 @@
     "rotateRight": "סובב ימינה",
     "zoomIn": "הגדל",
     "zoomOut": "הקטן",
+    "fitToPage": "התאם לעמוד",
     "deletePage": "מחק עמוד",
     "deleteAll": "מחק הכל",
     "confirmDeleteAll": "האם למחוק את כל העמודים?",
@@ -79,9 +80,12 @@
     "title": "קבצים",
     "selectFile": "בחר קובץ",
     "dragDrop": "גרור קבצים לכאן או לחץ לבחירה",
+    "clickToBrowse": "או לחץ לעיון",
     "selectedFiles": "קבצים שנבחרו",
     "removeFile": "הסר קובץ",
-    "noFiles": "לא נבחרו קבצים"
+    "noFiles": "לא נבחרו קבצים",
+    "pdfPreview": "תצוגת PDF",
+    "imagePreview": "תצוגת תמונה"
   },
   "priority": {
     "company": "חברה",
@@ -103,13 +107,24 @@
     "attachments": "קבצים מצורפים",
     "viewAttachments": "הצג נספחים",
     "noAttachments": "אין נספחים",
+    "fileType": "סוג קובץ",
+    "fileSize": "גודל",
+    "date": "תאריך",
+    "open": "פתח",
+    "download": "הורד",
     "openInPriority": "פתח ב-Priority",
     "upload": "העלה ל-Priority",
     "uploading": "מעלה...",
     "uploadSuccess": "הקובץ הועלה בהצלחה",
     "uploadError": "שגיאה בהעלאת הקובץ",
     "selectedDocument": "תעודה נבחרת",
-    "selectDocumentFirst": "אנא בחר תעודה קודם"
+    "selectDocumentFirst": "אנא בחר תעודה קודם",
+    "page": "עמוד",
+    "pages": "עמודים",
+    "allDocTypes": "כל סוגי התעודות",
+    "allCustomers": "כל הלקוחות",
+    "clearFilters": "נקה",
+    "noFilteredResults": "לא נמצאו תוצאות מתאימות"
   },
   "settings": {
     "title": "הגדרות",
@@ -119,6 +134,48 @@
     "tiff": "TIFF",
     "saveSettings": "שמור הגדרות",
     "settingsSaved": "ההגדרות נשמרו"
+  },
+  "barcode": {
+    "title": "עיבוד ברקודים",
+    "trimChars": "כ.תווים להסרה מברקוד",
+    "trimFromStart": "מהתחלה",
+    "trimFromEnd": "מהסוף",
+    "uploadFiles": "הוספת קבצים",
+    "dragDrop": "גרור קבצי PDF או תמונות לכאן",
+    "orClickToBrowse": "או לחץ לעיון",
+    "processAll": "עבד הכל",
+    "processing": "מעבד...",
+    "uploadAll": "העלה את כל ההתאמות",
+    "uploadAllCount": "העלה {count} קבצים מותאמים",
+    "status": {
+      "pending": "ממתין",
+      "detecting": "מזהה ברקוד...",
+      "detected": "ברקוד זוהה",
+      "matching": "מחפש מסמך...",
+      "matched": "מוכן להעלאה",
+      "uploading": "מעלה...",
+      "uploaded": "הועלה",
+      "error": "שגיאה",
+      "notFound": "מסמך לא נמצא"
+    },
+    "errors": {
+      "noBarcode": "לא זוהה ברקוד",
+      "invalidPrefix": "קידומת לא מוכרת",
+      "documentNotFound": "מסמך לא נמצא",
+      "uploadFailed": "ההעלאה נכשלה"
+    },
+    "summary": {
+      "total": "סה\"כ קבצים",
+      "matched": "הותאמו",
+      "errors": "שגיאות",
+      "pending": "ממתינים"
+    },
+    "removeFile": "הסר קובץ",
+    "clearAll": "נקה הכל",
+    "noFiles": "טרם נוספו קבצים",
+    "barcodeValue": "ברקוד",
+    "documentForm": "סוג מסמך",
+    "documentNumber": "מספר מסמך"
   },
   "common": {
     "loading": "טוען...",
@@ -132,5 +189,9 @@
     "yes": "כן",
     "no": "לא",
     "clear": "נקה"
+  },
+  "deepLink": {
+    "invalidUrl": "פורמט קישור מסמך לא תקין",
+    "companyNotFound": "חברה לא נמצאה: {company}"
   }
 }

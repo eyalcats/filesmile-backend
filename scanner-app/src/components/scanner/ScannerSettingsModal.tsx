@@ -10,6 +10,7 @@ import {
 import { DeviceSelector } from './DeviceSelector';
 import { ScanSettings } from './ScanSettings';
 import { ServiceStatus } from './ServiceStatus';
+import { BarcodeSettings } from './BarcodeSettings';
 
 interface ScannerSettingsModalProps {
   open: boolean;
@@ -23,19 +24,24 @@ export function ScannerSettingsModal({ open, onOpenChange }: ScannerSettingsModa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>{t('settings')}</span>
-            <ServiceStatus />
-          </DialogTitle>
+          <DialogTitle>{t('settings')}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-2">
+          {/* Service Status */}
+          <ServiceStatus />
+
           {/* Device Selection */}
           <DeviceSelector />
 
           {/* Scan Settings */}
           <div className="border-t pt-4">
             <ScanSettings />
+          </div>
+
+          {/* Barcode Settings */}
+          <div className="border-t pt-4">
+            <BarcodeSettings />
           </div>
         </div>
       </DialogContent>

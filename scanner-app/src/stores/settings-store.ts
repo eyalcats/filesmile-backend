@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type AppMode = 'scan' | 'file';
+export type AppMode = 'document' | 'barcode';
 export type ColorMode = 'gray' | 'bw' | 'rgb';
 export type OutputFormat = 'pdf' | 'tiff';
 export type Resolution = 100 | 150 | 200 | 300 | 600;
@@ -19,6 +19,10 @@ interface SettingsState {
   autoSave: boolean;
   outputFormat: OutputFormat;
 
+  // Barcode trimming settings
+  barcodeTrimPrefix: number;
+  barcodeTrimSuffix: number;
+
   // Priority defaults
   defaultCompany: string | null;
   defaultSearchGroupId: number | null;
@@ -32,6 +36,8 @@ interface SettingsState {
   setAutoFeeder: (autoFeeder: boolean) => void;
   setAutoSave: (autoSave: boolean) => void;
   setOutputFormat: (format: OutputFormat) => void;
+  setBarcodeTrimPrefix: (chars: number) => void;
+  setBarcodeTrimSuffix: (chars: number) => void;
   setDefaultCompany: (company: string | null) => void;
   setDefaultSearchGroupId: (groupId: number | null) => void;
 }
@@ -40,7 +46,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       // Default values
-      mode: 'scan',
+      mode: 'document',
       selectedDeviceId: null,
       resolution: 150,
       colorMode: 'gray',
@@ -48,6 +54,8 @@ export const useSettingsStore = create<SettingsState>()(
       autoFeeder: false,
       autoSave: false,
       outputFormat: 'pdf',
+      barcodeTrimPrefix: 0,
+      barcodeTrimSuffix: 0,
       defaultCompany: null,
       defaultSearchGroupId: null,
 
@@ -60,6 +68,8 @@ export const useSettingsStore = create<SettingsState>()(
       setAutoFeeder: (autoFeeder) => set({ autoFeeder }),
       setAutoSave: (autoSave) => set({ autoSave }),
       setOutputFormat: (outputFormat) => set({ outputFormat }),
+      setBarcodeTrimPrefix: (barcodeTrimPrefix) => set({ barcodeTrimPrefix }),
+      setBarcodeTrimSuffix: (barcodeTrimSuffix) => set({ barcodeTrimSuffix }),
       setDefaultCompany: (defaultCompany) => set({ defaultCompany }),
       setDefaultSearchGroupId: (defaultSearchGroupId) =>
         set({ defaultSearchGroupId }),

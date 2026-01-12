@@ -8,7 +8,7 @@ Improvements over C# version:
 """
 import asyncio
 from typing import List, Dict, Tuple, Optional, Any
-from app.models.schemas import Doc, FormMetaData, FormMetaField
+from app.models.schemas import Doc, FormMetaData, FormMetaField, FormPrefixInfo
 from app.services.priority_client import PriorityClient
 
 
@@ -295,18 +295,35 @@ class SearchService:
         if not metadata:
             return None
 
+        fields = metadata.get("SOF_FSCLMNS_SUBFORM", [])
+
         # Get document number field
-        doc_no_field = self._get_field_by_flag(
-            metadata.get("SOF_FSCLMNS_SUBFORM", []),
-            "DOC_FLAG"
-        )
+        doc_no_field = self._get_field_by_flag(fields, "DOC_FLAG")
 
         if not doc_no_field:
             return None
 
+        # Get additional display fields
+        date_field = self._get_field_by_flag(fields, "DATE_FLAG")
+        cust_field = self._get_field_by_flag(fields, "CS_FLAG")
+        details_field = self._get_field_by_flag(fields, "DET_FLAG")
+
+        # Build select clause with key fields and display fields
+        key_fields = self._get_key_fields(fields)
+        select_fields = key_fields.copy()
+        if doc_no_field:
+            select_fields.append(doc_no_field)
+        if date_field:
+            select_fields.append(date_field)
+        if cust_field:
+            select_fields.append(cust_field)
+        if details_field:
+            select_fields.append(details_field)
+
         # Search by document number
         results = await self.client.get(
             form=form_name,
+            select=list(set(select_fields)),  # Remove duplicates
             filter_expr=f"{doc_no_field} eq '{doc_number}'",
             top=1
         )
@@ -316,7 +333,6 @@ class SearchService:
 
         # Build Doc object
         record = results[0]
-        key_fields = self._get_key_fields(metadata.get("SOF_FSCLMNS_SUBFORM", []))
         form_key_parts = [f"{field}={record.get(field, '')}" for field in key_fields]
         raw_form_key = f"({','.join(form_key_parts)})"
         form_key = self.client.format_key(raw_form_key)
@@ -326,5 +342,39 @@ class SearchService:
             FormDesc=metadata.get("TITLE", form_name),
             ExtFilesForm=metadata.get("SUBENAME", "EXTFILES"),
             FormKey=form_key,
-            DocNo=doc_number
+            DocNo=record.get(doc_no_field, doc_number) if doc_no_field else doc_number,
+            DocDate=record.get(date_field) if date_field else None,
+            CustName=record.get(cust_field) if cust_field else None,
+            Details=record.get(details_field) if details_field else None
         )
+
+    async def get_all_form_prefixes(self) -> List[FormPrefixInfo]:
+        """
+        Get all forms that have a PREFIX configured for barcode matching.
+
+        This returns ALL form prefixes in a single API call, allowing the frontend
+        to cache and match barcodes locally without per-barcode API calls.
+
+        Returns:
+            List of FormPrefixInfo with ENAME, TITLE, SUBENAME, and PREFIX
+        """
+        # Query SOF_FSFORMS for all forms with a PREFIX defined
+        results = await self.client.get(
+            form="SOF_FSFORMS",
+            select=["ENAME", "TITLE", "SUBENAME", "PREFIX"],
+            filter_expr="PREFIX ne ''",  # Only forms with PREFIX defined
+        )
+
+        # Filter out any results where PREFIX is None or empty
+        prefixes = []
+        for record in results:
+            prefix = record.get("PREFIX")
+            if prefix and prefix.strip():
+                prefixes.append(FormPrefixInfo(
+                    ENAME=record.get("ENAME", ""),
+                    TITLE=record.get("TITLE", record.get("ENAME", "")),
+                    SUBENAME=record.get("SUBENAME", "EXTFILES"),
+                    PREFIX=prefix.strip()
+                ))
+
+        return prefixes

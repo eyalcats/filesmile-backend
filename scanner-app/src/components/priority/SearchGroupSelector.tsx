@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Select,
   SelectContent,
@@ -13,9 +13,12 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useDocumentStore } from '@/stores/document-store';
+import { sharedPreferences } from '@/lib/shared-preferences';
 
 export function SearchGroupSelector() {
   const t = useTranslations('priority');
+  const locale = useLocale();
+  const isRTL = locale === 'he';
   const {
     searchGroups,
     selectedGroupId,
@@ -37,9 +40,23 @@ export function SearchGroupSelector() {
         const data = await api.getSearchGroups();
         setSearchGroups(data);
 
-        // Auto-select first group if none selected
-        if (data.length > 0 && !selectedGroupId) {
+        // Try to restore from shared preferences first
+        const savedGroupId = sharedPreferences.getSearchGroupId();
+        const savedDocType = sharedPreferences.getDocType();
+
+        if (savedGroupId && data.some(g => g.FSGROUP === savedGroupId)) {
+          setSelectedGroupId(savedGroupId);
+          // Also restore doc type if it belongs to this group
+          if (savedDocType) {
+            const group = data.find(g => g.FSGROUP === savedGroupId);
+            if (group?.GROUPFORMS.some(f => f.ENAME === savedDocType)) {
+              setSelectedForm(savedDocType);
+            }
+          }
+        } else if (data.length > 0 && !selectedGroupId) {
+          // Auto-select first group if none selected
           setSelectedGroupId(data[0].FSGROUP);
+          sharedPreferences.setSearchGroupId(data[0].FSGROUP);
         }
       } catch (error) {
         console.error('Failed to load search groups:', error);
@@ -49,7 +66,7 @@ export function SearchGroupSelector() {
     };
 
     loadGroups();
-  }, [searchGroups.length, selectedGroupId, setSearchGroups, setSelectedGroupId, setIsLoadingGroups]);
+  }, [searchGroups.length, selectedGroupId, setSearchGroups, setSelectedGroupId, setSelectedForm, setIsLoadingGroups]);
 
   // Get forms for selected group
   const selectedGroup = useMemo(() => {
@@ -58,14 +75,24 @@ export function SearchGroupSelector() {
 
   const forms = selectedGroup?.GROUPFORMS || [];
 
-  // Handle group change - reset form selection
+  // Handle group change - reset form selection and save to shared preferences
   const handleGroupChange = (value: string) => {
-    setSelectedGroupId(parseInt(value));
+    const groupId = parseInt(value);
+    setSelectedGroupId(groupId);
     setSelectedForm(null); // Reset form when group changes
+    sharedPreferences.setSearchGroupId(groupId);
+    sharedPreferences.setDocType(null);
+  };
+
+  // Handle doc type change - save to shared preferences
+  const handleDocTypeChange = (value: string) => {
+    const docType = value === '__all__' ? null : value;
+    setSelectedForm(docType);
+    sharedPreferences.setDocType(docType);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Search By (Group) */}
       <div className="space-y-2">
         <Label>{t('searchBy')}</Label>
@@ -73,10 +100,11 @@ export function SearchGroupSelector() {
           value={selectedGroupId?.toString() || ''}
           onValueChange={handleGroupChange}
           disabled={isLoadingGroups}
+          dir={isRTL ? 'rtl' : 'ltr'}
         >
-          <SelectTrigger>
+          <SelectTrigger className={isRTL ? 'text-right' : ''}>
             {isLoadingGroups ? (
-              <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-muted-foreground">{t('searchBy')}</span>
               </div>
@@ -86,7 +114,7 @@ export function SearchGroupSelector() {
           </SelectTrigger>
           <SelectContent>
             {searchGroups.map((group) => (
-              <SelectItem key={group.FSGROUP} value={group.FSGROUP.toString()}>
+              <SelectItem key={group.FSGROUP} value={group.FSGROUP.toString()} className={isRTL ? 'text-right' : ''}>
                 {group.FSGROUPNAME}
               </SelectItem>
             ))}
@@ -100,19 +128,20 @@ export function SearchGroupSelector() {
           <Label>{t('docType')}</Label>
           <Select
             value={selectedForm || '__all__'}
-            onValueChange={(value) => setSelectedForm(value === '__all__' ? null : value)}
+            onValueChange={handleDocTypeChange}
             disabled={isLoadingGroups}
+            dir={isRTL ? 'rtl' : 'ltr'}
           >
-            <SelectTrigger>
+            <SelectTrigger className={isRTL ? 'text-right' : ''}>
               <SelectValue placeholder={t('selectDocType')} />
             </SelectTrigger>
             <SelectContent>
               {/* "All" option - searches all forms in the group */}
-              <SelectItem value="__all__">
+              <SelectItem value="__all__" className={isRTL ? 'text-right' : ''}>
                 {t('selectDocType')}
               </SelectItem>
               {forms.map((form) => (
-                <SelectItem key={form.ENAME} value={form.ENAME}>
+                <SelectItem key={form.ENAME} value={form.ENAME} className={isRTL ? 'text-right' : ''}>
                   {form.TITLE}
                 </SelectItem>
               ))}

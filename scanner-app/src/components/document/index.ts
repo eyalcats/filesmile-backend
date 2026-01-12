@@ -1,0 +1,1 @@
+export { ImageFileTable } from './ImageFileTable';

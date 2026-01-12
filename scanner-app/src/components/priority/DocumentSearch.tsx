@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -15,6 +14,8 @@ interface DocumentSearchProps {
 
 export function DocumentSearch({ onResultsFound }: DocumentSearchProps) {
   const t = useTranslations('priority');
+  const locale = useLocale();
+  const isRTL = locale === 'he';
   const {
     selectedGroupId,
     selectedForm,
@@ -67,9 +68,9 @@ export function DocumentSearch({ onResultsFound }: DocumentSearchProps) {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
       <Label>{t('searchTerm')}</Label>
-      <div className="flex gap-2">
+      <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <div className="relative flex-1">
           <Input
             value={searchTerm}
@@ -78,12 +79,13 @@ export function DocumentSearch({ onResultsFound }: DocumentSearchProps) {
             placeholder={t('searchTerm')}
             disabled={isSearching}
             dir="ltr"
+            className={isRTL ? 'text-right' : ''}
           />
           {searchTerm && (
             <button
               type="button"
               onClick={clearSearch}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className={`absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground ${isRTL ? 'left-2' : 'right-2'}`}
             >
               <X className="h-4 w-4" />
             </button>
@@ -98,7 +100,7 @@ export function DocumentSearch({ onResultsFound }: DocumentSearchProps) {
           ) : (
             <Search className="h-4 w-4" />
           )}
-          <span className="ml-2">{isSearching ? t('searching') : t('search')}</span>
+          <span className={isRTL ? 'mr-2' : 'ml-2'}>{isSearching ? t('searching') : t('search')}</span>
         </Button>
       </div>
     </div>

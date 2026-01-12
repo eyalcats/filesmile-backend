@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
+import { useScannerStore } from '@/stores/scanner-store';
+import { scannerService } from '@/lib/scanner';
 import { LoginDialog } from './LoginDialog';
 
 interface AuthProviderProps {
@@ -13,16 +15,39 @@ interface AuthProviderProps {
  *
  * - Shows login dialog when not authenticated
  * - Persists auth state in localStorage via Zustand
+ * - Initializes scanner service on app load
  * - Children are only rendered when authenticated
  */
 export function AuthProvider({ children }: AuthProviderProps) {
   const { isAuthenticated } = useAuthStore();
+  const { setServiceStatus } = useScannerStore();
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Wait for Zustand to hydrate from localStorage
   useEffect(() => {
     setIsHydrated(true);
   }, []);
+
+  // Initialize scanner service on app load
+  useEffect(() => {
+    const initScanner = async () => {
+      try {
+        // Check connection first
+        const connected = await scannerService.checkConnection();
+        setServiceStatus(connected ? 'connected' : 'disconnected');
+
+        // If connected, preload the SDK
+        if (connected) {
+          await scannerService.loadSDK();
+        }
+      } catch (error) {
+        console.warn('Scanner initialization failed:', error);
+        setServiceStatus('disconnected');
+      }
+    };
+
+    initScanner();
+  }, [setServiceStatus]);
 
   // Show nothing while hydrating to prevent flash
   if (!isHydrated) {

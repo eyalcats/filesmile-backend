@@ -7,18 +7,19 @@ import { ScanLine, Loader2 } from 'lucide-react';
 import { useScannerStore } from '@/stores/scanner-store';
 import { useSettingsStore } from '@/stores/settings-store';
 import { useImageStore } from '@/stores/image-store';
-import { scannerService } from '@/lib/scanner';
+import { scannerService, type ScannedImage } from '@/lib/scanner';
 
 interface ScanButtonProps {
   compact?: boolean;
+  onScanComplete?: (images: ScannedImage[]) => void;
 }
 
-export function ScanButton({ compact = false }: ScanButtonProps) {
+export function ScanButton({ compact = false, onScanComplete }: ScanButtonProps) {
   const t = useTranslations('scanner');
   const { serviceStatus, isScanning, scanProgress, setIsScanning, setScanProgress, setScanError } =
     useScannerStore();
   const { selectedDeviceId, resolution, colorMode, duplex, autoFeeder } = useSettingsStore();
-  const { addImages } = useImageStore();
+  const { addFileGroup } = useImageStore();
 
   const handleScan = async () => {
     if (!selectedDeviceId) {
@@ -37,15 +38,29 @@ export function ScanButton({ compact = false }: ScanButtonProps) {
         (progress) => setScanProgress(progress)
       );
 
-      // Add scanned images to the image store
+      // If callback provided, use it; otherwise add to image store
       if (result.images.length > 0) {
-        addImages(
-          result.images.map((img) => ({
-            data: img.data,
-            width: img.width,
-            height: img.height,
-          }))
-        );
+        if (onScanComplete) {
+          onScanComplete(result.images);
+        } else {
+          // Default behavior: add to image store as separate file groups
+          const timestamp = Date.now();
+          result.images.forEach((img, index) => {
+            addFileGroup({
+              fileName: `Scan_${timestamp}_${index + 1}.png`,
+              originalData: img.data,
+              originalType: 'image',
+              mimeType: 'image/png',
+              pages: [{
+                id: '',
+                data: img.data,
+                width: img.width,
+                height: img.height,
+                pageNumber: 1,
+              }],
+            });
+          });
+        }
       }
 
       setScanProgress(100);

@@ -4,8 +4,8 @@
     "subtitle": "Scan and attach files to Priority"
   },
   "header": {
-    "fileMode": "File Handling",
-    "scanMode": "Scan Handling",
+    "documentMode": "Document Handling",
+    "barcodeMode": "Barcode Handling",
     "settings": "Settings",
     "logout": "Logout"
   },
@@ -69,6 +69,7 @@
     "rotateRight": "Rotate Right",
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",
+    "fitToPage": "Fit to Page",
     "deletePage": "Delete Page",
     "deleteAll": "Delete All",
     "confirmDeleteAll": "Delete all pages?",
@@ -79,9 +80,12 @@
     "title": "Files",
     "selectFile": "Select File",
     "dragDrop": "Drag files here or click to select",
+    "clickToBrowse": "or click to browse",
     "selectedFiles": "Selected Files",
     "removeFile": "Remove File",
-    "noFiles": "No files selected"
+    "noFiles": "No files selected",
+    "pdfPreview": "PDF Preview",
+    "imagePreview": "Image Preview"
   },
   "priority": {
     "company": "Company",
@@ -103,13 +107,24 @@
     "attachments": "Attachments",
     "viewAttachments": "View Attachments",
     "noAttachments": "No attachments",
+    "fileType": "File Type",
+    "fileSize": "Size",
+    "date": "Date",
+    "open": "Open",
+    "download": "Download",
     "openInPriority": "Open in Priority",
     "upload": "Upload to Priority",
     "uploading": "Uploading...",
     "uploadSuccess": "File uploaded successfully",
     "uploadError": "Error uploading file",
     "selectedDocument": "Selected Document",
-    "selectDocumentFirst": "Please select a document first"
+    "selectDocumentFirst": "Please select a document first",
+    "page": "page",
+    "pages": "pages",
+    "allDocTypes": "All document types",
+    "allCustomers": "All customers",
+    "clearFilters": "Clear",
+    "noFilteredResults": "No matching results"
   },
   "settings": {
     "title": "Settings",
@@ -119,6 +134,48 @@
     "tiff": "TIFF",
     "saveSettings": "Save Settings",
     "settingsSaved": "Settings saved"
+  },
+  "barcode": {
+    "title": "Barcode Processing",
+    "trimChars": "Characters to remove from barcode",
+    "trimFromStart": "From start",
+    "trimFromEnd": "From end",
+    "uploadFiles": "Add Files",
+    "dragDrop": "Drop PDF or image files here",
+    "orClickToBrowse": "or click to browse",
+    "processAll": "Process All",
+    "processing": "Processing...",
+    "uploadAll": "Upload All Matched",
+    "uploadAllCount": "Upload {count} matched files",
+    "status": {
+      "pending": "Waiting",
+      "detecting": "Detecting barcode...",
+      "detected": "Barcode detected",
+      "matching": "Finding document...",
+      "matched": "Ready to upload",
+      "uploading": "Uploading...",
+      "uploaded": "Uploaded",
+      "error": "Error",
+      "notFound": "Document not found"
+    },
+    "errors": {
+      "noBarcode": "No barcode detected",
+      "invalidPrefix": "Unknown prefix",
+      "documentNotFound": "Document not found",
+      "uploadFailed": "Upload failed"
+    },
+    "summary": {
+      "total": "Total files",
+      "matched": "Matched",
+      "errors": "Errors",
+      "pending": "Pending"
+    },
+    "removeFile": "Remove file",
+    "clearAll": "Clear all",
+    "noFiles": "No files added yet",
+    "barcodeValue": "Barcode",
+    "documentForm": "Document type",
+    "documentNumber": "Document number"
   },
   "common": {
     "loading": "Loading...",
@@ -132,5 +189,9 @@
     "yes": "Yes",
     "no": "No",
     "clear": "Clear"
+  },
+  "deepLink": {
+    "invalidUrl": "Invalid document link format",
+    "companyNotFound": "Company not found: {company}"
   }
 }

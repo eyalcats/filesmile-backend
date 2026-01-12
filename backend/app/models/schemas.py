@@ -45,6 +45,12 @@ class SwitchTenantRequest(BaseModel):
     tenant_id: int = Field(..., description="Target tenant ID to switch to")
 
 
+class UserLoginRequest(BaseModel):
+    """Request model for login with email only (pre-configured users)."""
+    email: str = Field(..., description="User email address")
+    tenant_id: Optional[int] = Field(None, description="Tenant ID (required if domain has multiple tenants)")
+
+
 class UserRegisterResponse(BaseModel):
     """Response model for user registration."""
     access_token: str = Field(..., description="JWT access token")
@@ -169,6 +175,14 @@ class SearchGroup(BaseModel):
     FSGROUP: int = Field(..., description="Group ID")
     FSGROUPNAME: str = Field(..., description="Group name")
     GROUPFORMS: List[GroupForm] = Field(default_factory=list, description="Forms in group")
+
+
+class FormPrefixInfo(BaseModel):
+    """Lightweight form prefix info for barcode matching."""
+    ENAME: str = Field(..., description="Form entity name")
+    TITLE: str = Field(..., description="Form title")
+    SUBENAME: Optional[str] = Field(None, description="Subform name for attachments")
+    PREFIX: str = Field(..., description="Barcode prefix")
 
 
 class SearchRequest(BaseModel):

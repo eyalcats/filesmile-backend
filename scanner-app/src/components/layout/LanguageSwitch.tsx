@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { locales, localeNames, type Locale } from '@/i18n/config';
+import { sharedPreferences } from '@/lib/shared-preferences';
 
 export function LanguageSwitch() {
   const locale = useLocale() as Locale;
@@ -18,6 +19,9 @@ export function LanguageSwitch() {
   const pathname = usePathname();
 
   const handleLocaleChange = (newLocale: Locale) => {
+    // Save to shared preferences for outlook-addin sync
+    sharedPreferences.setLanguage(newLocale);
+
     // Replace the locale segment in the pathname
     const segments = pathname.split('/');
     if (locales.includes(segments[1] as Locale)) {

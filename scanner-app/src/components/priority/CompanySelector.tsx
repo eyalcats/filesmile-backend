@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Select,
   SelectContent,
@@ -13,9 +13,12 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useDocumentStore } from '@/stores/document-store';
+import { sharedPreferences } from '@/lib/shared-preferences';
 
 export function CompanySelector() {
   const t = useTranslations('priority');
+  const locale = useLocale();
+  const isRTL = locale === 'he';
   const {
     companies,
     selectedCompany,
@@ -24,6 +27,12 @@ export function CompanySelector() {
     setSelectedCompany,
     setIsLoadingCompanies,
   } = useDocumentStore();
+
+  // Handle company change - save to shared preferences
+  const handleCompanyChange = (company: string) => {
+    setSelectedCompany(company);
+    sharedPreferences.setCompany(company);
+  };
 
   // Load companies on mount
   useEffect(() => {
@@ -35,9 +44,14 @@ export function CompanySelector() {
         const data = await api.getCompanies();
         setCompanies(data);
 
-        // Auto-select first company if none selected
-        if (data.length > 0 && !selectedCompany) {
+        // Try to restore from shared preferences first
+        const savedCompany = sharedPreferences.getCompany();
+        if (savedCompany && data.some(c => c.DNAME === savedCompany)) {
+          setSelectedCompany(savedCompany);
+        } else if (data.length > 0 && !selectedCompany) {
+          // Auto-select first company if none selected
           setSelectedCompany(data[0].DNAME);
+          sharedPreferences.setCompany(data[0].DNAME);
         }
       } catch (error) {
         console.error('Failed to load companies:', error);
@@ -50,16 +64,17 @@ export function CompanySelector() {
   }, [companies.length, selectedCompany, setCompanies, setSelectedCompany, setIsLoadingCompanies]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
       <Label>{t('company')}</Label>
       <Select
         value={selectedCompany || ''}
-        onValueChange={setSelectedCompany}
+        onValueChange={handleCompanyChange}
         disabled={isLoadingCompanies}
+        dir={isRTL ? 'rtl' : 'ltr'}
       >
-        <SelectTrigger>
+        <SelectTrigger className={isRTL ? 'text-right' : ''}>
           {isLoadingCompanies ? (
-            <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-muted-foreground">{t('selectCompany')}</span>
             </div>
@@ -69,7 +84,7 @@ export function CompanySelector() {
         </SelectTrigger>
         <SelectContent>
           {companies.map((company) => (
-            <SelectItem key={company.DNAME} value={company.DNAME}>
+            <SelectItem key={company.DNAME} value={company.DNAME} className={isRTL ? 'text-right' : ''}>
               {company.TITLE}
             </SelectItem>
           ))}
