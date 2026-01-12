@@ -82,10 +82,7 @@ services:
   # FileSmile API (FastAPI Backend)
   # ===========================================
   filesmile-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: filesmile-api:latest
+    image: eyalcats/filesmile-api:latest
     container_name: filesmile-api
     restart: unless-stopped
     depends_on:
@@ -134,12 +131,7 @@ services:
   # Scanner App (Next.js)
   # ===========================================
   scanner-app:
-    build:
-      context: ./scanner-app
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: http://localhost/api/v1
-    image: scanner-app:latest
+    image: eyalcats/scanner-app:latest
     container_name: scanner-app
     restart: unless-stopped
     depends_on:
