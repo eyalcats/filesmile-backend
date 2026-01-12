@@ -25,9 +25,13 @@ if database_url.startswith("sqlite"):
             print(f"Creating database directory: {db_dir}")
             os.makedirs(db_dir, exist_ok=True)
 
+connect_args = {}
+if database_url.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
+
 engine = create_engine(
     database_url,
-    connect_args={"check_same_thread": False},
+    connect_args=connect_args,
     echo=settings.debug
 )
 
