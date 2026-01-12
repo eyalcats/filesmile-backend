@@ -35,7 +35,7 @@ services:
       - "--providers.docker.network=filesmile-net"
       - "--entrypoints.web.address=:80"
     ports:
-      - "8081:80"   # Changed from 80 due to Windows port conflict
+      - "80:80"
       - "8080:8080"  # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -110,15 +110,15 @@ services:
     labels:
       - "traefik.enable=true"
       # Main API route
-      - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
       - "traefik.http.routers.api.entrypoints=web"
       - "traefik.http.services.api.loadbalancer.server.port=8002"
       # Health endpoint
-      - "traefik.http.routers.health.rule=Host(`localhost`) && Path(`/health`)"
+      - "traefik.http.routers.health.rule=Path(`/health`)"
       - "traefik.http.routers.health.entrypoints=web"
       - "traefik.http.routers.health.service=api"
       # Admin dashboard and Swagger docs
-      - "traefik.http.routers.admin.rule=Host(`localhost`) && (PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`) || PathPrefix(`/static`) || PathPrefix(`/frontend`) || PathPrefix(`/outlook-addin`) || Path(`/`))"
+      - "traefik.http.routers.admin.rule=PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`) || PathPrefix(`/static`) || PathPrefix(`/frontend`) || PathPrefix(`/outlook-addin`) || PathPrefix(`/admin`) || PathPrefix(`/assets`) || PathPrefix(`/taskpane`) || PathPrefix(`/commands`) || Path(`/`)"
       - "traefik.http.routers.admin.entrypoints=web"
       - "traefik.http.routers.admin.service=api"
 
