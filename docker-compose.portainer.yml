@@ -115,15 +115,15 @@ services:
     labels:
       - "traefik.enable=true"
       # Main API route
-      - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
       - "traefik.http.routers.api.entrypoints=web"
       - "traefik.http.services.api.loadbalancer.server.port=8002"
       # Health endpoint
-      - "traefik.http.routers.health.rule=Host(`localhost`) && Path(`/health`)"
+      - "traefik.http.routers.health.rule=Path(`/health`)"
       - "traefik.http.routers.health.entrypoints=web"
       - "traefik.http.routers.health.service=api"
       # Admin dashboard and Swagger docs (served by FastAPI)
-      - "traefik.http.routers.admin.rule=Host(`localhost`) && (PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`) || PathPrefix(`/static`) || PathPrefix(`/frontend`) || PathPrefix(`/outlook-addin`) || Path(`/`))"
+      - "traefik.http.routers.admin.rule=PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`) || PathPrefix(`/static`) || PathPrefix(`/frontend`) || PathPrefix(`/outlook-addin`) || Path(`/`)"
       - "traefik.http.routers.admin.entrypoints=web"
       - "traefik.http.routers.admin.service=api"
 
@@ -157,7 +157,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Scanner app route
-      - "traefik.http.routers.scanner.rule=Host(`localhost`) && PathPrefix(`/scanner`)"
+      - "traefik.http.routers.scanner.rule=PathPrefix(`/scanner`)"
       - "traefik.http.routers.scanner.entrypoints=web"
       - "traefik.http.services.scanner.loadbalancer.server.port=3001"
       # Strip /scanner prefix before forwarding
