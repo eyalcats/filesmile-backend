@@ -136,6 +136,8 @@ services:
     restart: unless-stopped
     depends_on:
       - filesmile-api
+    ports:
+      - "3001:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
