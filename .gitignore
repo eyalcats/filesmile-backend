@@ -85,3 +85,15 @@ Thumbs.db
 **/config.ini
 **/Soft.dat
 filesmile.db
+
+# Local settings
+.claude/settings.local.json
+
+# Temp files
+_ul
+_ul-*
+nul
+
+# VintaSoft SDK (download separately)
+scanner-app/public/js/
+scanner-app/public/vintasoft/
