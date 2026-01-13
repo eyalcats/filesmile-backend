@@ -64,6 +64,10 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} dir={dir}>
+      <head>
+        {/* Required for VintaSoft SDK - ensures referrer header is sent to localhost service */}
+        <meta name="referrer" content="origin-when-cross-origin" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
       >

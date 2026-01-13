@@ -109,6 +109,9 @@ interface VintasoftAcquiredImage {
   get_Height(): number;
 }
 
+// Base path for static assets (must match next.config.ts basePath)
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '/scanner';
+
 // License configuration - get your evaluation license from https://myaccount.vintasoft.com
 const VINTASOFT_LICENSE = {
   regUser: process.env.NEXT_PUBLIC_VINTASOFT_REG_USER || '',
@@ -202,8 +205,8 @@ class ScannerService {
     }
 
     try {
-      await this.loadScript('/vintasoft/Vintasoft.Shared.js');
-      await this.loadScript('/vintasoft/Vintasoft.Twain.js');
+      await this.loadScript(`${BASE_PATH}/vintasoft/Vintasoft.Shared.js`);
+      await this.loadScript(`${BASE_PATH}/vintasoft/Vintasoft.Twain.js`);
 
       // Wait for SDK to be fully initialized (scripts may need time to execute)
       await this.waitForSDK();
