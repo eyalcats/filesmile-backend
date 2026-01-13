@@ -257,12 +257,24 @@ if __name__ == "__main__":
     # Get the backend directory (parent of app directory)
     backend_dir = Path(__file__).parent.parent
 
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8002,
-        reload=True,
-        log_level="info",
-        ssl_keyfile=str(backend_dir / "key.pem"),
-        ssl_certfile=str(backend_dir / "cert.pem")
-    )
+    # Check if SSL certificates exist for HTTPS mode
+    ssl_keyfile = backend_dir / "key.pem"
+    ssl_certfile = backend_dir / "cert.pem"
+    use_ssl = ssl_keyfile.exists() and ssl_certfile.exists()
+
+    uvicorn_config = {
+        "app": "app.main:app",
+        "host": "0.0.0.0",
+        "port": 8002,
+        "reload": True,
+        "log_level": "info",
+    }
+
+    if use_ssl:
+        uvicorn_config["ssl_keyfile"] = str(ssl_keyfile)
+        uvicorn_config["ssl_certfile"] = str(ssl_certfile)
+        print(f"Starting server with HTTPS on https://0.0.0.0:8002")
+    else:
+        print(f"Starting server with HTTP on http://0.0.0.0:8002")
+
+    uvicorn.run(**uvicorn_config)

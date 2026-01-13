@@ -54,7 +54,16 @@
     "serviceStatus": {
       "connected": "שירות סריקה מחובר",
       "disconnected": "שירות סריקה לא מחובר",
-      "checking": "בודק חיבור..."
+      "checking": "בודק חיבור...",
+      "installTitle": "התקן שירות סריקה",
+      "installDescription": "שירות VintaSoft Web TWAIN נדרש לסריקת מסמכים. השירות רץ מקומית על המחשב שלך.",
+      "step1": "הורד את קובץ ההתקנה (ZIP)",
+      "step2": "חלץ והפעל את קובץ ההתקנה",
+      "step3": "לחץ על \"נסה שוב\" למטה",
+      "downloadButton": "הורד שירות",
+      "retryButton": "נסה שוב",
+      "windowsOnly": "Windows בלבד (10/11/Server 2016+)",
+      "retrying": "בודק..."
     }
   },
   "viewer": {

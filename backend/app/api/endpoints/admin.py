@@ -112,8 +112,7 @@ def user_to_response(user: User) -> UserResponse:
     )
 
 from app.core.config import settings
-import hashlib
-import secrets
+from app.core.auth import AdminJWTService, verify_admin_password, get_current_admin
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -125,39 +124,44 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 
 def verify_admin_credentials(username: str, password: str) -> bool:
     """
-    Verify admin credentials.
-    In production, use proper password hashing and database storage.
+    Verify admin credentials using bcrypt password hash.
+
+    Args:
+        username: Admin username
+        password: Plain text password
+
+    Returns:
+        True if credentials valid, False otherwise
     """
-    # Get admin credentials from environment or use defaults for development
-    admin_username = getattr(settings, 'admin_username', 'admin')
-    admin_password = getattr(settings, 'admin_password', 'admin123')
-    return username == admin_username and password == admin_password
+    # Verify username matches configured admin username
+    if username != settings.admin_username:
+        return False
 
-
-def create_admin_token() -> str:
-    """Generate a simple admin session token."""
-    return secrets.token_urlsafe(32)
+    # Verify password against bcrypt hash
+    return verify_admin_password(password)
 
 
 @router.post("/login", response_model=AdminLoginResponse)
 async def admin_login(request: AdminLoginRequest):
     """
-    Admin login endpoint.
-    
-    Returns a session token for authenticated admin access.
+    Admin login endpoint with bcrypt password validation.
+
+    Returns a JWT token for authenticated admin access.
     """
     if not verify_admin_credentials(request.username, request.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
         )
-    
-    token = create_admin_token()
+
+    token, expires_at = AdminJWTService.create_admin_jwt(request.username)
+    expires_in = int((expires_at - datetime.utcnow()).total_seconds())
+
     return AdminLoginResponse(
         access_token=token,
         token_type="bearer",
         username=request.username,
-        expires_in=86400  # 24 hours
+        expires_in=expires_in
     )
 
 
@@ -171,7 +175,8 @@ async def list_tenants(
     status: Optional[str] = Query(None, description="Filter by status (active/inactive)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin)
 ):
     """List all tenants with optional filtering."""
     query = db.query(Tenant)
@@ -202,7 +207,7 @@ async def list_tenants(
 
 
 @router.get("/tenants/{tenant_id}", response_model=TenantResponse)
-async def get_tenant(tenant_id: int, db: Session = Depends(get_db)):
+async def get_tenant(tenant_id: int, db: Session = Depends(get_db), admin: str = Depends(get_current_admin)):
     """Get a single tenant by ID."""
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
@@ -214,7 +219,7 @@ async def get_tenant(tenant_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/tenants", response_model=TenantResponse, status_code=status.HTTP_201_CREATED)
-async def create_tenant(tenant_data: TenantCreate, db: Session = Depends(get_db)):
+async def create_tenant(tenant_data: TenantCreate, db: Session = Depends(get_db), admin: str = Depends(get_current_admin)):
     """Create a new tenant."""
     try:
         # Check if tenant name already exists
@@ -269,7 +274,8 @@ async def create_tenant(tenant_data: TenantCreate, db: Session = Depends(get_db)
 async def update_tenant(
     tenant_id: int,
     tenant_data: TenantUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin)
 ):
     """Update an existing tenant."""
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
@@ -305,7 +311,7 @@ async def update_tenant(
 
 
 @router.delete("/tenants/{tenant_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_tenant(tenant_id: int, db: Session = Depends(get_db)):
+async def delete_tenant(tenant_id: int, db: Session = Depends(get_db), admin: str = Depends(get_current_admin)):
     """Delete a tenant and all associated domains and users."""
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
@@ -329,7 +335,8 @@ async def list_domains(
     tenant_id: Optional[int] = Query(None, description="Filter by tenant ID"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin)
 ):
     """List all domains with optional filtering."""
     query = db.query(TenantDomain)
@@ -353,7 +360,7 @@ async def list_domains(
 
 
 @router.get("/domains/{domain_id}", response_model=DomainResponse)
-async def get_domain(domain_id: int, db: Session = Depends(get_db)):
+async def get_domain(domain_id: int, db: Session = Depends(get_db), admin: str = Depends(get_current_admin)):
     """Get a single domain by ID."""
     domain = db.query(TenantDomain).filter(TenantDomain.id == domain_id).first()
     if not domain:
@@ -365,7 +372,7 @@ async def get_domain(domain_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/domains", response_model=DomainResponse, status_code=status.HTTP_201_CREATED)
-async def create_domain(domain_data: DomainCreate, db: Session = Depends(get_db)):
+async def create_domain(domain_data: DomainCreate, db: Session = Depends(get_db), admin: str = Depends(get_current_admin)):
     """Create a new domain-tenant mapping.
     
     Note: A domain can be connected to multiple tenants.
@@ -406,7 +413,8 @@ async def create_domain(domain_data: DomainCreate, db: Session = Depends(get_db)
 async def update_domain(
     domain_id: int,
     domain_data: DomainUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin)
 ):
     """Update an existing domain-tenant mapping."""
     domain = db.query(TenantDomain).filter(TenantDomain.id == domain_id).first()
@@ -453,7 +461,7 @@ async def update_domain(
 
 
 @router.delete("/domains/{domain_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_domain(domain_id: int, db: Session = Depends(get_db)):
+async def delete_domain(domain_id: int, db: Session = Depends(get_db), admin: str = Depends(get_current_admin)):
     """Delete a domain."""
     domain = db.query(TenantDomain).filter(TenantDomain.id == domain_id).first()
     if not domain:
@@ -478,7 +486,8 @@ async def list_users(
     status: Optional[str] = Query(None, description="Filter by status (active/inactive)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin)
 ):
     """List all users with optional filtering."""
     query = db.query(User)
@@ -512,7 +521,7 @@ async def list_users(
 
 
 @router.get("/users/{user_id}", response_model=UserResponse)
-async def get_user(user_id: int, db: Session = Depends(get_db)):
+async def get_user(user_id: int, db: Session = Depends(get_db), admin: str = Depends(get_current_admin)):
     """Get a single user by ID."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -524,7 +533,7 @@ async def get_user(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
+async def create_user(user_data: UserCreate, db: Session = Depends(get_db), admin: str = Depends(get_current_admin)):
     """Create a new user with optional initial tenant association."""
     # Check if email already exists
     existing = db.query(User).filter(User.email == user_data.email.lower()).first()
@@ -574,7 +583,8 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
 async def update_user(
     user_id: int,
     user_data: UserUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin)
 ):
     """Update an existing user (basic info only, use tenant endpoints for tenant associations)."""
     user = db.query(User).filter(User.id == user_id).first()
@@ -610,7 +620,7 @@ async def update_user(
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
+async def delete_user(user_id: int, db: Session = Depends(get_db), admin: str = Depends(get_current_admin)):
     """Delete a user."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -629,7 +639,7 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.get("/users/{user_id}/tenants", response_model=List[UserTenantResponse])
-async def list_user_tenants(user_id: int, db: Session = Depends(get_db)):
+async def list_user_tenants(user_id: int, db: Session = Depends(get_db), admin: str = Depends(get_current_admin)):
     """List all tenant associations for a user."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -645,7 +655,8 @@ async def list_user_tenants(user_id: int, db: Session = Depends(get_db)):
 async def add_user_tenant(
     user_id: int,
     request: AddUserTenantRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin)
 ):
     """Add a tenant association to a user."""
     # Verify user exists
@@ -695,7 +706,8 @@ async def update_user_tenant(
     user_id: int,
     tenant_id: int,
     request: UpdateUserTenantRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin)
 ):
     """Update a user's tenant association (ERP credentials, active status)."""
     user_tenant = db.query(UserTenant).filter(
@@ -728,7 +740,8 @@ async def update_user_tenant(
 async def remove_user_tenant(
     user_id: int,
     tenant_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin)
 ):
     """Remove a tenant association from a user."""
     user_tenant = db.query(UserTenant).filter(
@@ -752,7 +765,7 @@ async def remove_user_tenant(
 # ============================================================================
 
 @router.post("/validate-credentials", response_model=ValidateCredentialsResponse)
-async def validate_erp_credentials(request: ValidateCredentialsRequest):
+async def validate_erp_credentials(request: ValidateCredentialsRequest, admin: str = Depends(get_current_admin)):
     """
     Validate ERP admin credentials by testing connection to Priority ERP.
     

@@ -53,7 +53,7 @@ const API = {
             // Handle 401 Unauthorized
             if (response.status === 401) {
                 Auth.logout();
-                window.location.href = 'index.html';
+                window.location.href = '/admin/';
                 throw new Error('Session expired. Please login again.');
             }
             

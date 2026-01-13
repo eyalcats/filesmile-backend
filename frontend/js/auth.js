@@ -12,10 +12,19 @@ const Auth = {
     isAuthenticated() {
         const token = this.getToken();
         if (!token) return false;
-        
-        // Check if token is expired
+
+        // Check if token is valid and not expired
         try {
             const payload = this.parseJWT(token);
+
+            // Check if token has admin claim (required for new secure tokens)
+            if (!payload.admin) {
+                console.log('Token missing admin claim - forcing re-login');
+                this.logout();
+                return false;
+            }
+
+            // Check if token is expired
             if (payload.exp && Date.now() >= payload.exp * 1000) {
                 this.logout();
                 return false;
@@ -78,37 +87,45 @@ const Auth = {
     },
     
     /**
-     * Login user
+     * Login user via backend API
      * @param {string} username - Admin username
      * @param {string} password - Admin password
      * @param {boolean} remember - Remember me option
      * @returns {Promise<Object>} - User data on success
      */
     async login(username, password, remember = false) {
-        // For demo purposes, we'll use a simple admin check
-        // In production, this should call your backend API
-        
-        // Simulated admin credentials check
-        // Replace this with actual API call to your backend
-        if (username === 'admin' && password === 'admin123') {
-            const mockToken = this.generateMockToken(username);
-            const user = {
-                username: username,
-                role: 'admin',
-                loginTime: new Date().toISOString()
-            };
-            
-            this.setToken(mockToken, remember);
-            this.setUser(user, remember);
-            
-            if (remember) {
-                localStorage.setItem(CONFIG.STORAGE_KEYS.REMEMBER_ME, 'true');
-            }
-            
-            return { success: true, user };
+        // Call backend login endpoint
+        const response = await fetch(CONFIG.API_URL + CONFIG.ENDPOINTS.LOGIN, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Invalid username or password');
         }
-        
-        throw new Error('Invalid username or password');
+
+        const data = await response.json();
+
+        // Store the JWT token from backend
+        this.setToken(data.access_token, remember);
+
+        const user = {
+            username: data.username,
+            role: 'admin',
+            loginTime: new Date().toISOString()
+        };
+
+        this.setUser(user, remember);
+
+        if (remember) {
+            localStorage.setItem(CONFIG.STORAGE_KEYS.REMEMBER_ME, 'true');
+        }
+
+        return { success: true, user };
     },
     
     /**
@@ -140,39 +157,22 @@ const Auth = {
     },
     
     /**
-     * Generate mock JWT token for demo
-     * @param {string} username - Username
-     * @returns {string} - Mock JWT token
-     */
-    generateMockToken(username) {
-        const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-        const payload = btoa(JSON.stringify({
-            sub: username,
-            role: 'admin',
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
-        }));
-        const signature = btoa('mock-signature');
-        return `${header}.${payload}.${signature}`;
-    },
-    
-    /**
      * Require authentication - redirect to login if not authenticated
      */
     requireAuth() {
         if (!this.isAuthenticated()) {
-            window.location.href = 'index.html';
+            window.location.href = '/admin/';
             return false;
         }
         return true;
     },
-    
+
     /**
      * Redirect to dashboard if already authenticated
      */
     redirectIfAuthenticated() {
         if (this.isAuthenticated()) {
-            window.location.href = 'dashboard.html';
+            window.location.href = '/admin/dashboard.html';
             return true;
         }
         return false;

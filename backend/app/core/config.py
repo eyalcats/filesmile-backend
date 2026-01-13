@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 1440  # 24 hours default
     encryption_key: str  # Key for encrypting sensitive credentials
 
+    # Admin Authentication
+    admin_username: str = "admin"
+    admin_password_hash: Optional[str] = None  # bcrypt hash, REQUIRED in production
+    admin_jwt_expire_minutes: int = 480  # 8 hours
+
     # Admin Priority Credentials (FOR INITIAL SETUP ONLY)
     # Optional - only required for tenant seeding scripts, not runtime
     priority_admin_user: Optional[str] = None

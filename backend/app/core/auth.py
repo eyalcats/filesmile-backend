@@ -7,6 +7,7 @@ Supports:
 Legacy API key authentication has been removed.
 """
 import secrets
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from jose import jwt, JWTError
@@ -188,3 +189,117 @@ async def get_current_user(
     return CurrentUser(user=user, tenant=tenant)
 
 
+# ============================================================================
+# Admin JWT Authentication
+# ============================================================================
+
+class AdminJWTService:
+    """Service for creating and validating admin JWT tokens."""
+
+    @staticmethod
+    def create_admin_jwt(username: str) -> Tuple[str, datetime]:
+        """
+        Create a JWT token for admin user.
+
+        Args:
+            username: Admin username
+
+        Returns:
+            Tuple of (jwt_token, expiration_datetime)
+        """
+        now = datetime.utcnow()
+        expires_at = now + timedelta(minutes=settings.admin_jwt_expire_minutes)
+
+        payload = {
+            "sub": username,
+            "admin": True,  # Distinguishes admin tokens from user tokens
+            "exp": expires_at,
+            "iat": now
+        }
+
+        token = jwt.encode(payload, settings.jwt_secret_key, algorithm="HS256")
+        return token, expires_at
+
+    @staticmethod
+    def verify_admin_jwt(token: str) -> dict:
+        """
+        Verify and decode an admin JWT token.
+
+        Args:
+            token: JWT token string
+
+        Returns:
+            Decoded payload with username
+
+        Raises:
+            HTTPException: If token is invalid, expired, or not an admin token
+        """
+        try:
+            payload = jwt.decode(token, settings.jwt_secret_key, algorithms=["HS256"])
+
+            # Verify this is an admin token
+            if not payload.get("admin"):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Not an admin token",
+                    headers={"WWW-Authenticate": "Bearer"}
+                )
+
+            return payload
+
+        except JWTError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid admin token: {str(e)}",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+
+def verify_admin_password(plain_password: str) -> bool:
+    """
+    Verify admin password against stored bcrypt hash.
+
+    Args:
+        plain_password: Password to verify
+
+    Returns:
+        True if password matches, False otherwise
+    """
+    if not settings.admin_password_hash:
+        logger.warning("ADMIN_PASSWORD_HASH not set - admin login disabled")
+        return False
+
+    try:
+        # Use bcrypt directly for Python 3.13+ compatibility
+        password_bytes = plain_password.encode('utf-8')
+        hash_bytes = settings.admin_password_hash.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, hash_bytes)
+    except Exception as e:
+        logger.error(f"Password verification error: {e}")
+        return False
+
+
+async def get_current_admin(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)
+) -> str:
+    """
+    FastAPI dependency to authenticate admin via JWT Bearer token.
+
+    Args:
+        credentials: Bearer token credentials from Authorization header
+
+    Returns:
+        Admin username
+
+    Raises:
+        HTTPException: If token is missing, invalid, or not an admin token
+    """
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authentication token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    payload = AdminJWTService.verify_admin_jwt(credentials.credentials)
+    return payload.get("sub")

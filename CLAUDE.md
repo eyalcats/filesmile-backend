@@ -68,14 +68,22 @@ python scripts/check_tenants.py          # Verify setup
 
 ### Docker Deployment
 ```bash
-# Root compose: API + ngrok tunnel (for Outlook add-in development)
+# Full development stack: Traefik + PostgreSQL + API + Scanner + ngrok
 docker-compose up
 
-# Backend-only compose (production-like)
+# Backend-only compose (production-like, uses Docker Hub image)
 docker-compose -f backend/docker-compose.yml up
 
-# Database persists in named volume: filesmile-database
-# To seed fresh database, place filesmile.db in backend/seed_db/ before build
+# Access points when running full stack:
+# - API: http://localhost:8002 (direct) or http://localhost/api (via Traefik)
+# - Scanner: http://localhost:3001
+# - Traefik dashboard: http://localhost:8080
+# - ngrok inspector: http://localhost:4040
+# - Outlook add-in: https://filesmile.ngrok.app (via ngrok tunnel)
+
+# Volumes:
+# - filesmile-postgres-data: PostgreSQL database (primary)
+# - filesmile-database: SQLite fallback for local dev
 ```
 
 ### Testing
@@ -95,6 +103,8 @@ pytest tests/test_auth.py::test_function_name -v
 # Run with verbose output
 pytest -v
 ```
+
+**Note**: Test directory (`backend/tests/`) needs to be created. The above commands describe the intended test setup.
 
 ### Linting/Formatting
 ```bash
@@ -140,11 +150,12 @@ API documentation available at `/docs` (Swagger) and `/redoc` (ReDoc) when runni
 
 ## Environment Configuration
 
-Critical environment variables (generate with `openssl rand -hex 32`):
+Critical environment variables (generate secrets with `openssl rand -hex 32`):
 - `SECRET_KEY` - FastAPI secret
 - `JWT_SECRET_KEY` - JWT signing key (must be different from SECRET_KEY)
 - `ENCRYPTION_KEY` - Fernet encryption key for ERP credentials (**MUST BE BACKED UP**)
 - `DATABASE_URL` - SQLite for dev (`sqlite:///./filesmile.db`) or PostgreSQL for prod
+- `NGROK_AUTHTOKEN` - Required for Outlook add-in development (tunnels API to https://filesmile.ngrok.app)
 
 ## Priority ERP Integration
 

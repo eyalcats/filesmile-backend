@@ -59,7 +59,7 @@ const App = {
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', () => {
             Auth.logout();
-            window.location.href = 'index.html';
+            window.location.href = '/admin/';
         });
         
         // Add new button
