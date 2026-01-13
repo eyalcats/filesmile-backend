@@ -232,6 +232,7 @@ if frontend_dir.exists():
 
 @app.get("/admin")
 @app.get("/admin/")
+@app.get("/admin/index.html")
 async def admin_panel():
     """Serve the admin panel index page."""
     if (frontend_dir / "index.html").exists():
