@@ -134,14 +134,11 @@ services:
       start_period: 15s
     labels:
       - "traefik.enable=true"
-      # Scanner app route - HTTPS
+      # Scanner app route - HTTPS (Next.js handles basePath internally)
       - "traefik.http.routers.scanner.rule=PathPrefix(`/scanner`)"
       - "traefik.http.routers.scanner.entrypoints=websecure"
       - "traefik.http.routers.scanner.tls=true"
       - "traefik.http.services.scanner.loadbalancer.server.port=3001"
-      # Strip /scanner prefix before forwarding
-      - "traefik.http.middlewares.scanner-strip.stripprefix.prefixes=/scanner"
-      - "traefik.http.routers.scanner.middlewares=scanner-strip"
       # Alternative: Direct access on subdomain
       # - "traefik.http.routers.scanner-direct.rule=Host(`scanner.localhost`)"
       # - "traefik.http.routers.scanner-direct.entrypoints=web"
