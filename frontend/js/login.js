@@ -1,13 +1,14 @@
 /**
  * Login Page Script
- * 
+ *
  * Handles login form submission and UI interactions.
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Redirect if already logged in
-    Auth.redirectIfAuthenticated();
-    
+    // Clear any stale auth data on login page load
+    // This prevents redirect loops from old/invalid tokens
+    Auth.clearAuth();
+
     // DOM Elements
     const loginForm = document.getElementById('loginForm');
     const usernameInput = document.getElementById('username');
@@ -16,17 +17,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginBtn = document.getElementById('loginBtn');
     const loginError = document.getElementById('loginError');
     const togglePasswordBtn = document.querySelector('.toggle-password');
-    
-    // Check if remember me was previously set
-    if (localStorage.getItem(CONFIG.STORAGE_KEYS.REMEMBER_ME)) {
-        rememberMeCheckbox.checked = true;
-    }
-    
+
     // Toggle password visibility
     togglePasswordBtn.addEventListener('click', function() {
         const type = passwordInput.type === 'password' ? 'text' : 'password';
         passwordInput.type = type;
-        
+
         // Update icon
         const eyeIcon = this.querySelector('.eye-icon');
         if (type === 'text') {
@@ -41,28 +37,28 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
     });
-    
+
     // Handle form submission
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const username = usernameInput.value.trim();
         const password = passwordInput.value;
         const rememberMe = rememberMeCheckbox.checked;
-        
+
         // Validate inputs
         if (!username || !password) {
             showError('Please enter both username and password');
             return;
         }
-        
+
         // Show loading state
         setLoading(true);
         hideError();
-        
+
         try {
             await Auth.login(username, password, rememberMe);
-            
+
             // Redirect to dashboard
             window.location.href = 'dashboard.html';
         } catch (error) {
@@ -70,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setLoading(false);
         }
     });
-    
+
     /**
      * Show error message
      * @param {string} message - Error message to display
@@ -79,14 +75,14 @@ document.addEventListener('DOMContentLoaded', function() {
         loginError.textContent = message;
         loginError.classList.remove('hidden');
     }
-    
+
     /**
      * Hide error message
      */
     function hideError() {
         loginError.classList.add('hidden');
     }
-    
+
     /**
      * Set loading state
      * @param {boolean} loading - Whether to show loading state
@@ -94,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function setLoading(loading) {
         const btnText = loginBtn.querySelector('.btn-text');
         const btnLoader = loginBtn.querySelector('.btn-loader');
-        
+
         if (loading) {
             loginBtn.disabled = true;
             btnText.classList.add('hidden');
@@ -105,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btnLoader.classList.add('hidden');
         }
     }
-    
+
     // Handle Enter key in inputs
     usernameInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
