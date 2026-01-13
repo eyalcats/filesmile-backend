@@ -1,10 +1,9 @@
-# FileSmile Development Stack for Portainer
-# ==========================================
-# This compose file includes all services needed for development:
-# - Traefik reverse proxy with dashboard
-# - FastAPI backend (filesmile-api)
+# FileSmile QA Stack for Portainer
+# =================================
+# This compose file includes all services for QA deployment:
+# - Traefik reverse proxy with HTTPS (via Cloudflare)
+# - FastAPI backend (filesmile-api) with SQLite
 # - Next.js scanner app (scanner-app)
-# - PostgreSQL database
 #
 # Deploy via Portainer: Stacks > Add Stack > Upload this file
 #
@@ -12,7 +11,8 @@
 # - SECRET_KEY
 # - JWT_SECRET_KEY
 # - ENCRYPTION_KEY
-# - POSTGRES_PASSWORD
+# - ADMIN_USERNAME
+# - ADMIN_PASSWORD_HASH
 # - (Optional) NEXT_PUBLIC_VINTASOFT_* for scanner SDK
 
 version: '3.8'
@@ -54,48 +54,20 @@ services:
       - "traefik.http.routers.traefik.service=api@internal"
 
   # ===========================================
-  # PostgreSQL Database
-  # ===========================================
-  postgres:
-    image: postgres:16-alpine
-    container_name: postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: filesmile
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-filesmile_dev_password}
-      POSTGRES_DB: filesmile
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - filesmile-net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U filesmile -d filesmile"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    # Uncomment to expose PostgreSQL for external access (dev only)
-    # ports:
-    #   - "5432:5432"
-
-  # ===========================================
   # FileSmile API (FastAPI Backend)
   # ===========================================
   filesmile-api:
     image: eyalcats/filesmile-api:latest
     container_name: filesmile-api
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       # API Configuration
-      - API_TITLE=FileSmile API (Dev)
+      - API_TITLE=FileSmile API (QA)
       - API_VERSION=2.0.0
       - API_PREFIX=/api/v1
       - DEBUG=True
-      # Database
-      - DATABASE_URL=postgresql://filesmile:${POSTGRES_PASSWORD:-filesmile_dev_password}@postgres:5432/filesmile
+      # Database (SQLite for QA, PostgreSQL for production)
+      - DATABASE_URL=sqlite:///app/db/filesmile.db
       # Security (generate with: openssl rand -hex 32)
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-jwt-secret-key-change-in-production}
@@ -187,8 +159,6 @@ networks:
 # Volumes
 # ===========================================
 volumes:
-  postgres-data:
-    name: filesmile-postgres-data
   traefik-certs:
     name: filesmile-traefik-certs
   filesmile-db:
