@@ -100,7 +100,7 @@ services:
       - "traefik.http.routers.health.tls=true"
       - "traefik.http.routers.health.service=api"
       # Admin dashboard and Swagger docs (served by FastAPI) - HTTPS
-      - "traefik.http.routers.admin.rule=PathPrefix(`/admin`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`) || PathPrefix(`/static`) || PathPrefix(`/frontend`) || PathPrefix(`/outlook-addin`) || Path(`/`)"
+      - "traefik.http.routers.admin.rule=PathPrefix(`/admin`) || PathPrefix(`/assets`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`) || PathPrefix(`/static`) || PathPrefix(`/frontend`) || PathPrefix(`/outlook-addin`) || Path(`/`)"
       - "traefik.http.routers.admin.entrypoints=websecure"
       - "traefik.http.routers.admin.tls=true"
       - "traefik.http.routers.admin.service=api"
