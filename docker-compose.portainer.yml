@@ -114,17 +114,20 @@ services:
       start_period: 15s
     labels:
       - "traefik.enable=true"
-      # Main API route
+      # Main API route - HTTPS
       - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls=true"
       - "traefik.http.services.api.loadbalancer.server.port=8002"
-      # Health endpoint
+      # Health endpoint - HTTPS
       - "traefik.http.routers.health.rule=Path(`/health`)"
-      - "traefik.http.routers.health.entrypoints=web"
+      - "traefik.http.routers.health.entrypoints=websecure"
+      - "traefik.http.routers.health.tls=true"
       - "traefik.http.routers.health.service=api"
-      # Admin dashboard and Swagger docs (served by FastAPI)
+      # Admin dashboard and Swagger docs (served by FastAPI) - HTTPS
       - "traefik.http.routers.admin.rule=PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`) || PathPrefix(`/static`) || PathPrefix(`/frontend`) || PathPrefix(`/outlook-addin`) || Path(`/`)"
-      - "traefik.http.routers.admin.entrypoints=web"
+      - "traefik.http.routers.admin.entrypoints=websecure"
+      - "traefik.http.routers.admin.tls=true"
       - "traefik.http.routers.admin.service=api"
 
   # ===========================================
@@ -136,8 +139,8 @@ services:
     restart: unless-stopped
     depends_on:
       - filesmile-api
-    ports:
-      - "3001:3001"
+    # ports:
+    #   - "3001:3001"  # Not needed - Traefik routes via /scanner path
     environment:
       - NODE_ENV=production
       - PORT=3001
@@ -156,9 +159,10 @@ services:
       start_period: 15s
     labels:
       - "traefik.enable=true"
-      # Scanner app route
+      # Scanner app route - HTTPS
       - "traefik.http.routers.scanner.rule=PathPrefix(`/scanner`)"
-      - "traefik.http.routers.scanner.entrypoints=web"
+      - "traefik.http.routers.scanner.entrypoints=websecure"
+      - "traefik.http.routers.scanner.tls=true"
       - "traefik.http.services.scanner.loadbalancer.server.port=3001"
       # Strip /scanner prefix before forwarding
       - "traefik.http.middlewares.scanner-strip.stripprefix.prefixes=/scanner"
