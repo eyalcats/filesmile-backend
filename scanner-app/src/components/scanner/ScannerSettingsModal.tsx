@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -25,6 +26,9 @@ export function ScannerSettingsModal({ open, onOpenChange }: ScannerSettingsModa
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{t('settings')}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('settings')}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">

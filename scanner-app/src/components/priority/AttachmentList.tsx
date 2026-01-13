@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -200,6 +201,9 @@ export function AttachmentList({ open, onClose }: AttachmentListProps) {
             <Paperclip className="h-5 w-5" />
             {t('attachments')} ({attachments.length})
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('attachments')}
+          </DialogDescription>
         </DialogHeader>
 
         {isLoadingAttachments ? (

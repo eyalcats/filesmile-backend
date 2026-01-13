@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -109,6 +110,9 @@ export function DocumentList({ open, onClose }: DocumentListProps) {
       <DialogContent className="sm:max-w-[500px]" dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle className={isRTL ? 'text-right' : ''}>{t('selectDocument')}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('selectDocument')}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Filter Section */}

@@ -18,6 +18,7 @@ interface SettingsState {
   autoFeeder: boolean;
   autoSave: boolean;
   outputFormat: OutputFormat;
+  showUI: boolean; // Show scanner UI dialog (true=ShowUI, false=NoUI silent mode)
 
   // Barcode trimming settings
   barcodeTrimPrefix: number;
@@ -36,6 +37,7 @@ interface SettingsState {
   setAutoFeeder: (autoFeeder: boolean) => void;
   setAutoSave: (autoSave: boolean) => void;
   setOutputFormat: (format: OutputFormat) => void;
+  setShowUI: (showUI: boolean) => void;
   setBarcodeTrimPrefix: (chars: number) => void;
   setBarcodeTrimSuffix: (chars: number) => void;
   setDefaultCompany: (company: string | null) => void;
@@ -54,6 +56,7 @@ export const useSettingsStore = create<SettingsState>()(
       autoFeeder: false,
       autoSave: false,
       outputFormat: 'pdf',
+      showUI: true,
       barcodeTrimPrefix: 0,
       barcodeTrimSuffix: 0,
       defaultCompany: null,
@@ -68,6 +71,7 @@ export const useSettingsStore = create<SettingsState>()(
       setAutoFeeder: (autoFeeder) => set({ autoFeeder }),
       setAutoSave: (autoSave) => set({ autoSave }),
       setOutputFormat: (outputFormat) => set({ outputFormat }),
+      setShowUI: (showUI) => set({ showUI }),
       setBarcodeTrimPrefix: (barcodeTrimPrefix) => set({ barcodeTrimPrefix }),
       setBarcodeTrimSuffix: (barcodeTrimSuffix) => set({ barcodeTrimSuffix }),
       setDefaultCompany: (defaultCompany) => set({ defaultCompany }),

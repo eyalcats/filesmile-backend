@@ -230,10 +230,7 @@ if frontend_dir.exists():
     print("✅ Mounted /admin frontend panel static files")
 
 
-@app.get("/admin")
-@app.get("/admin/")
-@app.get("/admin/index.html")
-async def admin_panel():
+async def serve_admin_index():
     """Serve the admin panel index page."""
     if (frontend_dir / "index.html").exists():
         return FileResponse(str(frontend_dir / "index.html"))
@@ -241,14 +238,20 @@ async def admin_panel():
         return {"error": "Admin panel not available"}
 
 
-@app.get("/admin/dashboard")
-@app.get("/admin/dashboard.html")
-async def admin_dashboard():
+async def serve_admin_dashboard():
     """Serve the admin dashboard page."""
     if (frontend_dir / "dashboard.html").exists():
         return FileResponse(str(frontend_dir / "dashboard.html"))
     else:
         return {"error": "Admin dashboard not available"}
+
+
+# Register routes using add_api_route for reliable multiple path support
+app.add_api_route("/admin", serve_admin_index, methods=["GET"])
+app.add_api_route("/admin/", serve_admin_index, methods=["GET"])
+app.add_api_route("/admin/index.html", serve_admin_index, methods=["GET"])
+app.add_api_route("/admin/dashboard", serve_admin_dashboard, methods=["GET"])
+app.add_api_route("/admin/dashboard.html", serve_admin_dashboard, methods=["GET"])
 
 
 if __name__ == "__main__":

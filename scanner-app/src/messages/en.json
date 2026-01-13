@@ -46,6 +46,7 @@
     "rgb": "Color (RGB)",
     "duplex": "Duplex",
     "autoFeeder": "Auto Feeder",
+    "showUI": "Show Dialog",
     "autoSave": "Auto Save",
     "scan": "Scan",
     "scanning": "Scanning...",

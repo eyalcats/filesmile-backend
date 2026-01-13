@@ -32,13 +32,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const initScanner = async () => {
       try {
-        // Check connection first
+        // Check connection to the scanner service
         const connected = await scannerService.checkConnection();
         setServiceStatus(connected ? 'connected' : 'disconnected');
 
-        // If connected, preload the SDK
+        // Load VintaSoft SDK if connected
         if (connected) {
-          await scannerService.loadSDK();
+          try {
+            await scannerService.loadSDK();
+          } catch (sdkError) {
+            console.warn('Failed to load VintaSoft SDK:', sdkError);
+          }
         }
       } catch (error) {
         console.warn('Scanner initialization failed:', error);

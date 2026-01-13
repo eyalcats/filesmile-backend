@@ -412,7 +412,7 @@ class ScannerService {
       onProgress?.(30);
 
       // Acquire images using modal loop
-      const acquiredImages: { data: string; width: number; height: number }[] = [];
+      const acquiredImages: ScannedImage[] = [];
       let scanning = true;
       let progressValue = 30;
 

@@ -107,9 +107,6 @@ export function ScanSettings() {
           </div>
         </div>
 
-        {/* Empty cell for alignment */}
-        <div></div>
-
         {/* Auto Save */}
         <div className="space-y-2">
           <Label htmlFor="autoSave" className="cursor-pointer">

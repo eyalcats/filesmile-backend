@@ -294,6 +294,7 @@ async def get_current_admin(
     Raises:
         HTTPException: If token is missing, invalid, or not an admin token
     """
+    print(f"DEBUG get_current_admin called, credentials: {credentials}")
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
