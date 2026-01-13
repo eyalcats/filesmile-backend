@@ -1,19 +1,21 @@
-# FileSmile Development Stack for Portainer
-# ==========================================
-# This compose file includes all services needed for development:
-# - Traefik reverse proxy with dashboard
-# - FastAPI backend (filesmile-api)
-# - Next.js scanner app (scanner-app)
+# FileSmile Development Stack
+# ===========================
+# Full development environment with:
+# - Traefik reverse proxy (port 80)
 # - PostgreSQL database
+# - FastAPI backend (filesmile-api)
+# - Next.js scanner app
+# - ngrok tunnel for Outlook add-in development
 #
-# Deploy via Portainer: Stacks > Add Stack > Upload this file
+# Usage:
+#   docker-compose up -d
+#   Access: http://localhost (Traefik), http://localhost:8002 (API direct)
+#   Outlook: https://filesmile.ngrok.app (via ngrok)
 #
-# Required environment variables in Portainer:
-# - SECRET_KEY
-# - JWT_SECRET_KEY
-# - ENCRYPTION_KEY
-# - POSTGRES_PASSWORD
-# - (Optional) NEXT_PUBLIC_VINTASOFT_* for scanner SDK
+# Required environment variables (in .env file):
+#   SECRET_KEY, JWT_SECRET_KEY, ENCRYPTION_KEY
+#   POSTGRES_PASSWORD (optional, has default)
+#   NGROK_AUTHTOKEN (for ngrok tunnel)
 
 version: '3.8'
 
@@ -32,24 +34,15 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=filesmile-net"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      # Uncomment for production with Let's Encrypt
-      # - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      # - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-      # - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
-      # - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
-      - "443:443"
       - "8080:8080"  # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik-certs:/letsencrypt
     networks:
       - filesmile-net
     labels:
       - "traefik.enable=true"
-      # Dashboard (accessible at http://localhost:8080)
       - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
       - "traefik.http.routers.traefik.service=api@internal"
 
@@ -74,7 +67,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    # Uncomment to expose PostgreSQL for external access (dev only)
+    # Uncomment for direct PostgreSQL access (dev only)
     # ports:
     #   - "5432:5432"
 
@@ -88,22 +81,24 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    ports:
+      - "8002:8002"  # Keep for backward compatibility
     environment:
       # API Configuration
-      - API_TITLE=FileSmile API (Dev)
+      - API_TITLE=FileSmile API
       - API_VERSION=2.0.0
       - API_PREFIX=/api/v1
-      - DEBUG=True
-      # Database
+      - DEBUG=${DEBUG:-False}
+      # Database (PostgreSQL)
       - DATABASE_URL=postgresql://filesmile:${POSTGRES_PASSWORD:-filesmile_dev_password}@postgres:5432/filesmile
-      # Security (generate with: openssl rand -hex 32)
-      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-jwt-secret-key-change-in-production}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-dev-encryption-key-change-in-production}
+      # Security
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       # CORS
       - ALLOWED_ORIGINS=*
     volumes:
-      - filesmile-db:/app/db
+      - filesmile-db:/app/db  # Keep for potential SQLite fallback
     networks:
       - filesmile-net
     healthcheck:
@@ -114,20 +109,17 @@ services:
       start_period: 15s
     labels:
       - "traefik.enable=true"
-      # Main API route - HTTPS
+      # Main API route
       - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.routers.api.entrypoints=web"
       - "traefik.http.services.api.loadbalancer.server.port=8002"
-      # Health endpoint - HTTPS
+      # Health endpoint
       - "traefik.http.routers.health.rule=Path(`/health`)"
-      - "traefik.http.routers.health.entrypoints=websecure"
-      - "traefik.http.routers.health.tls=true"
+      - "traefik.http.routers.health.entrypoints=web"
       - "traefik.http.routers.health.service=api"
-      # Admin dashboard and Swagger docs (served by FastAPI) - HTTPS
-      - "traefik.http.routers.admin.rule=PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`) || PathPrefix(`/static`) || PathPrefix(`/frontend`) || PathPrefix(`/outlook-addin`) || Path(`/`)"
-      - "traefik.http.routers.admin.entrypoints=websecure"
-      - "traefik.http.routers.admin.tls=true"
+      # Admin dashboard and Swagger docs
+      - "traefik.http.routers.admin.rule=PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`) || PathPrefix(`/static`) || PathPrefix(`/frontend`) || PathPrefix(`/outlook-addin`) || PathPrefix(`/admin`) || PathPrefix(`/assets`) || PathPrefix(`/taskpane`) || PathPrefix(`/commands`) || Path(`/`)"
+      - "traefik.http.routers.admin.entrypoints=web"
       - "traefik.http.routers.admin.service=api"
 
   # ===========================================
@@ -137,14 +129,14 @@ services:
     image: eyalcats/scanner-app:latest
     container_name: scanner-app
     restart: unless-stopped
+    ports:
+      - "3001:3001"  # Direct access (Traefik routing has issues on Windows)
     depends_on:
       - filesmile-api
-    # ports:
-    #   - "3001:3001"  # Not needed - Traefik routes via /scanner path
     environment:
       - NODE_ENV=production
       - PORT=3001
-      # VintaSoft SDK License (optional - for scanner functionality)
+      # VintaSoft SDK License (optional)
       - NEXT_PUBLIC_VINTASOFT_REG_USER=${NEXT_PUBLIC_VINTASOFT_REG_USER:-}
       - NEXT_PUBLIC_VINTASOFT_REG_CODE=${NEXT_PUBLIC_VINTASOFT_REG_CODE:-}
       - NEXT_PUBLIC_VINTASOFT_REG_URL=${NEXT_PUBLIC_VINTASOFT_REG_URL:-}
@@ -159,18 +151,28 @@ services:
       start_period: 15s
     labels:
       - "traefik.enable=true"
-      # Scanner app route - HTTPS
-      - "traefik.http.routers.scanner.rule=PathPrefix(`/scanner`)"
-      - "traefik.http.routers.scanner.entrypoints=websecure"
-      - "traefik.http.routers.scanner.tls=true"
+      # Scanner app route at /scanner
+      - "traefik.http.routers.scanner.rule=Host(`localhost`) && PathPrefix(`/scanner`)"
+      - "traefik.http.routers.scanner.entrypoints=web"
       - "traefik.http.services.scanner.loadbalancer.server.port=3001"
       # Strip /scanner prefix before forwarding
       - "traefik.http.middlewares.scanner-strip.stripprefix.prefixes=/scanner"
       - "traefik.http.routers.scanner.middlewares=scanner-strip"
-      # Alternative: Direct access on subdomain
-      # - "traefik.http.routers.scanner-direct.rule=Host(`scanner.localhost`)"
-      # - "traefik.http.routers.scanner-direct.entrypoints=web"
-      # - "traefik.http.routers.scanner-direct.service=scanner"
+
+  # ===========================================
+  # ngrok - Tunnel for Outlook Add-in
+  # ===========================================
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    command: http filesmile-api:8002 --authtoken ${NGROK_AUTHTOKEN} --domain filesmile.ngrok.app
+    ports:
+      - "4040:4040"  # ngrok dashboard
+    depends_on:
+      - filesmile-api
+    networks:
+      - filesmile-net
+    restart: unless-stopped
 
 # ===========================================
 # Networks
@@ -186,7 +188,5 @@ networks:
 volumes:
   postgres-data:
     name: filesmile-postgres-data
-  traefik-certs:
-    name: filesmile-traefik-certs
   filesmile-db:
     name: filesmile-database
