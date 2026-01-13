@@ -3,8 +3,8 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-// Determine basePath: use env var if set, otherwise '/scanner' in production
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/scanner' : '');
+// Hardcode basePath for production builds (served at /scanner via reverse proxy)
+const basePath = '/scanner';
 
 const nextConfig: NextConfig = {
   // Enable standalone output for Docker deployment
