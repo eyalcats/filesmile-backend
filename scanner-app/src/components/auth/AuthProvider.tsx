@@ -19,7 +19,7 @@ interface AuthProviderProps {
  * - Children are only rendered when authenticated
  */
 export function AuthProvider({ children }: AuthProviderProps) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, reauthMode, clearReauthMode } = useAuthStore();
   const { setServiceStatus } = useScannerStore();
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -80,5 +80,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   // Render children when authenticated
-  return <>{children}</>;
+  // Also show login dialog as overlay when in reauth mode
+  return (
+    <>
+      {children}
+      {reauthMode !== 'none' && (
+        <LoginDialog
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) {
+              clearReauthMode();
+            }
+          }}
+        />
+      )}
+    </>
+  );
 }

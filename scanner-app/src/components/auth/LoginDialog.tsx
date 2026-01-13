@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useState, useEffect } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,16 @@ type AuthStep = 'email' | 'tenant-select' | 'credentials';
 
 export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const t = useTranslations('auth');
-  const { setAuth } = useAuthStore();
+  const locale = useLocale();
+  const isRTL = locale === 'he';
+  const {
+    setAuth,
+    reauthMode,
+    clearReauthMode,
+    userEmail: currentUserEmail,
+    tenantId: currentTenantId,
+    tenantName: currentTenantName,
+  } = useAuthStore();
 
   // Form state
   const [email, setEmail] = useState('');
@@ -47,6 +56,53 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const [tenants, setTenants] = useState<TenantInfo[]>([]);
   const [resolvedTenantId, setResolvedTenantId] = useState<number | null>(null);
   const [resolvedTenantName, setResolvedTenantName] = useState<string>('');
+
+  // Handle reauth mode changes
+  useEffect(() => {
+    if (reauthMode === 'none') return;
+
+    if (!currentUserEmail) {
+      // No current user, clear reauth mode
+      clearReauthMode();
+      return;
+    }
+
+    // Set email from current user
+    setEmail(currentUserEmail);
+    setError(null);
+
+    if (reauthMode === 'credentials') {
+      // Go directly to credentials form with current tenant
+      setResolvedTenantId(currentTenantId);
+      setResolvedTenantName(currentTenantName || '');
+      setStep('credentials');
+    } else if (reauthMode === 'tenant-select') {
+      // Fetch available tenants and show selection
+      setIsLoading(true);
+      api.resolveTenant(currentUserEmail)
+        .then((response) => {
+          if (response.requires_selection && response.tenants) {
+            setTenants(response.tenants);
+            setStep('tenant-select');
+          } else {
+            // Only one tenant, no selection needed
+            setError('Only one organization available');
+            clearReauthMode();
+          }
+        })
+        .catch((err) => {
+          if (err instanceof ApiException) {
+            setError(err.message);
+          } else {
+            setError(t('loginError'));
+          }
+          clearReauthMode();
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [reauthMode, currentUserEmail, currentTenantId, currentTenantName, clearReauthMode, t]);
 
   // Step 1: Handle email submission
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -177,6 +233,11 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       userId: response.user_id,
     });
 
+    // Clear reauth mode if it was set
+    if (reauthMode !== 'none') {
+      clearReauthMode();
+    }
+
     setIsLoading(false);
     onOpenChange?.(false);
   };
@@ -184,6 +245,19 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   // Go back to previous step
   const handleBack = () => {
     setError(null);
+
+    // In reauth mode, back cancels the reauth flow
+    if (reauthMode !== 'none') {
+      clearReauthMode();
+      // Reset to email step for next time
+      setStep('email');
+      setTenants([]);
+      setSelectedTenantId('');
+      setErpUsername('');
+      setErpPassword('');
+      return;
+    }
+
     if (step === 'credentials') {
       if (tenants.length > 1) {
         setStep('tenant-select');
@@ -373,7 +447,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle>{getDialogTitle()}</DialogTitle>
           <DialogDescription>{getDialogDescription()}</DialogDescription>

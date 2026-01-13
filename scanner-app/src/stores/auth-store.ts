@@ -20,6 +20,8 @@ interface UserInfo {
   tenant_name?: string;
 }
 
+type ReauthMode = 'none' | 'credentials' | 'tenant-select';
+
 interface AuthState {
   // Auth state
   isAuthenticated: boolean;
@@ -33,6 +35,9 @@ interface AuthState {
   availableTenants: TenantInfo[];
   requiresTenantSelection: boolean;
 
+  // Re-authentication mode
+  reauthMode: ReauthMode;
+
   // Actions
   setAuth: (data: {
     jwtToken: string;
@@ -44,6 +49,9 @@ interface AuthState {
   setAvailableTenants: (tenants: TenantInfo[]) => void;
   setRequiresTenantSelection: (requires: boolean) => void;
   logout: () => void;
+  triggerReauthentication: () => void;
+  triggerTenantChange: () => void;
+  clearReauthMode: () => void;
 
   // Initialize from localStorage (call on app start)
   initFromStorage: () => void;
@@ -141,6 +149,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   userId: null,
   availableTenants: [],
   requiresTenantSelection: false,
+  reauthMode: 'none',
 
   // Initialize from localStorage
   initFromStorage: () => {
@@ -185,7 +194,20 @@ export const useAuthStore = create<AuthState>()((set) => ({
       userId: null,
       availableTenants: [],
       requiresTenantSelection: false,
+      reauthMode: 'none',
     });
+  },
+
+  triggerReauthentication: () => {
+    set({ reauthMode: 'credentials' });
+  },
+
+  triggerTenantChange: () => {
+    set({ reauthMode: 'tenant-select' });
+  },
+
+  clearReauthMode: () => {
+    set({ reauthMode: 'none' });
   },
 }));
 

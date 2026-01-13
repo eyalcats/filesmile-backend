@@ -143,7 +143,9 @@
     "pdf": "PDF",
     "tiff": "TIFF",
     "saveSettings": "Save Settings",
-    "settingsSaved": "Settings saved"
+    "settingsSaved": "Settings saved",
+    "accountTab": "Account",
+    "scannerTab": "Scanner"
   },
   "barcode": {
     "title": "Barcode Processing",
@@ -203,5 +205,16 @@
   "deepLink": {
     "invalidUrl": "Invalid document link format",
     "companyNotFound": "Company not found: {company}"
+  },
+  "account": {
+    "title": "Account",
+    "currentUser": "Logged in as",
+    "organization": "Organization",
+    "reenterCredentials": "Re-enter Credentials",
+    "reenterCredentialsDesc": "Update your ERP connection",
+    "changeTenant": "Change Organization",
+    "changeTenantDesc": "Switch to a different environment",
+    "logout": "Logout",
+    "logoutDesc": "Sign out of FileSmile"
   }
 }

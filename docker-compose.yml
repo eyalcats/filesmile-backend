@@ -67,7 +67,7 @@ services:
       - API_PREFIX=/api/v1
       - DEBUG=True
       # Database (SQLite for QA, PostgreSQL for production)
-      - DATABASE_URL=sqlite:///app/db/filesmile.db
+      - DATABASE_URL=sqlite:////app/db/filesmile.db
       # Security (generate with: openssl rand -hex 32)
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-jwt-secret-key-change-in-production}

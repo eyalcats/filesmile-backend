@@ -143,7 +143,9 @@
     "pdf": "PDF",
     "tiff": "TIFF",
     "saveSettings": "שמור הגדרות",
-    "settingsSaved": "ההגדרות נשמרו"
+    "settingsSaved": "ההגדרות נשמרו",
+    "accountTab": "חשבון",
+    "scannerTab": "סורק"
   },
   "barcode": {
     "title": "עיבוד ברקודים",
@@ -203,5 +205,16 @@
   "deepLink": {
     "invalidUrl": "פורמט קישור מסמך לא תקין",
     "companyNotFound": "חברה לא נמצאה: {company}"
+  },
+  "account": {
+    "title": "חשבון",
+    "currentUser": "מחובר כ",
+    "organization": "ארגון",
+    "reenterCredentials": "עדכן פרטי התחברות",
+    "reenterCredentialsDesc": "עדכן את פרטי ה-ERP שלך",
+    "changeTenant": "החלף ארגון",
+    "changeTenantDesc": "עבור לסביבה אחרת",
+    "logout": "התנתק",
+    "logoutDesc": "צא מ-FileSmile"
   }
 }
