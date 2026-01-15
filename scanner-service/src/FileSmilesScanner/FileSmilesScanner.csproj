@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
     <UserSecretsId>dotnet-FileSmilesScanner-73340f40-6813-4840-8c51-fcd6b53eb46b</UserSecretsId>
+
+    <!-- Only include English resources (removes ~30 language folders) -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <ItemGroup>

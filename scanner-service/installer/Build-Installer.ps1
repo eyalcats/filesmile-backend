@@ -32,13 +32,13 @@ if (-not $SkipPublish) {
         Remove-Item -Path $publishDir -Recurse -Force
     }
 
-    # Publish self-contained for Windows x64
+    # Publish framework-dependent for Windows x64 (requires .NET 8 pre-installed)
+    # This reduces size from ~150MB to ~5MB
     dotnet publish $projectFile `
         -c $Configuration `
         -r win-x64 `
-        --self-contained true `
+        --self-contained false `
         -p:PublishSingleFile=false `
-        -p:IncludeNativeLibrariesForSelfExtract=true `
         -o $publishDir
 
     if ($LASTEXITCODE -ne 0) {
