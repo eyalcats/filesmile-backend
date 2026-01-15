@@ -3,8 +3,9 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-// Hardcode basePath for production builds (served at /scanner via reverse proxy)
-const basePath = '/scanner';
+// Base path for production (served at /scanner via reverse proxy)
+// Set to empty string for local development, '/scanner' for production
+const basePath = process.env.NODE_ENV === 'production' ? '/scanner' : '';
 
 const nextConfig: NextConfig = {
   // Enable standalone output for Docker deployment

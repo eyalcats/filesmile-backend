@@ -18,7 +18,7 @@ export function ScanButton({ compact = false, onScanComplete }: ScanButtonProps)
   const t = useTranslations('scanner');
   const { serviceStatus, isScanning, scanProgress, setIsScanning, setScanProgress, setScanError } =
     useScannerStore();
-  const { selectedDeviceId, resolution, colorMode, duplex, autoFeeder } = useSettingsStore();
+  const { selectedDeviceId, resolution, colorMode, duplex, autoFeeder, showUI } = useSettingsStore();
   const { addFileGroup } = useImageStore();
 
   const handleScan = async () => {
@@ -34,7 +34,7 @@ export function ScanButton({ compact = false, onScanComplete }: ScanButtonProps)
     try {
       const result = await scannerService.scan(
         selectedDeviceId,
-        { resolution, colorMode, duplex, autoFeeder },
+        { resolution, colorMode, duplex, autoFeeder, showUI },
         (progress) => setScanProgress(progress)
       );
 

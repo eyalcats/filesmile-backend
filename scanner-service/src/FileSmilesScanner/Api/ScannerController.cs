@@ -8,12 +8,12 @@ namespace FileSmilesScanner.Api;
 [Route("api")]
 public class ScannerController : ControllerBase
 {
-    private readonly ITwainService _twainService;
+    private readonly IScannerService _scannerService;
     private readonly ILogger<ScannerController> _logger;
 
-    public ScannerController(ITwainService twainService, ILogger<ScannerController> logger)
+    public ScannerController(IScannerService scannerService, ILogger<ScannerController> logger)
     {
-        _twainService = twainService;
+        _scannerService = scannerService;
         _logger = logger;
     }
 
@@ -24,7 +24,7 @@ public class ScannerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Status()
     {
-        return Ok(new { status = "ok", twainAvailable = _twainService.IsAvailable });
+        return Ok(new { status = "ok", twainAvailable = _scannerService.IsAvailable });
     }
 
     /// <summary>
@@ -38,7 +38,7 @@ public class ScannerController : ControllerBase
 
         try
         {
-            var devices = await _twainService.GetDevicesAsync();
+            var devices = await _scannerService.GetDevicesAsync();
             return Ok(new DevicesResponse { Devices = devices });
         }
         catch (Exception ex)
@@ -64,8 +64,8 @@ public class ScannerController : ControllerBase
 
         try
         {
-            _logger.LogInformation("Calling TwainService.ScanAsync...");
-            var response = await _twainService.ScanAsync(
+            _logger.LogInformation("Calling ScannerService.ScanAsync...");
+            var response = await _scannerService.ScanAsync(
                 request.DeviceId,
                 request.Settings);
 

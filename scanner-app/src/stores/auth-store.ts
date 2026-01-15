@@ -4,8 +4,13 @@ import { create } from 'zustand';
 const STORAGE_KEYS = {
   JWT_TOKEN: 'filesmile_jwt_token',
   TENANT_ID: 'filesmile_tenant_id',
+  TENANT_NAME: 'filesmile_tenant_name',
   USER_EMAIL: 'filesmile_user_email',
   USER_INFO: 'filesmile_user_info',
+  // Local credential storage for device-based trust (matching Outlook add-in)
+  REGISTRATION_COMPLETE: 'filesmile_registration_complete',
+  ERP_USERNAME: 'filesmile_erp_username',
+  ERP_PASSWORD: 'filesmile_erp_password',
 } as const;
 
 interface TenantInfo {
@@ -52,6 +57,12 @@ interface AuthState {
   triggerReauthentication: () => void;
   triggerTenantChange: () => void;
   clearReauthMode: () => void;
+
+  // Local credential management (device-based trust)
+  setLocalCredentials: (username: string, password: string) => void;
+  getLocalCredentials: () => { username: string; password: string } | null;
+  isRegistrationComplete: () => boolean;
+  clearLocalCredentials: () => void;
 
   // Initialize from localStorage (call on app start)
   initFromStorage: () => void;
@@ -120,6 +131,7 @@ const saveAuthToStorage = (data: {
 }): void => {
   setStorageItem(STORAGE_KEYS.JWT_TOKEN, data.jwtToken);
   setStorageItem(STORAGE_KEYS.TENANT_ID, data.tenantId.toString());
+  setStorageItem(STORAGE_KEYS.TENANT_NAME, data.tenantName);
   setStorageItem(STORAGE_KEYS.USER_EMAIL, data.userEmail);
   setStorageItem(STORAGE_KEYS.USER_INFO, JSON.stringify({
     user_id: data.userId,
@@ -133,10 +145,34 @@ const saveAuthToStorage = (data: {
 const clearAuthFromStorage = (): void => {
   removeStorageItem(STORAGE_KEYS.JWT_TOKEN);
   removeStorageItem(STORAGE_KEYS.TENANT_ID);
+  removeStorageItem(STORAGE_KEYS.TENANT_NAME);
   removeStorageItem(STORAGE_KEYS.USER_EMAIL);
   removeStorageItem(STORAGE_KEYS.USER_INFO);
   // Also clear legacy Zustand persist key if it exists
   removeStorageItem('filesmile-auth');
+};
+
+// Local credential storage helpers (device-based trust matching Outlook add-in)
+const saveLocalCredentials = (username: string, password: string): void => {
+  setStorageItem(STORAGE_KEYS.ERP_USERNAME, username);
+  setStorageItem(STORAGE_KEYS.ERP_PASSWORD, password);
+  setStorageItem(STORAGE_KEYS.REGISTRATION_COMPLETE, 'true');
+};
+
+const getLocalCredentialsFromStorage = (): { username: string; password: string } | null => {
+  const username = getStorageItem(STORAGE_KEYS.ERP_USERNAME);
+  const password = getStorageItem(STORAGE_KEYS.ERP_PASSWORD);
+  return username && password ? { username, password } : null;
+};
+
+const isRegistrationCompleteInStorage = (): boolean => {
+  return getStorageItem(STORAGE_KEYS.REGISTRATION_COMPLETE) === 'true';
+};
+
+const clearLocalCredentialsFromStorage = (): void => {
+  removeStorageItem(STORAGE_KEYS.ERP_USERNAME);
+  removeStorageItem(STORAGE_KEYS.ERP_PASSWORD);
+  removeStorageItem(STORAGE_KEYS.REGISTRATION_COMPLETE);
 };
 
 export const useAuthStore = create<AuthState>()((set) => ({
@@ -181,8 +217,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
     set({ requiresTenantSelection }),
 
   logout: () => {
-    // Clear localStorage
+    // Clear localStorage (including local credentials)
     clearAuthFromStorage();
+    clearLocalCredentialsFromStorage();
 
     // Reset Zustand state
     set({
@@ -208,6 +245,23 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   clearReauthMode: () => {
     set({ reauthMode: 'none' });
+  },
+
+  // Local credential management (device-based trust)
+  setLocalCredentials: (username: string, password: string) => {
+    saveLocalCredentials(username, password);
+  },
+
+  getLocalCredentials: () => {
+    return getLocalCredentialsFromStorage();
+  },
+
+  isRegistrationComplete: () => {
+    return isRegistrationCompleteInStorage();
+  },
+
+  clearLocalCredentials: () => {
+    clearLocalCredentialsFromStorage();
   },
 }));
 

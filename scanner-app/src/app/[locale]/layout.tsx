@@ -1,21 +1,10 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { Geist, Geist_Mono } from 'next/font/google';
 import { locales, type Locale, getDirection } from '@/i18n/config';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/components/auth';
-import '../globals.css';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+import { HtmlAttributesUpdater } from '@/components/html-attributes-updater';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -63,21 +52,12 @@ export default async function LocaleLayout({
   const dir = getDirection(locale as Locale);
 
   return (
-    <html lang={locale} dir={dir}>
-      <head>
-        {/* Required for VintaSoft SDK - ensures referrer header is sent to localhost service */}
-        <meta name="referrer" content="origin-when-cross-origin" />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
-      >
-        <NextIntlClientProvider messages={messages}>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-          <Toaster position={dir === 'rtl' ? 'top-left' : 'top-right'} />
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages}>
+      <HtmlAttributesUpdater lang={locale} dir={dir} />
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+      <Toaster position={dir === 'rtl' ? 'top-left' : 'top-right'} />
+    </NextIntlClientProvider>
   );
 }

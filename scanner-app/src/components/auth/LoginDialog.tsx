@@ -122,13 +122,25 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
         return;
       }
 
-      // Single tenant - try email-only login first
+      // Single tenant - check for local credentials (device-based trust)
       const tenantId = resolveResponse.tenant_id!;
       const tenantName = resolveResponse.tenant_name || '';
       setResolvedTenantId(tenantId);
       setResolvedTenantName(tenantName);
 
-      await tryEmailOnlyLogin(tenantId, tenantName);
+      // Check if this device has local credentials for this email
+      const localCreds = useAuthStore.getState().getLocalCredentials();
+      const storedEmail = localStorage.getItem('filesmile_user_email');
+      const isRegistered = useAuthStore.getState().isRegistrationComplete();
+
+      if (localCreds && storedEmail === email && isRegistered) {
+        // Has local credentials for this email - try silent re-auth
+        await trySilentReauth(tenantId, tenantName, localCreds);
+      } else {
+        // No local credentials - ALWAYS require credentials form
+        setStep('credentials');
+        setIsLoading(false);
+      }
     } catch (err) {
       setIsLoading(false);
       if (err instanceof ApiException) {
@@ -157,37 +169,44 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     setResolvedTenantId(tenantId);
     setResolvedTenantName(tenantName);
 
-    await tryEmailOnlyLogin(tenantId, tenantName);
+    // Check for local credentials (device-based trust)
+    const localCreds = useAuthStore.getState().getLocalCredentials();
+    const storedEmail = localStorage.getItem('filesmile_user_email');
+    const isRegistered = useAuthStore.getState().isRegistrationComplete();
+
+    if (localCreds && storedEmail === email && isRegistered) {
+      // Has local credentials - try silent re-auth
+      await trySilentReauth(tenantId, tenantName, localCreds);
+    } else {
+      // No local credentials - show credentials form
+      setStep('credentials');
+      setIsLoading(false);
+    }
   };
 
-  // Try email-only login (for pre-configured users)
-  const tryEmailOnlyLogin = async (tenantId: number, tenantName: string) => {
+  // Try silent re-authentication using local credentials (device-based trust)
+  const trySilentReauth = async (
+    tenantId: number,
+    tenantName: string,
+    localCreds: { username: string; password: string }
+  ) => {
     try {
-      const loginResponse = await api.login(email, tenantId);
-      handleLoginSuccess(loginResponse, tenantName);
+      // Use register endpoint with stored local credentials
+      const response = await api.register(
+        email,
+        localCreds.username,
+        localCreds.password,
+        tenantId
+      );
+      handleLoginSuccess(response, tenantName);
     } catch (err) {
+      // Silent re-auth failed - clear local credentials and show form
+      useAuthStore.getState().clearLocalCredentials();
+      setStep('credentials');
       setIsLoading(false);
-      if (err instanceof ApiException) {
-        // Check if credentials are missing or invalid - need to show credentials form
-        // Check both errorCode (from header) and message (from response body)
-        const credentialErrors = [
-          'NO_STORED_CREDENTIALS',
-          'STORED_CREDENTIALS_INVALID',
-          'USER_NOT_FOUND',
-          'CREDENTIAL_DECRYPTION_FAILED',
-        ];
-        const needsCredentials =
-          credentialErrors.includes(err.errorCode || '') ||
-          credentialErrors.includes(err.message);
 
-        if (needsCredentials) {
-          // Show credentials form
-          setStep('credentials');
-          return;
-        }
-        setError(err.message);
-      } else {
-        setError(t('loginError'));
+      if (err instanceof ApiException && err.status === 401) {
+        setError(t('storedCredentialsExpired'));
       }
     }
   };
@@ -205,6 +224,10 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
         erpPassword,
         resolvedTenantId || undefined
       );
+
+      // Save credentials locally for future silent re-auth (device-based trust)
+      useAuthStore.getState().setLocalCredentials(erpUsername, erpPassword);
+
       handleLoginSuccess(registerResponse, resolvedTenantName);
     } catch (err) {
       setIsLoading(false);

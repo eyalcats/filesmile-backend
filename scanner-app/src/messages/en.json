@@ -32,7 +32,8 @@
     "tenantNotFound": "No organization found for this email domain",
     "validating": "Validating...",
     "continue": "Continue",
-    "back": "Back"
+    "back": "Back",
+    "storedCredentialsExpired": "Your saved credentials have expired. Please enter them again."
   },
   "scanner": {
     "title": "Scanner Settings",
@@ -57,13 +58,14 @@
       "disconnected": "Scanner service not connected",
       "checking": "Checking connection...",
       "installTitle": "Install Scanner Service",
-      "installDescription": "The VintaSoft Web TWAIN Service is required to scan documents. It runs locally on your computer.",
-      "step1": "Download the installer (ZIP file)",
-      "step2": "Extract and run the setup executable",
+      "installDescription": "The FileSmilesScanner service is required to scan documents. It runs locally on your computer.",
+      "step1": "Download and run the installer",
+      "step2": "Follow the installation wizard",
       "step3": "Click \"Retry Connection\" below",
-      "downloadButton": "Download Service",
-      "retryButton": "Retry Connection",
+      "downloadButton": "Download Installer",
+      "downloadDotNet": ".NET 8 Runtime",
       "windowsOnly": "Windows only (10/11/Server 2016+)",
+      "retryButton": "Retry Connection",
       "retrying": "Checking..."
     }
   },

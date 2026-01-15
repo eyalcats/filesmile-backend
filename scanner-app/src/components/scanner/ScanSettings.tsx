@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Select,
   SelectContent,
@@ -17,6 +17,8 @@ const RESOLUTIONS: Resolution[] = [100, 150, 200, 300, 600];
 
 export function ScanSettings() {
   const t = useTranslations('scanner');
+  const locale = useLocale();
+  const isRTL = locale === 'he';
   const { serviceStatus } = useScannerStore();
   const {
     resolution,
@@ -36,9 +38,9 @@ export function ScanSettings() {
   return (
     <div className="space-y-4">
       {/* Grid layout for dropdowns and switches */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Resolution */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
           <Label>{t('resolution')}</Label>
           <Select
             value={resolution.toString()}
@@ -59,11 +61,11 @@ export function ScanSettings() {
         </div>
 
         {/* Duplex */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
           <Label htmlFor="duplex" className="cursor-pointer">
             {t('duplex')}
           </Label>
-          <div className="h-10 flex items-center">
+          <div className={`h-10 flex items-center ${isRTL ? 'justify-end' : ''}`}>
             <Switch
               id="duplex"
               checked={duplex}
@@ -74,7 +76,7 @@ export function ScanSettings() {
         </div>
 
         {/* Color Mode */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
           <Label>{t('colorMode')}</Label>
           <Select
             value={colorMode}
@@ -93,11 +95,11 @@ export function ScanSettings() {
         </div>
 
         {/* Auto Feeder */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
           <Label htmlFor="autoFeeder" className="cursor-pointer">
             {t('autoFeeder')}
           </Label>
-          <div className="h-10 flex items-center">
+          <div className={`h-10 flex items-center ${isRTL ? 'justify-end' : ''}`}>
             <Switch
               id="autoFeeder"
               checked={autoFeeder}
@@ -108,11 +110,11 @@ export function ScanSettings() {
         </div>
 
         {/* Auto Save */}
-        <div className="space-y-2">
+        <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
           <Label htmlFor="autoSave" className="cursor-pointer">
             {t('autoSave')}
           </Label>
-          <div className="h-10 flex items-center">
+          <div className={`h-10 flex items-center ${isRTL ? 'justify-end' : ''}`}>
             <Switch
               id="autoSave"
               checked={autoSave}

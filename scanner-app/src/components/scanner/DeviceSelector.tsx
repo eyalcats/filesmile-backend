@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Select,
   SelectContent,
@@ -21,6 +21,8 @@ interface DeviceSelectorProps {
 
 export function DeviceSelector({ compact = false }: DeviceSelectorProps) {
   const t = useTranslations('scanner');
+  const locale = useLocale();
+  const isRTL = locale === 'he';
   const { serviceStatus, devices, isLoadingDevices, setDevices, setIsLoadingDevices } =
     useScannerStore();
   const { selectedDeviceId, setSelectedDeviceId } = useSettingsStore();
@@ -97,7 +99,7 @@ export function DeviceSelector({ compact = false }: DeviceSelectorProps) {
 
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-2">
+      <Label className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <ScanLine className="h-4 w-4" />
         {t('selectDevice')}
       </Label>

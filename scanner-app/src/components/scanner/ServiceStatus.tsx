@@ -1,16 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { Wifi, WifiOff, Loader2, Download, RefreshCw } from 'lucide-react';
+import { useEffect } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
+import { Wifi, WifiOff, Loader2, Download, ExternalLink } from 'lucide-react';
 import { useScannerStore } from '@/stores/scanner-store';
 import { scannerService } from '@/lib/scanner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-const VINTASOFT_DOWNLOAD_URL =
-  process.env.NEXT_PUBLIC_VINTASOFT_SERVICE_URL ||
-  'https://www.vintasoft.com/zip/VintasoftWebTwainService-15.3.3.zip';
+// Base path for static assets (must match next.config.ts basePath)
+// In development basePath is empty, in production it's '/scanner'
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
+// Installer served from the container
+const SCANNER_SERVICE_INSTALLER_PATH = `${BASE_PATH}/downloads/FileSmilesScanner-Setup-1.0.0.exe`;
+
+// .NET 8 Desktop Runtime download URL
+const DOTNET_RUNTIME_URL = 'https://dotnet.microsoft.com/en-us/download/dotnet/8.0';
 
 interface ServiceStatusProps {
   className?: string;
@@ -18,8 +24,9 @@ interface ServiceStatusProps {
 
 export function ServiceStatus({ className }: ServiceStatusProps) {
   const t = useTranslations('scanner.serviceStatus');
+  const locale = useLocale();
+  const isRTL = locale === 'he';
   const { serviceStatus, setServiceStatus, setServiceError } = useScannerStore();
-  const [isRetrying, setIsRetrying] = useState(false);
 
   // Check connection on mount and periodically
   useEffect(() => {
@@ -43,23 +50,12 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
     return () => clearInterval(interval);
   }, [setServiceStatus, setServiceError]);
 
-  const handleRetryConnection = async () => {
-    setIsRetrying(true);
-    setServiceStatus('checking');
-    try {
-      const connected = await scannerService.checkConnection();
-      setServiceStatus(connected ? 'connected' : 'disconnected');
-      setServiceError(null);
-    } catch (error) {
-      setServiceStatus('error');
-      setServiceError(error instanceof Error ? error.message : 'Connection error');
-    } finally {
-      setIsRetrying(false);
-    }
+  const handleDownloadInstaller = () => {
+    window.open(SCANNER_SERVICE_INSTALLER_PATH, '_blank');
   };
 
-  const handleDownload = () => {
-    window.open(VINTASOFT_DOWNLOAD_URL, '_blank');
+  const handleDownloadDotNet = () => {
+    window.open(DOTNET_RUNTIME_URL, '_blank');
   };
 
   const getStatusConfig = () => {
@@ -100,6 +96,7 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
       <div
         className={cn(
           'flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm',
+          isRTL && 'flex-row-reverse',
           config.className
         )}
       >
@@ -109,7 +106,10 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
 
       {/* Download/Install section - only shown when disconnected */}
       {isDisconnected && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+        <div
+          className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3"
+          dir={isRTL ? 'rtl' : 'ltr'}
+        >
           <div>
             <h4 className="font-medium text-blue-900">{t('installTitle')}</h4>
             <p className="text-sm text-blue-700 mt-1">{t('installDescription')}</p>
@@ -123,23 +123,22 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
 
           <div className="flex flex-wrap gap-2">
             <Button
-              onClick={handleDownload}
+              onClick={handleDownloadInstaller}
               variant="default"
               size="sm"
               className="bg-blue-600 hover:bg-blue-700"
             >
-              <Download className="h-4 w-4 mr-2" />
+              <Download className={cn('h-4 w-4', isRTL ? 'ms-2' : 'me-2')} />
               {t('downloadButton')}
             </Button>
             <Button
-              onClick={handleRetryConnection}
+              onClick={handleDownloadDotNet}
               variant="outline"
               size="sm"
-              disabled={isRetrying}
               className="border-blue-300 text-blue-700 hover:bg-blue-100"
             >
-              <RefreshCw className={cn('h-4 w-4 mr-2', isRetrying && 'animate-spin')} />
-              {isRetrying ? t('retrying') : t('retryButton')}
+              <ExternalLink className={cn('h-4 w-4', isRTL ? 'ms-2' : 'me-2')} />
+              {t('downloadDotNet')}
             </Button>
           </div>
 

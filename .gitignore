@@ -97,3 +97,14 @@ nul
 # VintaSoft SDK (download separately)
 scanner-app/public/js/
 scanner-app/public/vintasoft/
+
+# .NET build artifacts
+**/bin/
+**/obj/
+**/publish/
+
+# Scanner service installer output
+scanner-service/installer/output/
+
+# Temp directories
+**/tmpclaude-*

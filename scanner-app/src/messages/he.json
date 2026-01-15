@@ -32,7 +32,8 @@
     "tenantNotFound": "לא נמצא ארגון עבור דומיין זה",
     "validating": "מאמת...",
     "continue": "המשך",
-    "back": "חזור"
+    "back": "חזור",
+    "storedCredentialsExpired": "פרטי ההתחברות השמורים פגו. אנא הזן אותם מחדש."
   },
   "scanner": {
     "title": "הגדרות סורק",
@@ -57,13 +58,14 @@
       "disconnected": "שירות סריקה לא מחובר",
       "checking": "בודק חיבור...",
       "installTitle": "התקן שירות סריקה",
-      "installDescription": "שירות VintaSoft Web TWAIN נדרש לסריקת מסמכים. השירות רץ מקומית על המחשב שלך.",
-      "step1": "הורד את קובץ ההתקנה (ZIP)",
-      "step2": "חלץ והפעל את קובץ ההתקנה",
+      "installDescription": "שירות FileSmilesScanner נדרש לסריקת מסמכים. השירות רץ מקומית על המחשב שלך.",
+      "step1": "הורד והפעל את תוכנית ההתקנה",
+      "step2": "עקוב אחר אשף ההתקנה",
       "step3": "לחץ על \"נסה שוב\" למטה",
-      "downloadButton": "הורד שירות",
-      "retryButton": "נסה שוב",
+      "downloadButton": "הורד תוכנית התקנה",
+      "downloadDotNet": ".NET 8 Runtime",
       "windowsOnly": "Windows בלבד (10/11/Server 2016+)",
+      "retryButton": "נסה שוב",
       "retrying": "בודק..."
     }
   },

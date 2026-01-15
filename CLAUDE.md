@@ -14,7 +14,8 @@ FileSmileJS/
 ├── frontend/          # Admin dashboard (vanilla HTML/CSS/JS)
 ├── outlook-addin/     # Microsoft Outlook Office.js add-in
 ├── gmail-addon/       # Google Apps Script Gmail add-on
-└── scanner-app/       # Next.js document scanner web app with barcode support
+├── scanner-app/       # Next.js document scanner web app with barcode support
+└── scanner-service/   # .NET Windows service for TWAIN/WIA scanning (NAPS2-based)
 ```
 
 ### Multi-Tenant Design
@@ -128,7 +129,24 @@ npm run build
 npm run lint
 ```
 
-**VintaSoft Setup**: Download VintaSoft Web TWAIN Service from [vintasoft.com](https://www.vintasoft.com/vstwain-dotnet-web-index.html). Place SDK JS files in `scanner-app/public/vintasoft/`.
+### Scanner Service Development (.NET)
+```bash
+cd scanner-service
+
+# Build
+dotnet build src/FileSmilesScanner/FileSmilesScanner.csproj
+
+# Run in development (port 25319)
+dotnet run --project src/FileSmilesScanner/FileSmilesScanner.csproj
+
+# Publish for production
+dotnet publish src/FileSmilesScanner/FileSmilesScanner.csproj -c Release -r win-x64 --self-contained false -o publish
+```
+
+### Scanning Options
+Two scanning approaches are available:
+1. **VintaSoft SDK** (browser-based): Requires VintaSoft Web TWAIN Service running locally. Place SDK JS files in `scanner-app/public/vintasoft/`.
+2. **Scanner Service** (NAPS2-based): Windows service using NAPS2.Sdk with NoUI mode. API on port 25319. See `scanner-service/CLAUDE.md` for details.
 
 ## Key Backend Files
 
@@ -138,7 +156,12 @@ npm run lint
 - [app/core/auth.py](backend/app/core/auth.py) - JWTService class, token creation/validation
 - [app/models/database.py](backend/app/models/database.py) - SQLAlchemy models (Tenant, TenantDomain, User, UserTenant)
 - [app/utils/encryption.py](backend/app/utils/encryption.py) - Fernet encryption/decryption for credentials
-- [scripts/](backend/scripts/) - Database init, tenant management, debugging utilities (see scripts/README.md)
+- [scripts/](backend/scripts/) - Database init, tenant management, debugging utilities:
+  - `init_db.py` - Create database tables
+  - `add_priority_tenant.py` / `add_sample_tenant.py` - Create tenants
+  - `check_tenants.py` / `check_env.py` - Debug utilities
+  - `generate_secrets.py` / `generate_admin_hash.py` - Generate security keys
+  - `migrate_sqlite_to_postgres.py` / `migrate_pg_to_sqlite.py` - Database migration
 
 ### API Endpoints Structure
 - `/api/v1/auth/*` - Authentication (legacy API key + multi-tenant JWT: tenant resolve, register, login, switch-tenant)
@@ -186,10 +209,10 @@ PriorityClient methods handle OData queries, base64 file encoding, and concurren
 ### Scanner App ([scanner-app/](scanner-app/))
 Next.js 16 web application for document scanning and barcode-based document attachment.
 
-**Tech Stack**: Next.js App Router, TypeScript, Zustand (state), next-intl (i18n: EN/HE), Tailwind CSS 4, Radix UI
+**Tech Stack**: Next.js 16 App Router, React 19, TypeScript, Zustand (state), next-intl (i18n: EN/HE), Tailwind CSS 4, Radix UI
 
 **Key Features**:
-- TWAIN scanner integration via VintaSoft Web TWAIN SDK (requires local service on ports 25319/25329)
+- TWAIN scanner integration via VintaSoft Web TWAIN SDK or scanner-service (NAPS2)
 - Barcode detection using @zxing/library to auto-match documents by form prefix + document number
 - PDF generation with pdf-lib, viewer with pdfjs-dist
 - Deep link support for launching with pre-selected document context
@@ -209,6 +232,18 @@ NEXT_PUBLIC_VINTASOFT_REG_CODE=...
 NEXT_PUBLIC_VINTASOFT_REG_URL=...
 NEXT_PUBLIC_VINTASOFT_EXPIRATION=...
 ```
+
+### Scanner Service ([scanner-service/](scanner-service/))
+.NET 8 Windows service providing REST API for TWAIN/WIA scanner access using NAPS2.Sdk.
+
+**Key Endpoints** (port 25319):
+- `GET /api/scanner/devices` - List available scanners
+- `POST /api/scanner/scan` - Perform scan with settings (resolution, colorMode, duplex, autoFeeder)
+- `GET /swagger` - API documentation
+
+**Key Files**:
+- [Services/Naps2ScannerService.cs](scanner-service/src/FileSmilesScanner/Services/Naps2ScannerService.cs) - NAPS2.Sdk wrapper with NoUI scanning
+- [Api/ScannerController.cs](scanner-service/src/FileSmilesScanner/Api/ScannerController.cs) - REST API endpoints
 
 ## Frontend Admin Dashboard
 

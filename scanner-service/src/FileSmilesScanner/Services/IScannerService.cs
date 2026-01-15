@@ -2,10 +2,10 @@ using FileSmilesScanner.Api.Models;
 
 namespace FileSmilesScanner.Services;
 
-public interface ITwainService
+public interface IScannerService : IDisposable
 {
     /// <summary>
-    /// Get list of available TWAIN scanner devices
+    /// Get list of available scanner devices
     /// </summary>
     Task<List<DeviceInfo>> GetDevicesAsync();
 
@@ -19,7 +19,7 @@ public interface ITwainService
     Task<ScanResponse> ScanAsync(string? deviceId, ScanSettings settings, IProgress<int>? progress = null);
 
     /// <summary>
-    /// Check if TWAIN is available on this system
+    /// Check if scanning is available on this system
     /// </summary>
     bool IsAvailable { get; }
 }

@@ -1,12 +1,14 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSettingsStore } from '@/stores/settings-store';
 
 export function BarcodeSettings() {
   const t = useTranslations('barcode');
+  const locale = useLocale();
+  const isRTL = locale === 'he';
   const {
     barcodeTrimPrefix,
     barcodeTrimSuffix,
@@ -26,10 +28,10 @@ export function BarcodeSettings() {
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-medium">{t('trimChars')}</Label>
-      <div className="grid grid-cols-2 gap-4">
+      <Label className={`text-sm font-medium ${isRTL ? 'block text-right' : ''}`}>{t('trimChars')}</Label>
+      <div className="grid grid-cols-2 gap-4" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Trim from start (prefix) */}
-        <div className="space-y-1.5">
+        <div className={`space-y-1.5 ${isRTL ? 'text-right' : ''}`}>
           <Label htmlFor="trimPrefix" className="text-xs text-muted-foreground">
             {t('trimFromStart')}
           </Label>
@@ -45,7 +47,7 @@ export function BarcodeSettings() {
         </div>
 
         {/* Trim from end (suffix) */}
-        <div className="space-y-1.5">
+        <div className={`space-y-1.5 ${isRTL ? 'text-right' : ''}`}>
           <Label htmlFor="trimSuffix" className="text-xs text-muted-foreground">
             {t('trimFromEnd')}
           </Label>
