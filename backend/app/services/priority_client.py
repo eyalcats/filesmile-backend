@@ -90,38 +90,45 @@ class PriorityClient:
     def format_key(self, key: str) -> str:
         """
         Format a key for Priority API with proper quoting.
-        
+
         Converts '(IVNUM=IN194000012,IVTYPE=A,DEBIT=D)' to '(IVNUM='IN194000012',IVTYPE='A',DEBIT='D')'
-        
+        But keeps numeric values unquoted: '(EXTFILENUM=123)' stays as '(EXTFILENUM=123)'
+
         Args:
             key: Raw key string
-            
+
         Returns:
-            Properly formatted key with quoted values
+            Properly formatted key with quoted string values (integers unquoted)
         """
         if not key:
             return key
-            
+
         if key.startswith('(') and key.endswith(')'):
             # Handle composite keys by quoting individual values
             inner_content = key[1:-1]  # Remove outer parentheses
             parts = inner_content.split(',')
             quoted_parts = []
-            
+
             for part in parts:
                 if '=' in part:
                     key_name, value = part.split('=', 1)
-                    # Add single quotes around the value if not already quoted
-                    if not (value.startswith("'") and value.endswith("'")):
+                    # Skip quoting for numeric values (integers)
+                    if value.lstrip('-').isdigit():
+                        quoted_parts.append(f"{key_name}={value}")
+                    # Add single quotes around string values if not already quoted
+                    elif not (value.startswith("'") and value.endswith("'")):
                         quoted_parts.append(f"{key_name}='{value}'")
                     else:
                         quoted_parts.append(part)
                 else:
                     quoted_parts.append(part)
-            
+
             return f"({','.join(quoted_parts)})"
         else:
-            # Simple key, wrap in single quotes
+            # Simple key - check if it's numeric
+            if key.lstrip('-').isdigit():
+                return key
+            # Wrap string in single quotes
             if not (key.startswith("'") and key.endswith("'")):
                 return f"'{key}'"
             return key
@@ -252,11 +259,18 @@ class PriorityClient:
             url = f"{self.base_url}{form}"
 
         # Log OData command for Postman replication
-        print(f"DEBUG: OData POST Command:")
-        print(f"  URL: {url}")
-        print(f"  Headers: Authorization: Basic <base64('{self.username}:{self.password}')>, Content-Type: application/json")
-        print(f"  Body: {data}")
-        print(f"  Postman: POST {url} with Basic Auth and JSON body: {data}")
+        import json
+        # Create a copy of data for logging, truncating EXTFILENAME if present
+        log_data = data.copy()
+        if "EXTFILENAME" in log_data and len(str(log_data["EXTFILENAME"])) > 100:
+            log_data["EXTFILENAME"] = log_data["EXTFILENAME"][:100] + "...[truncated]"
+        print(f"\n{'='*60}")
+        print(f"DEBUG: OData POST Command")
+        print(f"{'='*60}")
+        print(f"URL: {url}")
+        print(f"Username: {self.username}")
+        print(f"Body:\n{json.dumps(log_data, indent=2, ensure_ascii=False)}")
+        print(f"{'='*60}\n")
 
         response = await self.client.post(url, json=data)
         

@@ -121,6 +121,16 @@ export interface AttachmentUploadResponse {
   attachment_id?: number;
 }
 
+export interface ExportAttachment {
+  EXTFILENUM?: number;
+  EXTFILENAME?: string;  // Base64 data URL (only present in content response)
+  EXTFILEDES?: string;   // File description
+  MAILFROM?: string;     // Source identifier
+  UDATE?: string;        // Creation date
+  CUREDATE?: string;     // Last modified date
+  FILESIZE?: number;     // File size in bytes
+}
+
 // ============================================================================
 // Error Types
 // ============================================================================

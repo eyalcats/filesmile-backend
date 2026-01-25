@@ -6,6 +6,7 @@
   "header": {
     "documentMode": "טיפול במסמכים",
     "barcodeMode": "טיפול בברקודים",
+    "exportMode": "יצוא לפריוריטי",
     "settings": "הגדרות",
     "logout": "התנתק"
   },
@@ -86,7 +87,8 @@
     "deleteAll": "מחק הכל",
     "confirmDeleteAll": "האם למחוק את כל העמודים?",
     "noImages": "אין תמונות להצגה",
-    "scanToStart": "לחץ סרוק להתחלה"
+    "scanToStart": "לחץ סרוק להתחלה",
+    "loading": "טוען תצוגה מקדימה..."
   },
   "files": {
     "title": "קבצים",
@@ -190,6 +192,28 @@
     "barcodeValue": "ברקוד",
     "documentForm": "סוג מסמך",
     "documentNumber": "מספר מסמך"
+  },
+  "export": {
+    "title": "קבצים ממתינים",
+    "fileName": "שם קובץ",
+    "source": "מקור",
+    "actions": "פעולות",
+    "export": "יצוא",
+    "retry": "נסה שוב",
+    "delete": "מחק",
+    "noFiles": "אין קבצים ליצוא",
+    "loading": "טוען קבצים...",
+    "refresh": "רענן",
+    "selectDocumentFirst": "בחר מסמך קודם",
+    "exportSuccess": "הקובץ יוצא בהצלחה",
+    "exportError": "יצוא הקובץ נכשל",
+    "deleteSuccess": "הקובץ נמחק בהצלחה",
+    "deleteError": "מחיקת הקובץ נכשלה",
+    "confirmDelete": "למחוק קובץ זה?",
+    "summary": {
+      "total": "סה\"כ קבצים",
+      "pending": "ממתינים"
+    }
   },
   "common": {
     "loading": "טוען...",

@@ -17,6 +17,8 @@ interface UseDeepLinkResult {
   isProcessed: boolean;
   /** Mark the deep link as processed */
   markProcessed: () => void;
+  /** URL mode parameter (e.g., 'export', 'document', 'barcode') */
+  urlMode: string | null;
 }
 
 /**
@@ -71,6 +73,11 @@ export function useDeepLink(): UseDeepLinkResult {
 
   const isDeepLink = params !== null;
 
+  // Get mode parameter (e.g., ?mode=export)
+  const urlMode = useMemo(() => {
+    return searchParams.get('mode');
+  }, [searchParams]);
+
   const markProcessed = useCallback(() => {
     setIsProcessed(true);
   }, []);
@@ -80,5 +87,6 @@ export function useDeepLink(): UseDeepLinkResult {
     isDeepLink,
     isProcessed,
     markProcessed,
+    urlMode,
   };
 }

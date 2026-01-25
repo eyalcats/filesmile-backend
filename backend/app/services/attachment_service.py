@@ -225,18 +225,40 @@ class AttachmentService:
         user_login: str
     ) -> List[Dict[str, Any]]:
         """
-        Get export attachments for a user.
+        Get export attachment metadata for a user (without file content).
 
         Args:
             user_login: User login name
 
         Returns:
-            List of export attachment records
+            List of export attachment records (without EXTFILENAME base64 data)
         """
         return await self.client.get(
             form="EXTFILESFILESMILE",
-            filter_expr=f"USERLOGIN eq '{user_login}'"
+            filter_expr=f"USERLOGIN eq '{user_login}'",
+            # Exclude EXTFILENAME (base64 data) for performance - load on-demand
+            select=["EXTFILENUM", "EXTFILEDES", "MAILFROM", "UDATE", "CUREDATE", "FILESIZE"]
         )
+
+    async def get_export_attachment_content(
+        self,
+        attachment_id: int
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get the file content (base64 data) for a single export attachment.
+
+        Args:
+            attachment_id: Export attachment ID (EXTFILENUM)
+
+        Returns:
+            Attachment record with EXTFILENAME (base64 data), or None if not found
+        """
+        results = await self.client.get(
+            form="EXTFILESFILESMILE",
+            filter_expr=f"EXTFILENUM eq {attachment_id}",
+            select=["EXTFILENUM", "EXTFILENAME"]
+        )
+        return results[0] if results else None
 
     async def delete_export_attachment(self, attachment_id: int):
         """
@@ -253,3 +275,67 @@ class AttachmentService:
             form="EXTFILESFILESMILE",
             key=attachment_key
         )
+
+    async def move_export_to_document(
+        self,
+        attachment_id: int,
+        form: str,
+        form_key: str,
+        user_login: str,
+        ext_files_form: str = "EXTFILES"
+    ) -> Dict[str, Any]:
+        """
+        Move an export attachment to a document (server-side).
+
+        This is more efficient than download+upload as the base64
+        content stays on the server and doesn't round-trip through the client.
+
+        Args:
+            attachment_id: Export attachment ID (EXTFILENUM)
+            form: Target document form name
+            form_key: Target document key
+            user_login: User login name to set on the attachment
+            ext_files_form: Target subform name for attachments
+
+        Returns:
+            Created attachment record
+
+        Raises:
+            ValueError: If export attachment not found
+            httpx.HTTPStatusError: If Priority operation fails
+        """
+        # 1. Get full export record including base64 content
+        export = await self.get_export_attachment_content(attachment_id)
+        if not export:
+            raise ValueError(f"Export attachment {attachment_id} not found")
+
+        # 2. Get metadata (description) - content query only returns EXTFILENUM and EXTFILENAME
+        metadata = await self.client.get(
+            form="EXTFILESFILESMILE",
+            filter_expr=f"EXTFILENUM eq {attachment_id}",
+            select=["EXTFILEDES"]
+        )
+        if not metadata:
+            raise ValueError(f"Export attachment {attachment_id} metadata not found")
+
+        file_desc = metadata[0].get("EXTFILEDES", "Imported file")
+
+        # 3. Create attachment in target document (data URL already formatted by Priority)
+        # Pass USERLOGIN in body to identify the user for audit trail
+        attachment_data = {
+            "EXTFILEDES": file_desc,
+            "EXTFILENAME": export["EXTFILENAME"],  # Already in data URL format
+            "USERLOGIN": user_login,
+        }
+
+        result = await self.client.post(
+            form=form,
+            data=attachment_data,
+            parent_key=form_key,
+            subform=ext_files_form
+        )
+
+        # 4. Delete from export staging only after successful upload
+        await self.delete_export_attachment(attachment_id)
+
+        return result

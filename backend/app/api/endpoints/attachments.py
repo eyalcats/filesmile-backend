@@ -8,7 +8,8 @@ from app.models.schemas import (
     AttachmentUploadResponse,
     ExtFile,
     ExportAttachment,
-    ExportAttachmentRequest
+    ExportAttachmentRequest,
+    MoveExportRequest
 )
 from app.core.auth import get_current_user, CurrentUser
 from app.services.priority_client import PriorityClient
@@ -311,6 +312,140 @@ async def get_export_attachments(
         )
 
 
+@router.get("/export/{attachment_id}/content")
+async def get_export_attachment_content(
+    attachment_id: int,
+    current_user: CurrentUser = Depends(get_current_user),
+    http_request: Request = None
+):
+    """
+    Get the file content (base64 data) for a single export attachment.
+
+    This endpoint is used for on-demand file loading in the scanner app.
+
+    Args:
+        attachment_id: Export attachment ID (EXTFILENUM)
+        current_user: Authenticated user with JWT token
+        http_request: FastAPI Request object
+
+    Returns:
+        Attachment with EXTFILENAME (base64 data URL)
+
+    Raises:
+        HTTPException: If retrieval fails or attachment not found
+    """
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="JWT authentication required"
+        )
+
+    try:
+        # Create Priority client using admin credentials for GET operation
+        client = AuthHelper.create_priority_client(current_user, http_request, use_admin_credentials=True)
+
+        attachment_service = AttachmentService(client)
+        attachment = await attachment_service.get_export_attachment_content(attachment_id)
+
+        await client.close()
+
+        if not attachment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Export attachment {attachment_id} not found"
+            )
+
+        return attachment
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve export attachment content: {str(e)}"
+        )
+
+
+@router.post("/export/{attachment_id}/move", response_model=AttachmentUploadResponse)
+async def move_export_attachment(
+    attachment_id: int,
+    request: MoveExportRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    http_request: Request = None
+):
+    """
+    Move an export attachment to a document (server-side).
+
+    This is more efficient than separate content download + upload calls
+    as the base64 content stays on the server and doesn't round-trip
+    through the client.
+
+    Args:
+        attachment_id: Export attachment ID (EXTFILENUM)
+        request: Target document information
+        current_user: Authenticated user with JWT token
+        http_request: FastAPI Request object
+
+    Returns:
+        Upload result with new attachment ID
+
+    Raises:
+        HTTPException: If move fails
+    """
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="JWT authentication required"
+        )
+
+    try:
+        # Use user credentials for write operation (creates audit trail)
+        client = AuthHelper.create_priority_client(
+            current_user, http_request, use_admin_credentials=False
+        )
+
+        attachment_service = AttachmentService(client)
+        result = await attachment_service.move_export_to_document(
+            attachment_id=attachment_id,
+            form=request.form,
+            form_key=request.form_key,
+            user_login=client.username,
+            ext_files_form=request.ext_files_form
+        )
+
+        await client.close()
+
+        return AttachmentUploadResponse(
+            success=True,
+            message="File moved successfully",
+            attachment_id=result.get("EXTFILENUM")
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        # Extract Priority error message if available
+        error_message = str(e)
+        if hasattr(e, 'response') and hasattr(e.response, 'content'):
+            try:
+                import json
+                response_data = json.loads(e.response.content.decode('utf-8'))
+                if 'FORM' in response_data and 'InterfaceErrors' in response_data['FORM']:
+                    interface_errors = response_data['FORM']['InterfaceErrors']
+                    if 'text' in interface_errors:
+                        error_message = interface_errors['text']
+            except:
+                pass
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Move failed: {error_message}"
+        )
+
+
 @router.delete("/export/{attachment_id}")
 async def delete_export_attachment(
     attachment_id: int,
@@ -336,7 +471,7 @@ async def delete_export_attachment(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="JWT authentication required"
         )
-    
+
     try:
         # Create Priority client using user credentials for DELETE operation
         client = AuthHelper.create_priority_client(current_user, http_request, use_admin_credentials=False)

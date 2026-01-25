@@ -14,6 +14,7 @@ import {
   AttachmentUploadRequest,
   AttachmentUploadResponse,
   FormPrefixInfo,
+  ExportAttachment,
   ApiException,
 } from './types';
 
@@ -329,6 +330,69 @@ class ApiClient {
     }
 
     return response.blob();
+  }
+
+  // ==========================================================================
+  // Export Attachment Endpoints (Outlook staging area)
+  // ==========================================================================
+
+  /**
+   * Get export attachments for a user from the staging area
+   * @param userLogin - User's ERP login name
+   */
+  async getExportAttachments(userLogin: string): Promise<ExportAttachment[]> {
+    const encodedLogin = encodeURIComponent(userLogin);
+    return this.request<ExportAttachment[]>(`/attachments/export/${encodedLogin}`);
+  }
+
+  /**
+   * Get file content (base64 data) for a single export attachment
+   * Used for on-demand loading of file previews
+   * @param attachmentId - The EXTFILENUM to fetch content for
+   */
+  async getExportAttachmentContent(attachmentId: number): Promise<{ EXTFILENUM: number; EXTFILENAME: string }> {
+    return this.request<{ EXTFILENUM: number; EXTFILENAME: string }>(
+      `/attachments/export/${attachmentId}/content`
+    );
+  }
+
+  /**
+   * Delete an export attachment from the staging area
+   * @param attachmentId - The EXTFILENUM to delete
+   */
+  async deleteExportAttachment(attachmentId: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(
+      `/attachments/export/${attachmentId}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /**
+   * Move an export attachment to a document (server-side).
+   * More efficient than separate content + upload calls as base64
+   * content stays on the server.
+   * @param attachmentId - The EXTFILENUM to move
+   * @param form - Target Priority form name
+   * @param formKey - Target document key
+   * @param extFilesForm - Target attachments subform
+   */
+  async moveExportToDocument(
+    attachmentId: number,
+    form: string,
+    formKey: string,
+    extFilesForm: string = 'EXTFILES'
+  ): Promise<{ success: boolean; message: string; attachment_id?: number }> {
+    return this.request<{ success: boolean; message: string; attachment_id?: number }>(
+      `/attachments/export/${attachmentId}/move`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          form,
+          form_key: formKey,
+          ext_files_form: extFilesForm,
+        }),
+      }
+    );
   }
 }
 

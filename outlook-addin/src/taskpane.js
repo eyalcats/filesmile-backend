@@ -223,11 +223,28 @@ async function initializeAddIn() {
     if (isAuthenticated) {
         // Add a small delay to ensure JWT token is properly stored
         setTimeout(async () => {
-            // Load data only after successful authentication and token storage
-            await Promise.all([
-                loadCompanies(),
-                loadSearchGroups()
-            ]);
+            try {
+                // Load data only after successful authentication and token storage
+                await Promise.all([
+                    loadCompanies(),
+                    loadSearchGroups()
+                ]);
+            } catch (error) {
+                // Handle expired JWT - trigger re-authentication
+                if (error.code === 'AUTH_REQUIRED' || error.message === 'AUTHENTICATION_REQUIRED') {
+                    console.log('JWT expired, triggering re-authentication...');
+                    const reauthSuccess = await AuthFlow.handleAuthRequired();
+                    if (reauthSuccess) {
+                        // Retry loading data after successful re-auth
+                        await Promise.all([
+                            loadCompanies(),
+                            loadSearchGroups()
+                        ]);
+                    }
+                } else {
+                    console.error('Failed to load initial data:', error);
+                }
+            }
         }, 100);
     } else {
         // AuthFlow will handle registration and then load data

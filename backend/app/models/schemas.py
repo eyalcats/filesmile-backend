@@ -223,6 +223,13 @@ class ExportAttachmentRequest(BaseModel):
     mime_type: Optional[str] = Field(None, description="MIME type")
 
 
+class MoveExportRequest(BaseModel):
+    """Request model for moving export attachment to document (server-side)."""
+    form: str = Field(..., description="Target Priority form name")
+    form_key: str = Field(..., description="Target document key")
+    ext_files_form: str = Field(default="EXTFILES", description="Target attachments subform")
+
+
 # ============================================================================
 # Company Models
 # ============================================================================

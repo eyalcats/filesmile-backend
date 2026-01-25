@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type AppMode = 'document' | 'barcode';
+export type AppMode = 'document' | 'barcode' | 'export';
 export type ColorMode = 'gray' | 'bw' | 'rgb';
 export type OutputFormat = 'pdf' | 'tiff';
 export type Resolution = 100 | 150 | 200 | 300 | 600;

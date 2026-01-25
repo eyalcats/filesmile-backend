@@ -6,6 +6,7 @@
   "header": {
     "documentMode": "Document Handling",
     "barcodeMode": "Barcode Handling",
+    "exportMode": "Export to Priority",
     "settings": "Settings",
     "logout": "Logout"
   },
@@ -86,7 +87,8 @@
     "deleteAll": "Delete All",
     "confirmDeleteAll": "Delete all pages?",
     "noImages": "No images to display",
-    "scanToStart": "Click Scan to start"
+    "scanToStart": "Click Scan to start",
+    "loading": "Loading preview..."
   },
   "files": {
     "title": "Files",
@@ -190,6 +192,28 @@
     "barcodeValue": "Barcode",
     "documentForm": "Document type",
     "documentNumber": "Document number"
+  },
+  "export": {
+    "title": "Pending Exports",
+    "fileName": "File Name",
+    "source": "Source",
+    "actions": "Actions",
+    "export": "Export",
+    "retry": "Retry",
+    "delete": "Delete",
+    "noFiles": "No files to export",
+    "loading": "Loading files...",
+    "refresh": "Refresh",
+    "selectDocumentFirst": "Select a document first",
+    "exportSuccess": "File exported successfully",
+    "exportError": "Failed to export file",
+    "deleteSuccess": "File deleted successfully",
+    "deleteError": "Failed to delete file",
+    "confirmDelete": "Delete this file?",
+    "summary": {
+      "total": "Total files",
+      "pending": "Pending"
+    }
   },
   "common": {
     "loading": "Loading...",

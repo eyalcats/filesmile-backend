@@ -18,6 +18,7 @@ import {
   Upload,
   X,
   Trash2,
+  RefreshCw,
 } from 'lucide-react';
 import {
   CompanySelector,
@@ -31,8 +32,10 @@ import { ScanButton } from '@/components/scanner';
 import { BarcodeProcessor, BarcodeFileList, BarcodeViewer, BarcodeFileTable } from '@/components/barcode';
 import { ImageFileTable } from '@/components/document';
 import { ImageViewer } from '@/components/viewer';
+import { ExportFileTable } from '@/components/export';
 import { useBarcodeStore } from '@/stores/barcode-store';
 import { useImageStore } from '@/stores/image-store';
+import { useExportStore, type ExportFile } from '@/stores/export-store';
 import { api } from '@/lib/api';
 import { splitPdfIntoPages } from '@/lib/barcode/pdf-extractor';
 import { cn } from '@/lib/utils';
@@ -57,7 +60,14 @@ function HomePageContent() {
   } = useDocumentStore();
 
   // Deep link handling
-  const { params: deepLinkParams, isDeepLink, isProcessed, markProcessed } = useDeepLink();
+  const { params: deepLinkParams, isDeepLink, isProcessed, markProcessed, urlMode } = useDeepLink();
+
+  // Handle mode URL parameter (e.g., ?mode=export)
+  useEffect(() => {
+    if (urlMode && ['document', 'barcode', 'export'].includes(urlMode)) {
+      useSettingsStore.getState().setMode(urlMode as 'document' | 'barcode' | 'export');
+    }
+  }, [urlMode]);
 
   // Handle deep link navigation
   useEffect(() => {
@@ -189,6 +199,138 @@ function HomePageContent() {
   // Remark input
   const [remark, setRemark] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
+  // Export store
+  const {
+    files: exportFiles,
+    selectedIndex: exportSelectedIndex,
+    isLoading: isLoadingExports,
+    setFiles: setExportFiles,
+    setIsLoading: setIsLoadingExports,
+    removeFile: removeExportFile,
+    setFileStatus: setExportFileStatus,
+    setFileContent: setExportFileContent,
+    setFileContentLoading: setExportFileContentLoading,
+  } = useExportStore();
+
+  // Load export files when entering export mode
+  const loadExportFiles = useCallback(async () => {
+    const credentials = useAuthStore.getState().getLocalCredentials();
+    if (!credentials?.username) {
+      console.warn('No ERP username available for loading exports');
+      return;
+    }
+    const erpUsername = credentials.username;
+
+    setIsLoadingExports(true);
+    try {
+      // Fetch metadata only (EXTFILENAME is excluded for performance)
+      const exports = await api.getExportAttachments(erpUsername);
+      setExportFiles(
+        exports.map((e) => ({
+          id: e.EXTFILENUM || 0,
+          fileName: e.EXTFILEDES || 'Unnamed',
+          source: e.MAILFROM || '',
+          suffix: '',  // SUFFIX not available in EXTFILESFILESMILE - will be extracted from filename when needed
+          dataUrl: null,  // Will be loaded on-demand when file is selected
+          curDate: e.UDATE || '',
+          status: 'pending' as const,
+        }))
+      );
+    } catch (error) {
+      console.error('Failed to load exports:', error);
+    } finally {
+      setIsLoadingExports(false);
+    }
+  }, [setExportFiles, setIsLoadingExports]);
+
+  // Effect to load exports when switching to export mode
+  useEffect(() => {
+    if (mode === 'export' && isAuthenticated) {
+      loadExportFiles();
+    }
+  }, [mode, isAuthenticated, loadExportFiles]);
+
+  // Effect to load file content on-demand when selection changes
+  useEffect(() => {
+    if (mode !== 'export' || exportFiles.length === 0) return;
+
+    const selectedFile = exportFiles[exportSelectedIndex];
+    if (!selectedFile) return;
+
+    // Skip if content already loaded or currently loading
+    if (selectedFile.dataUrl !== null || selectedFile.isLoadingContent) return;
+
+    // Load file content on-demand
+    setExportFileContentLoading(selectedFile.id, true);
+    api.getExportAttachmentContent(selectedFile.id)
+      .then((response) => {
+        setExportFileContent(selectedFile.id, response.EXTFILENAME);
+      })
+      .catch((error) => {
+        console.error('Failed to load file content:', error);
+        setExportFileContentLoading(selectedFile.id, false);
+      });
+  }, [mode, exportFiles, exportSelectedIndex, setExportFileContent, setExportFileContentLoading]);
+
+  // Export handlers
+  const handleExportToDocument = async (file: ExportFile) => {
+    if (!selectedDocument) {
+      alert(t('export.selectDocumentFirst'));
+      return;
+    }
+
+    setExportFileStatus(file.id, 'uploading');
+    try {
+      // Use server-side move - base64 content stays on server, no client round-trip
+      await api.moveExportToDocument(
+        file.id,
+        selectedDocument.Form,
+        selectedDocument.FormKey,
+        selectedDocument.ExtFilesForm || 'EXTFILES'
+      );
+
+      // Remove from local list (already deleted on server)
+      removeExportFile(file.id);
+
+      // Refresh attachments list
+      const attachments = await api.getAttachments(
+        selectedDocument.Form,
+        selectedDocument.FormKey,
+        selectedDocument.ExtFilesForm || 'EXTFILES'
+      );
+      useDocumentStore.getState().setAttachments(
+        attachments.map((f) => ({
+          EXTFILENUM: f.EXTFILENUM || 0,
+          EXTFILEDES: f.EXTFILEDES || '',
+          EXTFILENAME: f.EXTFILENAME || '',
+          SUFFIX: f.SUFFIX || '',
+          FILESIZE: f.FILESIZE,
+          CURDATE: f.CURDATE,
+        }))
+      );
+
+      alert(t('export.exportSuccess'));
+    } catch (error) {
+      console.error('Export failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      setExportFileStatus(file.id, 'error', errorMsg);
+      // Show the actual error message from Priority (includes Hebrew messages like document status errors)
+      alert(`${t('export.exportError')}\n\n${errorMsg}`);
+    }
+  };
+
+  const handleExportDelete = async (file: ExportFile) => {
+    if (!confirm(t('export.confirmDelete'))) return;
+
+    try {
+      await api.deleteExportAttachment(file.id);
+      removeExportFile(file.id);
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert(t('export.deleteError'));
+    }
+  };
 
   // File input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -411,7 +553,7 @@ function HomePageContent() {
         <ModeToggle />
       </div>
 
-      <main className={`flex-1 container mx-auto p-4 max-w-7xl ${mode === 'barcode' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
+      <main className={`flex-1 container mx-auto p-4 max-w-7xl ${mode === 'barcode' || mode === 'export' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
         {mode === 'barcode' ? (
           /* Barcode Mode - Fixed height layout with internal scrolling
              RTL: File table on left, viewer on right */
@@ -444,6 +586,125 @@ function HomePageContent() {
                 </div>
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                   <BarcodeViewer />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : mode === 'export' ? (
+          /* Export Mode - Three column layout using CSS Grid (auto-RTL)
+             LTR: Search | Files | Preview
+             RTL: Preview | Files | Search (grid auto-reverses with dir="rtl") */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
+            {/* Document Search Panel - First in grid = Right in RTL, Left in LTR */}
+            <div className="lg:col-span-4 xl:col-span-3 min-h-0 flex flex-col gap-4">
+              {/* Search Group Box */}
+              <div className="bg-white rounded-lg border-2 border-amber-200 shadow-sm overflow-hidden">
+                <div className="bg-amber-50 px-4 py-2 border-b border-amber-100">
+                  <h2 className="text-xs font-bold text-amber-700 uppercase tracking-wide">
+                    {t('priority.searchBy')}
+                  </h2>
+                </div>
+                <div className="p-4 space-y-3">
+                  {isAuthenticated ? (
+                    <>
+                      <CompanySelector />
+                      <SearchGroupSelector />
+                      <DocumentSearch onResultsFound={() => setShowDocumentList(true)} />
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground text-sm text-center py-4">
+                      {t('common.loading')}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Selected Document */}
+              {selectedDocument && (
+                <div className="bg-amber-50 rounded-lg border-2 border-amber-300 shadow-sm overflow-hidden relative">
+                  <div className="bg-amber-100 px-4 py-2 border-b border-amber-200 flex items-center justify-between">
+                    <h2 className="text-xs font-bold text-amber-800 uppercase tracking-wide">
+                      {t('priority.selectedDocument')}
+                    </h2>
+                    <div className="flex items-center gap-1">
+                      <SelectedDocument
+                        headerMode
+                        onShowAttachments={() => setShowAttachmentList(true)}
+                      />
+                      <button
+                        onClick={() => useDocumentStore.getState().setSelectedDocument(null)}
+                        className="text-gray-500 hover:text-red-500 transition-colors"
+                        title={t('common.clear')}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <SelectedDocument />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Middle: Export File Table */}
+            <div className="lg:col-span-4 xl:col-span-5 min-h-0 flex flex-col">
+              <div className="bg-white rounded-lg border-2 border-amber-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="bg-amber-50 px-4 py-2 border-b border-amber-100 flex items-center justify-between">
+                  <h2 className="text-xs font-bold text-amber-700 uppercase tracking-wide">
+                    {t('export.title')}
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={loadExportFiles}
+                    disabled={isLoadingExports}
+                    className="h-7 px-2"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isLoadingExports ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-auto">
+                  {isLoadingExports ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+                    </div>
+                  ) : (
+                    <ExportFileTable
+                      onExport={handleExportToDocument}
+                      onDelete={handleExportDelete}
+                      disabled={!selectedDocument}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Preview Panel - Last in grid = Left in RTL, Right in LTR */}
+            <div className="lg:col-span-4 xl:col-span-4 flex flex-col min-h-0">
+              <div className="bg-white rounded-lg border-2 border-amber-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="bg-amber-50 px-4 py-2 border-b border-amber-100">
+                  <h2 className="text-xs font-bold text-amber-700 uppercase tracking-wide">
+                    {t('viewer.title')}
+                  </h2>
+                </div>
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <ImageViewer
+                    images={exportFiles.map((f) => ({
+                      data: f.dataUrl || '',
+                      width: undefined,
+                      height: undefined,
+                      isLoading: f.isLoadingContent || false,
+                      fileName: f.fileName,
+                    }))}
+                    currentIndex={exportSelectedIndex}
+                    onFirst={() => useExportStore.getState().goFirst()}
+                    onPrev={() => useExportStore.getState().goPrev()}
+                    onNext={() => useExportStore.getState().goNext()}
+                    onLast={() => useExportStore.getState().goLast()}
+                    emptyText={t('export.noFiles')}
+                    emptySubtext={t('export.selectDocumentFirst')}
+                  />
                 </div>
               </div>
             </div>
