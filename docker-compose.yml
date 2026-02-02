@@ -126,15 +126,14 @@ services:
       start_period: 5s
     labels:
       - "traefik.enable=true"
-      # Scanner app route - HTTPS (nginx handles /scanner path)
+      # Scanner app route - HTTPS
       - "traefik.http.routers.scanner.rule=PathPrefix(`/scanner`)"
       - "traefik.http.routers.scanner.entrypoints=websecure"
       - "traefik.http.routers.scanner.tls=true"
       - "traefik.http.services.scanner.loadbalancer.server.port=80"
-      # Alternative: Direct access on subdomain
-      # - "traefik.http.routers.scanner-direct.rule=Host(`scanner.localhost`)"
-      # - "traefik.http.routers.scanner-direct.entrypoints=web"
-      # - "traefik.http.routers.scanner-direct.service=scanner"
+      # Strip /scanner prefix before forwarding to nginx
+      - "traefik.http.routers.scanner.middlewares=scanner-strip"
+      - "traefik.http.middlewares.scanner-strip.stripprefix.prefixes=/scanner"
 
 # ===========================================
 # Networks

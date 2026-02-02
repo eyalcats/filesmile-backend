@@ -25,7 +25,7 @@ FROM nginx:alpine AS production
 # Copy built files to nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration for SPA routing with /scanner base path
+# Copy nginx configuration for SPA routing (Traefik strips /scanner prefix)
 RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
 server {
     listen 80;
@@ -34,19 +34,12 @@ server {
     index index.html;
 
     # Health check endpoint
-    location /health {
+    location = /health {
         access_log off;
         return 200 'OK';
-        add_header Content-Type text/plain;
     }
 
-    # Handle /scanner base path (strip prefix and serve from root)
-    location /scanner/ {
-        alias /usr/share/nginx/html/;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Also serve from root for direct access
+    # SPA routing - serve index.html for all routes
     location / {
         try_files $uri $uri/ /index.html;
     }
