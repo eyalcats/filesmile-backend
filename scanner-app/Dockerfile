@@ -33,6 +33,13 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
+
     # Handle /scanner base path (strip prefix and serve from root)
     location /scanner/ {
         alias /usr/share/nginx/html/;
