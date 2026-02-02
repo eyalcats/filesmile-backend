@@ -59,10 +59,21 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
-    const response = await fetch(url, {
-      ...options,
-      headers: this.getHeaders(),
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...options,
+        headers: this.getHeaders(),
+      });
+    } catch (error) {
+      // Network error (server unreachable, no internet, CORS, etc.)
+      const message = error instanceof Error ? error.message : 'Network error';
+      throw new ApiException(
+        `Unable to connect to server: ${message}`,
+        0, // Status 0 indicates network error
+        'NETWORK_ERROR'
+      );
+    }
 
     // Handle errors (including 401)
     if (!response.ok) {
@@ -321,9 +332,19 @@ class ApiClient {
     const encodedFormKey = encodeURIComponent(formKey);
     const url = `${this.baseUrl}/attachments/download/${form}/${encodedFormKey}/${attachmentId}?ext_files_form=${extFilesForm}`;
 
-    const response = await fetch(url, {
-      headers: this.getHeaders(),
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: this.getHeaders(),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Network error';
+      throw new ApiException(
+        `Unable to connect to server: ${message}`,
+        0,
+        'NETWORK_ERROR'
+      );
+    }
 
     if (!response.ok) {
       throw new ApiException('Failed to download attachment', response.status);

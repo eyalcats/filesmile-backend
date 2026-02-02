@@ -41,6 +41,7 @@ interface BarcodeState {
   prefixMap: Map<string, FormPrefixInfo>;
   isPrefixesLoaded: boolean;
   isPrefixesLoading: boolean;
+  prefixError: string | null;
 
   // File processing state
   files: BarcodeFile[];
@@ -55,6 +56,7 @@ interface BarcodeState {
   // Prefix cache actions
   setFormPrefixes: (prefixes: FormPrefixInfo[]) => void;
   setIsPrefixesLoading: (loading: boolean) => void;
+  setPrefixError: (error: string | null) => void;
   getFormByPrefix: (prefix: string) => FormPrefixInfo | undefined;
 
   // File actions
@@ -97,6 +99,7 @@ export const useBarcodeStore = create<BarcodeState>((set, get) => ({
   prefixMap: new Map(),
   isPrefixesLoaded: false,
   isPrefixesLoading: false,
+  prefixError: null,
 
   // Initial state - file processing
   files: [],
@@ -119,10 +122,13 @@ export const useBarcodeStore = create<BarcodeState>((set, get) => ({
       prefixMap,
       isPrefixesLoaded: true,
       isPrefixesLoading: false,
+      prefixError: null,
     });
   },
 
   setIsPrefixesLoading: (isPrefixesLoading) => set({ isPrefixesLoading }),
+
+  setPrefixError: (prefixError) => set({ prefixError, isPrefixesLoading: false }),
 
   getFormByPrefix: (prefix) => {
     return get().prefixMap.get(prefix.toUpperCase());

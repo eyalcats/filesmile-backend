@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   XCircle,
   Trash2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { useBarcodeStore } from '@/stores/barcode-store';
 import { api } from '@/lib/api/client';
@@ -35,11 +37,13 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
     files,
     isPrefixesLoaded,
     isPrefixesLoading,
+    prefixError,
     isProcessing,
     isUploading,
     uploadProgress,
     setFormPrefixes,
     setIsPrefixesLoading,
+    setPrefixError,
     addFiles,
     setFileStatus,
     setFileBarcode,
@@ -84,13 +88,20 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
 
   const loadFormPrefixes = async () => {
     setIsPrefixesLoading(true);
+    setPrefixError(null);
     try {
       const prefixes = await api.getAllFormPrefixes();
       setFormPrefixes(prefixes);
     } catch (error) {
       console.error('Failed to load form prefixes:', error);
-      setIsPrefixesLoading(false);
+      const message = error instanceof Error ? error.message : t('errors.connectionFailed');
+      setPrefixError(message);
     }
+  };
+
+  const retryLoadPrefixes = () => {
+    isInitializedRef.current = false;
+    loadFormPrefixes();
   };
 
   // Handle file drop - split multi-page PDFs into individual pages
@@ -369,6 +380,22 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
             {t('processing')}
           </span>
         )}
+
+        {/* Connection error indicator */}
+        {prefixError && (
+          <span className="flex items-center gap-1 text-sm text-red-600 ms-2">
+            <AlertCircle className="h-4 w-4" />
+            {t('errors.connectionFailed')}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={retryLoadPrefixes}
+              className="h-6 px-2"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          </span>
+        )}
       </div>
     );
   }
@@ -380,6 +407,23 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
         <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>{t('processing')}</span>
+        </div>
+      )}
+
+      {/* Connection error */}
+      {prefixError && (
+        <div className="flex items-center justify-center gap-3 py-4 px-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <span className="text-sm">{t('errors.connectionFailed')}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={retryLoadPrefixes}
+            className="border-red-300 hover:bg-red-100"
+          >
+            <RefreshCw className="h-4 w-4 me-2" />
+            {t('retry')}
+          </Button>
         </div>
       )}
 

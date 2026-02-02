@@ -178,8 +178,10 @@
       "noBarcode": "לא זוהה ברקוד",
       "invalidPrefix": "קידומת לא מוכרת",
       "documentNotFound": "מסמך לא נמצא",
-      "uploadFailed": "ההעלאה נכשלה"
+      "uploadFailed": "ההעלאה נכשלה",
+      "connectionFailed": "לא ניתן להתחבר לשרת"
     },
+    "retry": "נסה שוב",
     "summary": {
       "total": "סה\"כ קבצים",
       "matched": "הותאמו",

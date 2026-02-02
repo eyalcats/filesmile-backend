@@ -178,8 +178,10 @@
       "noBarcode": "No barcode detected",
       "invalidPrefix": "Unknown prefix",
       "documentNotFound": "Document not found",
-      "uploadFailed": "Upload failed"
+      "uploadFailed": "Upload failed",
+      "connectionFailed": "Unable to connect to server"
     },
+    "retry": "Retry",
     "summary": {
       "total": "Total files",
       "matched": "Matched",
