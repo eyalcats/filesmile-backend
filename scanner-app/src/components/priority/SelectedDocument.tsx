@@ -1,7 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 import { ExternalLink, FileText, Paperclip, Loader2 } from 'lucide-react';
 import { useDocumentStore } from '@/stores/document-store';
 
@@ -27,7 +24,7 @@ function formatShortDate(dateStr?: string): string {
 }
 
 export function SelectedDocument({ onShowAttachments, headerMode }: SelectedDocumentProps) {
-  const t = useTranslations('priority');
+  const { t } = useTranslation();
   const { selectedDocument, selectedCompany, attachments, isLoadingAttachments } = useDocumentStore();
 
   if (!selectedDocument) return null;
@@ -47,7 +44,7 @@ export function SelectedDocument({ onShowAttachments, headerMode }: SelectedDocu
             onClick={onShowAttachments}
             disabled={isLoadingAttachments}
             className="relative flex items-center justify-center h-6 w-6 rounded text-amber-800 hover:text-amber-900 transition-colors"
-            title={t('attachments')}
+            title={t('priority.attachments')}
           >
             {isLoadingAttachments ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -64,7 +61,7 @@ export function SelectedDocument({ onShowAttachments, headerMode }: SelectedDocu
         <button
           onClick={handleOpenInPriority}
           className="flex items-center justify-center h-6 w-6 rounded text-amber-800 hover:text-amber-900 transition-colors"
-          title={t('openInPriority')}
+          title={t('priority.openInPriority')}
         >
           <ExternalLink className="h-3.5 w-3.5" />
         </button>

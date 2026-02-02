@@ -1,15 +1,13 @@
-'use client';
-
 import { useState } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { User, Building2, KeyRound, RefreshCw, LogOut, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { api, ApiException } from '@/lib/api';
 
 export function UserSettings() {
-  const t = useTranslations('account');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const {
     userEmail,
@@ -55,19 +53,19 @@ export function UserSettings() {
       {/* Section Title */}
       <h3 className={`text-sm font-medium flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <User className="h-4 w-4" />
-        {t('title')}
+        {t('account.title')}
       </h3>
 
       {/* Current User Info */}
       <div className="rounded-lg bg-muted/50 p-3 space-y-2">
         <div className={`flex items-center gap-2 text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
           <User className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-muted-foreground">{t('currentUser')}:</span>
+          <span className="text-muted-foreground">{t('account.currentUser')}:</span>
           <span className="font-medium truncate" dir="ltr">{userEmail}</span>
         </div>
         <div className={`flex items-center gap-2 text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
           <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-muted-foreground">{t('organization')}:</span>
+          <span className="text-muted-foreground">{t('account.organization')}:</span>
           <span className="font-medium truncate">{tenantName || '-'}</span>
         </div>
       </div>
@@ -83,9 +81,9 @@ export function UserSettings() {
           <div className={`flex items-center gap-2 w-full ${isRTL ? 'flex-row-reverse' : ''}`}>
             <KeyRound className="h-4 w-4 shrink-0" />
             <div className={`flex flex-col ${isRTL ? 'items-end' : 'items-start'}`}>
-              <span>{t('reenterCredentials')}</span>
+              <span>{t('account.reenterCredentials')}</span>
               <span className="text-xs text-muted-foreground font-normal">
-                {t('reenterCredentialsDesc')}
+                {t('account.reenterCredentialsDesc')}
               </span>
             </div>
           </div>
@@ -108,9 +106,9 @@ export function UserSettings() {
             <div className={`flex items-center gap-2 w-full ${isRTL ? 'flex-row-reverse' : ''}`}>
               <RefreshCw className="h-4 w-4 shrink-0" />
               <div className={`flex flex-col ${isRTL ? 'items-end' : 'items-start'}`}>
-                <span>{t('changeTenant')}</span>
+                <span>{t('account.changeTenant')}</span>
                 <span className="text-xs text-muted-foreground font-normal">
-                  {t('changeTenantDesc')}
+                  {t('account.changeTenantDesc')}
                 </span>
               </div>
             </div>
@@ -126,9 +124,9 @@ export function UserSettings() {
           <div className={`flex items-center gap-2 w-full ${isRTL ? 'flex-row-reverse' : ''}`}>
             <LogOut className="h-4 w-4 shrink-0" />
             <div className={`flex flex-col ${isRTL ? 'items-end' : 'items-start'}`}>
-              <span>{t('logout')}</span>
+              <span>{t('account.logout')}</span>
               <span className="text-xs text-muted-foreground font-normal">
-                {t('logoutDesc')}
+                {t('account.logoutDesc')}
               </span>
             </div>
           </div>

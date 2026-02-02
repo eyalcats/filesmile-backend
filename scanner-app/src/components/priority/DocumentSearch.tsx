@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -13,8 +11,8 @@ interface DocumentSearchProps {
 }
 
 export function DocumentSearch({ onResultsFound }: DocumentSearchProps) {
-  const t = useTranslations('priority');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const {
     selectedGroupId,
@@ -43,7 +41,7 @@ export function DocumentSearch({ onResultsFound }: DocumentSearchProps) {
       setSearchResults(response.documents);
 
       if (response.documents.length === 0) {
-        setSearchError(t('noResults'));
+        setSearchError(t('priority.noResults'));
       } else {
         onResultsFound?.();
       }
@@ -69,14 +67,14 @@ export function DocumentSearch({ onResultsFound }: DocumentSearchProps) {
 
   return (
     <div className="space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
-      <Label>{t('searchTerm')}</Label>
+      <Label>{t('priority.searchTerm')}</Label>
       <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <div className="relative flex-1">
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={t('searchTerm')}
+            placeholder={t('priority.searchTerm')}
             disabled={isSearching}
             dir="ltr"
             className={isRTL ? 'text-right' : ''}
@@ -100,7 +98,7 @@ export function DocumentSearch({ onResultsFound }: DocumentSearchProps) {
           ) : (
             <Search className="h-4 w-4" />
           )}
-          <span className={isRTL ? 'mr-2' : 'ml-2'}>{isSearching ? t('searching') : t('search')}</span>
+          <span className={isRTL ? 'mr-2' : 'ml-2'}>{isSearching ? t('priority.searching') : t('priority.search')}</span>
         </Button>
       </div>
     </div>

@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   ChevronLeft,
@@ -31,42 +29,42 @@ function getStatusBadge(status: BarcodeStatus, t: (key: string) => string) {
       return (
         <span className={cn(baseClasses, 'bg-gray-100 text-gray-600')}>
           <Clock className="h-3 w-3" />
-          {t('status.pending')}
+          {t('barcode.status.pending')}
         </span>
       );
     case 'detecting':
       return (
         <span className={cn(baseClasses, 'bg-blue-100 text-blue-600')}>
           <Loader2 className="h-3 w-3 animate-spin" />
-          {t('status.detecting')}
+          {t('barcode.status.detecting')}
         </span>
       );
     case 'detected':
       return (
         <span className={cn(baseClasses, 'bg-blue-100 text-blue-600')}>
           <Loader2 className="h-3 w-3 animate-spin" />
-          {t('status.matching')}
+          {t('barcode.status.matching')}
         </span>
       );
     case 'matched':
       return (
         <span className={cn(baseClasses, 'bg-green-100 text-green-600')}>
           <CheckCircle2 className="h-3 w-3" />
-          {t('status.matched')}
+          {t('barcode.status.matched')}
         </span>
       );
     case 'not_found':
       return (
         <span className={cn(baseClasses, 'bg-amber-100 text-amber-600')}>
           <AlertCircle className="h-3 w-3" />
-          {t('status.notFound')}
+          {t('barcode.status.notFound')}
         </span>
       );
     case 'error':
       return (
         <span className={cn(baseClasses, 'bg-red-100 text-red-600')}>
           <XCircle className="h-3 w-3" />
-          {t('status.error')}
+          {t('barcode.status.error')}
         </span>
       );
     default:
@@ -77,9 +75,8 @@ function getStatusBadge(status: BarcodeStatus, t: (key: string) => string) {
 const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 
 export function BarcodeViewer() {
-  const t = useTranslations('barcode');
-  const tViewer = useTranslations('viewer');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
 
   // null means "fit to page" mode, number is index into ZOOM_LEVELS
@@ -146,7 +143,7 @@ export function BarcodeViewer() {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-400 py-20">
         <div className="text-6xl mb-4">📄</div>
-        <p className="text-sm">{t('noFiles')}</p>
+        <p className="text-sm">{t('barcode.noFiles')}</p>
       </div>
     );
   }
@@ -197,7 +194,7 @@ export function BarcodeViewer() {
         ) : (
           <div className="text-center text-gray-400 py-20">
             <div className="text-6xl mb-4">📄</div>
-            <p className="text-sm">{t('noFiles')}</p>
+            <p className="text-sm">{t('barcode.noFiles')}</p>
           </div>
         )}
       </div>
@@ -248,7 +245,7 @@ export function BarcodeViewer() {
             className="h-8 w-8 text-white hover:bg-red-600"
             onClick={() => selectedFile && removeFile(selectedFile.id)}
             disabled={files.length === 0 || isProcessing}
-            title={tViewer('deletePage')}
+            title={t('viewer.deletePage')}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -262,7 +259,7 @@ export function BarcodeViewer() {
             className="h-8 w-8 text-white hover:bg-white/20"
             onClick={handleZoomOut}
             disabled={files.length === 0 || (!isFitMode && zoomIndex === 0) || selectedFile?.fileType === 'pdf'}
-            title={tViewer('zoomOut')}
+            title={t('viewer.zoomOut')}
           >
             <ZoomOut className="h-4 w-4" />
           </Button>
@@ -275,7 +272,7 @@ export function BarcodeViewer() {
             )}
             onClick={handleFitToPage}
             disabled={files.length === 0 || selectedFile?.fileType === 'pdf'}
-            title={tViewer('fitToPage')}
+            title={t('viewer.fitToPage')}
           >
             {isFitMode ? 'Fit' : `${Math.round(zoom * 100)}%`}
           </Button>
@@ -285,7 +282,7 @@ export function BarcodeViewer() {
             className="h-8 w-8 text-white hover:bg-white/20"
             onClick={handleZoomIn}
             disabled={files.length === 0 || (!isFitMode && zoomIndex === ZOOM_LEVELS.length - 1) || selectedFile?.fileType === 'pdf'}
-            title={tViewer('zoomIn')}
+            title={t('viewer.zoomIn')}
           >
             <ZoomIn className="h-4 w-4" />
           </Button>
@@ -296,7 +293,7 @@ export function BarcodeViewer() {
             className="h-8 w-8 text-white hover:bg-white/20"
             onClick={handleRotateLeft}
             disabled={files.length === 0 || selectedFile?.fileType === 'pdf'}
-            title={tViewer('rotateLeft')}
+            title={t('viewer.rotateLeft')}
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
@@ -306,7 +303,7 @@ export function BarcodeViewer() {
             className="h-8 w-8 text-white hover:bg-white/20"
             onClick={handleRotateRight}
             disabled={files.length === 0 || selectedFile?.fileType === 'pdf'}
-            title={tViewer('rotateRight')}
+            title={t('viewer.rotateRight')}
           >
             <RotateCw className="h-4 w-4" />
           </Button>

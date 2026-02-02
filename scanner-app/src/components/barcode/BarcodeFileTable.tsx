@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   CheckCircle2,
@@ -10,7 +8,7 @@ import {
   Loader2,
   Trash2,
 } from 'lucide-react';
-import { useBarcodeStore, type BarcodeFile, type BarcodeStatus } from '@/stores/barcode-store';
+import { useBarcodeStore, type BarcodeStatus } from '@/stores/barcode-store';
 import { cn } from '@/lib/utils';
 
 function getStatusIcon(status: BarcodeStatus) {
@@ -36,9 +34,9 @@ interface BarcodeFileTableProps {
   showActionBar?: boolean;
 }
 
-export function BarcodeFileTable({ showActionBar = false }: BarcodeFileTableProps) {
-  const t = useTranslations('barcode');
-  const locale = useLocale();
+export function BarcodeFileTable({ showActionBar: _showActionBar = false }: BarcodeFileTableProps) {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
 
   const {
@@ -60,19 +58,19 @@ export function BarcodeFileTable({ showActionBar = false }: BarcodeFileTableProp
       {/* Summary Bar - Prominent and Centered */}
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center justify-center gap-6 flex-shrink-0">
         <span className="text-base font-semibold text-gray-700">
-          {t('summary.total')}: <span className="text-lg">{files.length}</span>
+          {t('barcode.summary.total')}: <span className="text-lg">{files.length}</span>
         </span>
         <span className={cn(
           'flex items-center gap-1.5 text-base font-semibold',
           matchedCount > 0 ? 'text-green-600' : 'text-gray-400'
         )}>
           <CheckCircle2 className="h-5 w-5" />
-          {t('summary.matched')}: <span className="text-lg">{matchedCount}</span>
+          {t('barcode.summary.matched')}: <span className="text-lg">{matchedCount}</span>
         </span>
         {errorCount > 0 && (
           <span className="flex items-center gap-1.5 text-base font-semibold text-red-600">
             <XCircle className="h-5 w-5" />
-            {t('summary.errors')}: <span className="text-lg">{errorCount}</span>
+            {t('barcode.summary.errors')}: <span className="text-lg">{errorCount}</span>
           </span>
         )}
       </div>
@@ -84,8 +82,8 @@ export function BarcodeFileTable({ showActionBar = false }: BarcodeFileTableProp
             <tr className={isRTL ? 'text-right' : 'text-left'}>
               <th className="px-2 py-2 w-8">#</th>
               <th className="px-2 py-2 w-8"></th>
-              <th className="px-2 py-2">{t('documentForm')}</th>
-              <th className="px-2 py-2">{t('documentNumber')}</th>
+              <th className="px-2 py-2">{t('barcode.documentForm')}</th>
+              <th className="px-2 py-2">{t('barcode.documentNumber')}</th>
               <th className="px-2 py-2 w-24"></th>
             </tr>
           </thead>
@@ -139,7 +137,7 @@ export function BarcodeFileTable({ showActionBar = false }: BarcodeFileTableProp
             {files.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                  {t('noFiles')}
+                  {t('barcode.noFiles')}
                 </td>
               </tr>
             )}

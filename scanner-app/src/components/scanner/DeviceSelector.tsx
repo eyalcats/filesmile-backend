@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import {
   Select,
   SelectContent,
@@ -20,8 +18,8 @@ interface DeviceSelectorProps {
 }
 
 export function DeviceSelector({ compact = false }: DeviceSelectorProps) {
-  const t = useTranslations('scanner');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const { serviceStatus, devices, isLoadingDevices, setDevices, setIsLoadingDevices } =
     useScannerStore();
@@ -57,7 +55,7 @@ export function DeviceSelector({ compact = false }: DeviceSelectorProps) {
 
   // Get selected device name for compact display
   const selectedDevice = devices.find((d) => d.id === selectedDeviceId);
-  const displayName = selectedDevice?.name || t('selectDevice');
+  const displayName = selectedDevice?.name || t('scanner.selectDevice');
   // Truncate long names in compact mode
   const truncatedName = compact && displayName.length > 25
     ? displayName.substring(0, 22) + '...'
@@ -89,7 +87,7 @@ export function DeviceSelector({ compact = false }: DeviceSelectorProps) {
           ))}
           {devices.length === 0 && !isLoadingDevices && (
             <div className="py-2 px-2 text-sm text-muted-foreground">
-              {t('noDevices')}
+              {t('scanner.noDevices')}
             </div>
           )}
         </SelectContent>
@@ -101,7 +99,7 @@ export function DeviceSelector({ compact = false }: DeviceSelectorProps) {
     <div className="space-y-2">
       <Label className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <ScanLine className="h-4 w-4" />
-        {t('selectDevice')}
+        {t('scanner.selectDevice')}
       </Label>
       <Select
         value={selectedDeviceId || ''}
@@ -112,10 +110,10 @@ export function DeviceSelector({ compact = false }: DeviceSelectorProps) {
           {isLoadingDevices ? (
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-muted-foreground">{t('selectDevice')}</span>
+              <span className="text-muted-foreground">{t('scanner.selectDevice')}</span>
             </div>
           ) : (
-            <SelectValue placeholder={devices.length === 0 ? t('noDevices') : t('selectDevice')} />
+            <SelectValue placeholder={devices.length === 0 ? t('scanner.noDevices') : t('scanner.selectDevice')} />
           )}
         </SelectTrigger>
         <SelectContent>
@@ -131,7 +129,7 @@ export function DeviceSelector({ compact = false }: DeviceSelectorProps) {
           ))}
           {devices.length === 0 && !isLoadingDevices && (
             <div className="py-2 px-2 text-sm text-muted-foreground">
-              {t('noDevices')}
+              {t('scanner.noDevices')}
             </div>
           )}
         </SelectContent>

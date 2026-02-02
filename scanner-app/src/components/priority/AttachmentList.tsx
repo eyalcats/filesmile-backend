@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -76,8 +74,8 @@ function dataUrlToBlob(dataUrl: string): Blob {
 }
 
 export function AttachmentList({ open, onClose }: AttachmentListProps) {
-  const t = useTranslations('priority');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const {
     selectedDocument,
@@ -199,10 +197,10 @@ export function AttachmentList({ open, onClose }: AttachmentListProps) {
         <DialogHeader className="pb-2">
           <DialogTitle className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Paperclip className="h-5 w-5" />
-            {t('attachments')} ({attachments.length})
+            {t('priority.attachments')} ({attachments.length})
           </DialogTitle>
           <DialogDescription className="sr-only">
-            {t('attachments')}
+            {t('priority.attachments')}
           </DialogDescription>
         </DialogHeader>
 
@@ -247,7 +245,7 @@ export function AttachmentList({ open, onClose }: AttachmentListProps) {
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => handleOpenAttachment(attachment)}
-                        title={t('open')}
+                        title={t('priority.open')}
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Button>
@@ -256,7 +254,7 @@ export function AttachmentList({ open, onClose }: AttachmentListProps) {
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => handleDownloadAttachment(attachment)}
-                        title={t('download')}
+                        title={t('priority.download')}
                       >
                         <Download className="h-4 w-4" />
                       </Button>
@@ -267,7 +265,7 @@ export function AttachmentList({ open, onClose }: AttachmentListProps) {
 
               {attachments.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
-                  {t('noAttachments')}
+                  {t('priority.noAttachments')}
                 </div>
               )}
             </div>

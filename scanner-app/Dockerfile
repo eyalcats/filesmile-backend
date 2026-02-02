@@ -1,78 +1,57 @@
-# FileSmile Scanner App Dockerfile
-# Multi-stage build for Next.js production deployment
+# Build stage
+FROM node:20-alpine AS build
 
-# ============================================
-# Stage 1: Dependencies
-# ============================================
-FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Install dependencies needed for native modules
-RUN apk add --no-cache libc6-compat
+# Build arguments (these become environment variables during build)
+ARG VITE_API_URL=/api/v1
+ENV VITE_API_URL=$VITE_API_URL
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production=false
+RUN npm ci
 
-# ============================================
-# Stage 2: Builder
-# ============================================
-FROM node:20-alpine AS builder
-WORKDIR /app
-
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy source files
 COPY . .
 
-# Set build-time environment variables
-# Use relative URL by default - browser will use current host
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_BASE_PATH
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-/api/v1}
-ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH:-/scanner}
-
-# Build the application
+# Build the app (env vars are baked into the bundle)
 RUN npm run build
 
-# ============================================
-# Stage 3: Runner
-# ============================================
-FROM node:20-alpine AS runner
-WORKDIR /app
+# Production stage - serve static files with nginx
+FROM nginx:alpine AS production
 
-# Set production environment
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+# Copy built files to nginx
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+# Copy nginx configuration for SPA routing with /scanner base path
+RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
 
-# Copy built application
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+    # Handle /scanner base path (strip prefix and serve from root)
+    location /scanner/ {
+        alias /usr/share/nginx/html/;
+        try_files $uri $uri/ /index.html;
+    }
 
-# Copy VintaSoft SDK files if present
-COPY --from=builder /app/public/vintasoft ./public/vintasoft
+    # Also serve from root for direct access
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
 
-# Set ownership
-RUN chown -R nextjs:nodejs /app
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
 
-USER nextjs
+EXPOSE 80
 
-# Expose port
-EXPOSE 3001
-
-# Set port environment variable
-ENV PORT=3001
-ENV HOSTNAME="0.0.0.0"
-
-# Health check - use basePath + default locale
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD node -e "fetch('http://127.0.0.1:3001/scanner/he').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
-
-# Start the application
-CMD ["node", "server.js"]
+CMD ["nginx", "-g", "daemon off;"]

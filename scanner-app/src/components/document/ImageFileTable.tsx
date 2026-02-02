@@ -1,14 +1,12 @@
-'use client';
-
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Trash2, FileText, Image as ImageIcon } from 'lucide-react';
 import { useImageStore } from '@/stores/image-store';
 import { cn } from '@/lib/utils';
 
 export function ImageFileTable() {
-  const t = useTranslations();
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
 
   const {

@@ -10,7 +10,7 @@ import { ColorMode, Resolution } from '@/stores/settings-store';
 
 // Service URL - HTTP only for local service
 const SERVICE_BASE_URL =
-  process.env.NEXT_PUBLIC_SCANNER_SERVICE_URL || 'http://127.0.0.1:25319';
+  import.meta.env.VITE_SCANNER_SERVICE_URL || 'http://127.0.0.1:25319';
 
 export interface ScanSettings {
   resolution: Resolution;

@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -29,13 +27,13 @@ export function TenantSelector({
   isLoading,
   error,
 }: TenantSelectorProps) {
-  const t = useTranslations('auth');
+  const { t } = useTranslation();
 
   return (
     <Dialog open={open}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{t('selectTenant')}</DialogTitle>
+          <DialogTitle>{t('auth.selectTenant')}</DialogTitle>
           <DialogDescription>
             {tenants.length} environments available
           </DialogDescription>

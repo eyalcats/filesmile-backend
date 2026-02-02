@@ -3,7 +3,7 @@
 # This compose file includes all services for QA deployment:
 # - Traefik reverse proxy with HTTPS (via Cloudflare)
 # - FastAPI backend (filesmile-api) with SQLite
-# - Next.js scanner app (scanner-app)
+# - React scanner app (scanner-app) - Vite build, nginx serving
 #
 # Deploy via Portainer: Stacks > Add Stack > Upload this file
 #
@@ -13,7 +13,7 @@
 # - ENCRYPTION_KEY
 # - ADMIN_USERNAME
 # - ADMIN_PASSWORD_HASH
-# - (Optional) NEXT_PUBLIC_VINTASOFT_* for scanner SDK
+# - (Optional) VintaSoft license is baked in at build time
 
 version: '3.8'
 
@@ -106,7 +106,7 @@ services:
       - "traefik.http.routers.admin.service=api"
 
   # ===========================================
-  # Scanner App (Next.js)
+  # Scanner App (React + Vite, served by nginx)
   # ===========================================
   scanner-app:
     image: eyalcats/scanner-app:latest
@@ -115,30 +115,22 @@ services:
     depends_on:
       - filesmile-api
     # ports:
-    #   - "3001:3001"  # Not needed - Traefik routes via /scanner path
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      # VintaSoft SDK License (optional - for scanner functionality)
-      - NEXT_PUBLIC_VINTASOFT_REG_USER=${NEXT_PUBLIC_VINTASOFT_REG_USER:-}
-      - NEXT_PUBLIC_VINTASOFT_REG_CODE=${NEXT_PUBLIC_VINTASOFT_REG_CODE:-}
-      - NEXT_PUBLIC_VINTASOFT_REG_URL=${NEXT_PUBLIC_VINTASOFT_REG_URL:-}
-      - NEXT_PUBLIC_VINTASOFT_EXPIRATION=${NEXT_PUBLIC_VINTASOFT_EXPIRATION:-}
+    #   - "3001:80"  # Not needed - Traefik routes via /scanner path
     networks:
       - filesmile-net
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/scanner').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 5s
     labels:
       - "traefik.enable=true"
-      # Scanner app route - HTTPS (Next.js handles basePath internally)
+      # Scanner app route - HTTPS (nginx handles /scanner path)
       - "traefik.http.routers.scanner.rule=PathPrefix(`/scanner`)"
       - "traefik.http.routers.scanner.entrypoints=websecure"
       - "traefik.http.routers.scanner.tls=true"
-      - "traefik.http.services.scanner.loadbalancer.server.port=3001"
+      - "traefik.http.services.scanner.loadbalancer.server.port=80"
       # Alternative: Direct access on subdomain
       # - "traefik.http.routers.scanner-direct.rule=Host(`scanner.localhost`)"
       # - "traefik.http.routers.scanner-direct.entrypoints=web"

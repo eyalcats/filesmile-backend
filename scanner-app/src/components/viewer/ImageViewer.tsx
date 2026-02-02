@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   ChevronLeft,
@@ -124,8 +122,8 @@ export function ImageViewer({
   emptySubtext,
   disabled = false,
 }: ImageViewerProps) {
-  const t = useTranslations('viewer');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
 
   // null means "fit to page" mode, number is index into ZOOM_LEVELS
@@ -178,7 +176,7 @@ export function ImageViewer({
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-400 py-20">
         <div className="text-6xl mb-4">{emptyIcon}</div>
-        <p className="text-sm">{emptyText || t('noImages')}</p>
+        <p className="text-sm">{emptyText || t('viewer.noImages')}</p>
         {emptySubtext && <p className="text-xs mt-1 text-gray-300">{emptySubtext}</p>}
       </div>
     );
@@ -193,7 +191,7 @@ export function ImageViewer({
             // Show loading spinner while content is being fetched
             <div className="flex flex-col items-center justify-center text-gray-500">
               <Loader2 className="h-8 w-8 animate-spin text-amber-600 mb-2" />
-              <p className="text-sm">{t('loading') || 'Loading...'}</p>
+              <p className="text-sm">{t('viewer.loading') || 'Loading...'}</p>
             </div>
           ) : (() => {
             const mimeType = getMimeType(currentImage.data);
@@ -295,7 +293,7 @@ export function ImageViewer({
         ) : (
           <div className="text-center text-gray-400 py-20">
             <div className="text-6xl mb-4">{emptyIcon}</div>
-            <p className="text-sm">{emptyText || t('noImages')}</p>
+            <p className="text-sm">{emptyText || t('viewer.noImages')}</p>
           </div>
         )}
       </div>
@@ -314,7 +312,7 @@ export function ImageViewer({
               className="h-8 w-8 text-white hover:bg-red-600"
               onClick={onDelete}
               disabled={images.length === 0 || disabled}
-              title={t('deletePage')}
+              title={t('viewer.deletePage')}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -329,7 +327,7 @@ export function ImageViewer({
             className="h-8 w-8 text-white hover:bg-white/20"
             onClick={handleZoomOut}
             disabled={images.length === 0 || (!isFitMode && zoomIndex === 0) || disabled}
-            title={t('zoomOut')}
+            title={t('viewer.zoomOut')}
           >
             <ZoomOut className="h-4 w-4" />
           </Button>
@@ -342,7 +340,7 @@ export function ImageViewer({
             )}
             onClick={handleFitToPage}
             disabled={images.length === 0 || disabled}
-            title={t('fitToPage')}
+            title={t('viewer.fitToPage')}
           >
             {isFitMode ? 'Fit' : `${Math.round(zoom * 100)}%`}
           </Button>
@@ -352,7 +350,7 @@ export function ImageViewer({
             className="h-8 w-8 text-white hover:bg-white/20"
             onClick={handleZoomIn}
             disabled={images.length === 0 || (!isFitMode && zoomIndex === ZOOM_LEVELS.length - 1) || disabled}
-            title={t('zoomIn')}
+            title={t('viewer.zoomIn')}
           >
             <ZoomIn className="h-4 w-4" />
           </Button>
@@ -363,7 +361,7 @@ export function ImageViewer({
             className="h-8 w-8 text-white hover:bg-white/20"
             onClick={handleRotateLeft}
             disabled={images.length === 0 || disabled}
-            title={t('rotateLeft')}
+            title={t('viewer.rotateLeft')}
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
@@ -373,7 +371,7 @@ export function ImageViewer({
             className="h-8 w-8 text-white hover:bg-white/20"
             onClick={handleRotateRight}
             disabled={images.length === 0 || disabled}
-            title={t('rotateRight')}
+            title={t('viewer.rotateRight')}
           >
             <RotateCw className="h-4 w-4" />
           </Button>

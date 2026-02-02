@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScanLine, Loader2 } from 'lucide-react';
@@ -15,7 +13,7 @@ interface ScanButtonProps {
 }
 
 export function ScanButton({ compact = false, onScanComplete }: ScanButtonProps) {
-  const t = useTranslations('scanner');
+  const { t } = useTranslation();
   const { serviceStatus, isScanning, scanProgress, setIsScanning, setScanProgress, setScanError } =
     useScannerStore();
   const { selectedDeviceId, resolution, colorMode, duplex, autoFeeder, showUI } = useSettingsStore();
@@ -90,7 +88,7 @@ export function ScanButton({ compact = false, onScanComplete }: ScanButtonProps)
         ) : (
           <>
             <ScanLine className="mr-1 h-4 w-4" />
-            <span className="text-xs">{t('scan')}</span>
+            <span className="text-xs">{t('scanner.scan')}</span>
           </>
         )}
       </Button>
@@ -108,12 +106,12 @@ export function ScanButton({ compact = false, onScanComplete }: ScanButtonProps)
         {isScanning ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            {t('scanning')}
+            {t('scanner.scanning')}
           </>
         ) : (
           <>
             <ScanLine className="mr-2 h-5 w-5" />
-            {t('scan')}
+            {t('scanner.scan')}
           </>
         )}
       </Button>

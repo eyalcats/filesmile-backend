@@ -1,28 +1,26 @@
-'use client';
-
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { FileText, Barcode, FolderDown } from 'lucide-react';
 import { useSettingsStore, type AppMode } from '@/stores/settings-store';
 import { cn } from '@/lib/utils';
 
 export function ModeToggle() {
-  const t = useTranslations('header');
+  const { t } = useTranslation();
   const { mode, setMode } = useSettingsStore();
 
   const modes: { value: AppMode; label: string; icon: React.ReactNode }[] = [
     {
       value: 'document',
-      label: t('documentMode'),
+      label: t('header.documentMode'),
       icon: <FileText className="h-4 w-4" />,
     },
     {
       value: 'barcode',
-      label: t('barcodeMode'),
+      label: t('header.barcodeMode'),
       icon: <Barcode className="h-4 w-4" />,
     },
     {
       value: 'export',
-      label: t('exportMode'),
+      label: t('header.exportMode'),
       icon: <FolderDown className="h-4 w-4" />,
     },
   ];

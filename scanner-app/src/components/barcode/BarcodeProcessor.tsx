@@ -1,7 +1,5 @@
-'use client';
-
 import { useCallback, useEffect, useRef } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -28,8 +26,8 @@ interface BarcodeProcessorProps {
 }
 
 export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
-  const t = useTranslations('barcode');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const isInitializedRef = useRef(false);
 
@@ -94,7 +92,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
       setFormPrefixes(prefixes);
     } catch (error) {
       console.error('Failed to load form prefixes:', error);
-      const message = error instanceof Error ? error.message : t('errors.connectionFailed');
+      const message = error instanceof Error ? error.message : t('barcode.errors.connectionFailed');
       setPrefixError(message);
     }
   };
@@ -172,13 +170,13 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
         if (file.fileType === 'pdf') {
           const pdfResult = await extractBarcodeFromPdf(file.fileData);
           if (!pdfResult.barcode) {
-            throw new Error(t('errors.noBarcode'));
+            throw new Error(t('barcode.errors.noBarcode'));
           }
           barcode = pdfResult.barcode.value;
         } else {
           const imageResult = await barcodeDetector.detectFromImage(file.fileData);
           if (!imageResult) {
-            throw new Error(t('errors.noBarcode'));
+            throw new Error(t('barcode.errors.noBarcode'));
           }
           barcode = imageResult.value;
         }
@@ -186,7 +184,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
         // Parse barcode to extract prefix and document number
         const parsed = barcodeDetector.parseBarcode(barcode);
         if (!parsed) {
-          setFileError(file.id, t('errors.noBarcode'));
+          setFileError(file.id, t('barcode.errors.noBarcode'));
           continue;
         }
 
@@ -196,7 +194,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
         const formInfo = getFormByPrefix(parsed.prefix);
         if (!formInfo) {
           setFileStatus(file.id, 'not_found');
-          setFileError(file.id, `${t('errors.invalidPrefix')}: ${parsed.prefix}`);
+          setFileError(file.id, `${t('barcode.errors.invalidPrefix')}: ${parsed.prefix}`);
           continue;
         }
 
@@ -215,13 +213,13 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
           });
         } catch {
           setFileStatus(file.id, 'not_found');
-          setFileError(file.id, t('errors.documentNotFound'));
+          setFileError(file.id, t('barcode.errors.documentNotFound'));
         }
 
         // Rate limiting - small delay between API calls to avoid overloading the server
         await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : t('status.error');
+        const errorMessage = error instanceof Error ? error.message : t('barcode.status.error');
         setFileError(file.id, errorMessage);
       }
     }
@@ -270,7 +268,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
         uploaded++;
       } catch (error) {
         console.error(`Failed to upload ${file.fileName}:`, error);
-        setFileError(file.id, t('errors.uploadFailed'));
+        setFileError(file.id, t('barcode.errors.uploadFailed'));
       }
 
       setUploadProgress(Math.round((uploaded / matchedFiles.length) * 100));
@@ -336,7 +334,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
             className={cn(isDragActive && 'border-primary bg-primary/5')}
           >
             <Upload className="h-4 w-4 me-2" />
-            {t('uploadFiles')}
+            {t('barcode.uploadFiles')}
           </Button>
         </div>
 
@@ -357,7 +355,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
           ) : (
             <>
               <FileUp className="h-4 w-4 me-2" />
-              {t('uploadAll')}
+              {t('barcode.uploadAll')}
             </>
           )}
         </Button>
@@ -370,14 +368,14 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
           disabled={isProcessing || isUploading || files.length === 0}
         >
           <Trash2 className="h-4 w-4 me-2" />
-          {t('clearAll')}
+          {t('barcode.clearAll')}
         </Button>
 
         {/* Processing indicator */}
         {isProcessing && (
           <span className="flex items-center gap-1 text-sm text-blue-600 ms-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            {t('processing')}
+            {t('barcode.processing')}
           </span>
         )}
 
@@ -385,7 +383,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
         {prefixError && (
           <span className="flex items-center gap-1 text-sm text-red-600 ms-2">
             <AlertCircle className="h-4 w-4" />
-            {t('errors.connectionFailed')}
+            {t('barcode.errors.connectionFailed')}
             <Button
               variant="ghost"
               size="sm"
@@ -406,7 +404,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
       {isPrefixesLoading && (
         <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>{t('processing')}</span>
+          <span>{t('barcode.processing')}</span>
         </div>
       )}
 
@@ -414,7 +412,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
       {prefixError && (
         <div className="flex items-center justify-center gap-3 py-4 px-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
           <AlertCircle className="h-5 w-5 flex-shrink-0" />
-          <span className="text-sm">{t('errors.connectionFailed')}</span>
+          <span className="text-sm">{t('barcode.errors.connectionFailed')}</span>
           <Button
             variant="outline"
             size="sm"
@@ -422,7 +420,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
             className="border-red-300 hover:bg-red-100"
           >
             <RefreshCw className="h-4 w-4 me-2" />
-            {t('retry')}
+            {t('barcode.retry')}
           </Button>
         </div>
       )}
@@ -439,31 +437,31 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
       >
         <input {...getInputProps()} />
         <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-        <p className="text-muted-foreground">{t('dragDrop')}</p>
-        <p className="text-sm text-muted-foreground/75">{t('orClickToBrowse')}</p>
+        <p className="text-muted-foreground">{t('barcode.dragDrop')}</p>
+        <p className="text-sm text-muted-foreground/75">{t('barcode.orClickToBrowse')}</p>
       </div>
 
       {/* Summary stats */}
       {files.length > 0 && (
         <div className={cn('flex items-center gap-4 text-sm', isRTL && 'flex-row-reverse')}>
           <span className="text-muted-foreground">
-            {t('summary.total')}: {files.length}
+            {t('barcode.summary.total')}: {files.length}
           </span>
           {matchedCount > 0 && (
             <span className="flex items-center gap-1 text-green-600">
               <CheckCircle2 className="h-4 w-4" />
-              {t('summary.matched')}: {matchedCount}
+              {t('barcode.summary.matched')}: {matchedCount}
             </span>
           )}
           {errorCount > 0 && (
             <span className="flex items-center gap-1 text-red-600">
               <XCircle className="h-4 w-4" />
-              {t('summary.errors')}: {errorCount}
+              {t('barcode.summary.errors')}: {errorCount}
             </span>
           )}
           {pendingCount > 0 && (
             <span className="text-muted-foreground">
-              {t('summary.pending')}: {pendingCount}
+              {t('barcode.summary.pending')}: {pendingCount}
             </span>
           )}
         </div>
@@ -473,7 +471,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
       {isProcessing && (
         <div className="flex items-center gap-2 text-blue-600">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>{t('processing')}</span>
+          <span>{t('barcode.processing')}</span>
         </div>
       )}
 
@@ -493,7 +491,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
             ) : (
               <>
                 <FileUp className="h-4 w-4 me-2" />
-                {t('uploadAllCount', { count: matchedCount })}
+                {t('barcode.uploadAllCount', { count: matchedCount })}
               </>
             )}
           </Button>
@@ -505,7 +503,7 @@ export function BarcodeProcessor({ compact = false }: BarcodeProcessorProps) {
             disabled={isProcessing || isUploading}
           >
             <Trash2 className="h-4 w-4 me-2" />
-            {t('clearAll')}
+            {t('barcode.clearAll')}
           </Button>
         </div>
       )}

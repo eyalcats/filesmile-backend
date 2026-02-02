@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   CheckCircle2,
@@ -36,8 +34,8 @@ interface ExportFileTableProps {
 }
 
 export function ExportFileTable({ onExport, onDelete, disabled }: ExportFileTableProps) {
-  const t = useTranslations('export');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
 
   const { files, selectedIndex, selectFile, isUploading } = useExportStore();
@@ -49,12 +47,12 @@ export function ExportFileTable({ onExport, onDelete, disabled }: ExportFileTabl
       {/* Summary Bar */}
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center justify-center gap-6 flex-shrink-0">
         <span className="text-base font-semibold text-gray-700">
-          {t('summary.total')}: <span className="text-lg">{files.length}</span>
+          {t('export.summary.total')}: <span className="text-lg">{files.length}</span>
         </span>
         {pendingCount > 0 && (
           <span className="flex items-center gap-1.5 text-base font-semibold text-amber-600">
             <Clock className="h-5 w-5" />
-            {t('summary.pending')}: <span className="text-lg">{pendingCount}</span>
+            {t('export.summary.pending')}: <span className="text-lg">{pendingCount}</span>
           </span>
         )}
       </div>
@@ -66,9 +64,9 @@ export function ExportFileTable({ onExport, onDelete, disabled }: ExportFileTabl
             <tr className={isRTL ? 'text-right' : 'text-left'}>
               <th className="px-2 py-2 w-8">#</th>
               <th className="px-2 py-2 w-8"></th>
-              <th className="px-2 py-2">{t('fileName')}</th>
-              <th className="px-2 py-2">{t('source')}</th>
-              <th className="px-2 py-2 w-24">{t('actions')}</th>
+              <th className="px-2 py-2">{t('export.fileName')}</th>
+              <th className="px-2 py-2">{t('export.source')}</th>
+              <th className="px-2 py-2 w-24">{t('export.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -110,7 +108,7 @@ export function ExportFileTable({ onExport, onDelete, disabled }: ExportFileTabl
                       )}
                       onClick={(e) => { e.stopPropagation(); onExport(file); }}
                       disabled={disabled || isUploading || file.status === 'uploading' || file.status === 'uploaded'}
-                      title={file.status === 'error' ? t('retry') : t('export')}
+                      title={file.status === 'error' ? t('export.retry') : t('export.export')}
                     >
                       {file.status === 'error' ? (
                         <RefreshCw className="h-3 w-3" />
@@ -124,7 +122,7 @@ export function ExportFileTable({ onExport, onDelete, disabled }: ExportFileTabl
                       className="h-6 w-6 text-gray-400 hover:text-red-600"
                       onClick={(e) => { e.stopPropagation(); onDelete(file); }}
                       disabled={disabled || isUploading}
-                      title={t('delete')}
+                      title={t('export.delete')}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -135,7 +133,7 @@ export function ExportFileTable({ onExport, onDelete, disabled }: ExportFileTabl
             {files.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                  {t('noFiles')}
+                  {t('export.noFiles')}
                 </td>
               </tr>
             )}

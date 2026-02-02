@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { Wifi, WifiOff, Loader2, Download, ExternalLink } from 'lucide-react';
 import { useScannerStore } from '@/stores/scanner-store';
 import { scannerService } from '@/lib/scanner';
@@ -10,7 +8,7 @@ import { Button } from '@/components/ui/button';
 
 // Base path for static assets (must match next.config.ts basePath)
 // In development basePath is empty, in production it's '/scanner'
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+const BASE_PATH = import.meta.env.VITE_BASE_PATH ?? '';
 
 // Installer served from the container
 const SCANNER_SERVICE_INSTALLER_PATH = `${BASE_PATH}/downloads/FileSmilesScanner-Setup-1.0.0.exe`;
@@ -23,8 +21,8 @@ interface ServiceStatusProps {
 }
 
 export function ServiceStatus({ className }: ServiceStatusProps) {
-  const t = useTranslations('scanner.serviceStatus');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const { serviceStatus, setServiceStatus, setServiceError } = useScannerStore();
 
@@ -63,7 +61,7 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
       case 'connected':
         return {
           icon: Wifi,
-          text: t('connected'),
+          text: t('scanner.serviceStatus.connected'),
           className: 'text-green-600 bg-green-50 border-green-200',
           iconClassName: 'text-green-600',
         };
@@ -71,7 +69,7 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
       case 'error':
         return {
           icon: WifiOff,
-          text: t('disconnected'),
+          text: t('scanner.serviceStatus.disconnected'),
           className: 'text-red-600 bg-red-50 border-red-200',
           iconClassName: 'text-red-600',
         };
@@ -79,7 +77,7 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
       default:
         return {
           icon: Loader2,
-          text: t('checking'),
+          text: t('scanner.serviceStatus.checking'),
           className: 'text-amber-600 bg-amber-50 border-amber-200',
           iconClassName: 'text-amber-600 animate-spin',
         };
@@ -111,14 +109,14 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
           dir={isRTL ? 'rtl' : 'ltr'}
         >
           <div>
-            <h4 className="font-medium text-blue-900">{t('installTitle')}</h4>
-            <p className="text-sm text-blue-700 mt-1">{t('installDescription')}</p>
+            <h4 className="font-medium text-blue-900">{t('scanner.serviceStatus.installTitle')}</h4>
+            <p className="text-sm text-blue-700 mt-1">{t('scanner.serviceStatus.installDescription')}</p>
           </div>
 
           <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-            <li>{t('step1')}</li>
-            <li>{t('step2')}</li>
-            <li>{t('step3')}</li>
+            <li>{t('scanner.serviceStatus.step1')}</li>
+            <li>{t('scanner.serviceStatus.step2')}</li>
+            <li>{t('scanner.serviceStatus.step3')}</li>
           </ol>
 
           <div className="flex flex-wrap gap-2">
@@ -129,7 +127,7 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
               className="bg-blue-600 hover:bg-blue-700"
             >
               <Download className={cn('h-4 w-4', isRTL ? 'ms-2' : 'me-2')} />
-              {t('downloadButton')}
+              {t('scanner.serviceStatus.downloadButton')}
             </Button>
             <Button
               onClick={handleDownloadDotNet}
@@ -138,11 +136,11 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
               className="border-blue-300 text-blue-700 hover:bg-blue-100"
             >
               <ExternalLink className={cn('h-4 w-4', isRTL ? 'ms-2' : 'me-2')} />
-              {t('downloadDotNet')}
+              {t('scanner.serviceStatus.downloadDotNet')}
             </Button>
           </div>
 
-          <p className="text-xs text-blue-600">{t('windowsOnly')}</p>
+          <p className="text-xs text-blue-600">{t('scanner.serviceStatus.windowsOnly')}</p>
         </div>
       )}
     </div>

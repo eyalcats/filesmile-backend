@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -31,8 +29,8 @@ interface LoginDialogProps {
 type AuthStep = 'email' | 'tenant-select' | 'credentials';
 
 export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
-  const t = useTranslations('auth');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const {
     setAuth,
@@ -86,7 +84,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
             setStep('tenant-select');
           } else {
             // Only one tenant, no selection needed
-            setError('Only one organization available');
+            setError(t('auth.singleTenantOnly'));
             clearReauthMode();
           }
         })
@@ -94,7 +92,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
           if (err instanceof ApiException) {
             setError(err.message);
           } else {
-            setError(t('loginError'));
+            setError(t('auth.loginError'));
           }
           clearReauthMode();
         })
@@ -145,12 +143,12 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       setIsLoading(false);
       if (err instanceof ApiException) {
         if (err.errorCode === 'TENANT_NOT_FOUND') {
-          setError(t('tenantNotFound'));
+          setError(t('auth.tenantNotFound'));
         } else {
           setError(err.message);
         }
       } else {
-        setError(t('loginError'));
+        setError(t('auth.loginError'));
       }
     }
   };
@@ -206,7 +204,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       setIsLoading(false);
 
       if (err instanceof ApiException && err.status === 401) {
-        setError(t('storedCredentialsExpired'));
+        setError(t('auth.storedCredentialsExpired'));
       }
     }
   };
@@ -233,12 +231,12 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       setIsLoading(false);
       if (err instanceof ApiException) {
         if (err.status === 401) {
-          setError(t('invalidCredentials'));
+          setError(t('auth.invalidCredentials'));
         } else {
           setError(err.message);
         }
       } else {
-        setError(t('loginError'));
+        setError(t('auth.loginError'));
       }
     }
   };
@@ -298,7 +296,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const renderEmailForm = () => (
     <form onSubmit={handleEmailSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">{t('email')}</Label>
+        <Label htmlFor="email">{t('auth.email')}</Label>
         <Input
           id="email"
           type="email"
@@ -317,10 +315,10 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {t('loggingIn')}
+            {t('auth.loggingIn')}
           </>
         ) : (
-          t('loginButton')
+          t('auth.loginButton')
         )}
       </Button>
     </form>
@@ -330,15 +328,15 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const renderTenantSelect = () => (
     <div className="space-y-4">
       <div className="text-sm text-muted-foreground">
-        <strong>{t('email')}:</strong> {email}
+        <strong>{t('auth.email')}:</strong> {email}
       </div>
-      <p className="text-sm text-muted-foreground">{t('selectTenantDescription')}</p>
+      <p className="text-sm text-muted-foreground">{t('auth.selectTenantDescription')}</p>
 
       <div className="space-y-2">
-        <Label>{t('organization')}</Label>
+        <Label>{t('auth.organization')}</Label>
         <Select value={selectedTenantId} onValueChange={setSelectedTenantId}>
           <SelectTrigger>
-            <SelectValue placeholder={t('selectAnOrganization')} />
+            <SelectValue placeholder={t('auth.selectAnOrganization')} />
           </SelectTrigger>
           <SelectContent>
             {tenants.map((tenant) => (
@@ -358,7 +356,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       <div className="flex gap-2">
         <Button variant="outline" onClick={handleBack} disabled={isLoading} className="flex-1">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('back')}
+          {t('auth.back')}
         </Button>
         <Button
           onClick={handleTenantSelect}
@@ -368,10 +366,10 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t('loggingIn')}
+              {t('auth.loggingIn')}
             </>
           ) : (
-            t('continue')
+            t('auth.continue')
           )}
         </Button>
       </div>
@@ -386,24 +384,24 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
           <Lock className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
           <div>
             <p className="text-amber-700 text-xs">
-              <strong>{t('organization')}:</strong> {resolvedTenantName}
+              <strong>{t('auth.organization')}:</strong> {resolvedTenantName}
               <br />
-              <strong>{t('email')}:</strong> {email}
+              <strong>{t('auth.email')}:</strong> {email}
             </p>
           </div>
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">{t('enterErpCredentials')}</p>
+      <p className="text-sm text-muted-foreground">{t('auth.enterErpCredentials')}</p>
 
       <div className="space-y-2">
-        <Label htmlFor="erpUsername">{t('erpUsername')} *</Label>
+        <Label htmlFor="erpUsername">{t('auth.erpUsername')} *</Label>
         <Input
           id="erpUsername"
           type="text"
           value={erpUsername}
           onChange={(e) => setErpUsername(e.target.value)}
-          placeholder={t('enterErpUsername')}
+          placeholder={t('auth.enterErpUsername')}
           required
           autoFocus
           dir="ltr"
@@ -411,13 +409,13 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="erpPassword">{t('erpPassword')} *</Label>
+        <Label htmlFor="erpPassword">{t('auth.erpPassword')} *</Label>
         <Input
           id="erpPassword"
           type="password"
           value={erpPassword}
           onChange={(e) => setErpPassword(e.target.value)}
-          placeholder={t('enterErpPassword')}
+          placeholder={t('auth.enterErpPassword')}
           required
           dir="ltr"
         />
@@ -428,16 +426,16 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       <div className="flex gap-2">
         <Button variant="outline" onClick={handleBack} disabled={isLoading} type="button">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('back')}
+          {t('auth.back')}
         </Button>
         <Button type="submit" disabled={isLoading} className="flex-1">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t('validating')}
+              {t('auth.validating')}
             </>
           ) : (
-            t('loginButton')
+            t('auth.loginButton')
           )}
         </Button>
       </div>
@@ -448,11 +446,11 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const getDialogTitle = () => {
     switch (step) {
       case 'tenant-select':
-        return t('selectTenant');
+        return t('auth.selectTenant');
       case 'credentials':
-        return t('erpLoginRequired');
+        return t('auth.erpLoginRequired');
       default:
-        return t('login');
+        return t('auth.login');
     }
   };
 
@@ -460,11 +458,11 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const getDialogDescription = () => {
     switch (step) {
       case 'tenant-select':
-        return `${tenants.length} ${t('environmentsAvailable')}`;
+        return `${tenants.length} ${t('auth.environmentsAvailable')}`;
       case 'credentials':
-        return t('enterErpCredentialsDesc');
+        return t('auth.enterErpCredentialsDesc');
       default:
-        return t('enterEmailToLogin');
+        return t('auth.enterEmailToLogin');
     }
   };
 

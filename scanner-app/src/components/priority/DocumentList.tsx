@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useMemo, useEffect } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -43,8 +41,8 @@ function formatShortDate(dateStr?: string): string {
 }
 
 export function DocumentList({ open, onClose }: DocumentListProps) {
-  const t = useTranslations('priority');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const { searchResults, setSelectedDocument } = useDocumentStore();
 
@@ -109,9 +107,9 @@ export function DocumentList({ open, onClose }: DocumentListProps) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]" dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
-          <DialogTitle className={isRTL ? 'text-right' : ''}>{t('selectDocument')}</DialogTitle>
+          <DialogTitle className={isRTL ? 'text-right' : ''}>{t('priority.selectDocument')}</DialogTitle>
           <DialogDescription className="sr-only">
-            {t('selectDocument')}
+            {t('priority.selectDocument')}
           </DialogDescription>
         </DialogHeader>
 
@@ -120,7 +118,7 @@ export function DocumentList({ open, onClose }: DocumentListProps) {
           <div className="space-y-2 pb-2 border-b">
             <div className={`flex items-center gap-2 text-xs text-muted-foreground ${isRTL ? 'flex-row-reverse' : ''}`}>
               <Filter className="h-3 w-3" />
-              <span>{t('filterBy')}</span>
+              <span>{t('priority.filterBy')}</span>
               {hasActiveFilters && (
                 <Button
                   variant="ghost"
@@ -129,7 +127,7 @@ export function DocumentList({ open, onClose }: DocumentListProps) {
                   onClick={clearFilters}
                 >
                   <X className="h-3 w-3 me-1" />
-                  {t('clearFilters')}
+                  {t('priority.clearFilters')}
                 </Button>
               )}
             </div>
@@ -138,10 +136,10 @@ export function DocumentList({ open, onClose }: DocumentListProps) {
               {docTypes.length > 1 && (
                 <Select value={docTypeFilter} onValueChange={setDocTypeFilter} dir={isRTL ? 'rtl' : 'ltr'}>
                   <SelectTrigger className={`h-8 text-xs flex-1 ${isRTL ? 'text-right' : ''}`}>
-                    <SelectValue placeholder={t('docType')} />
+                    <SelectValue placeholder={t('priority.docType')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all" className={isRTL ? 'text-right' : ''}>{t('allDocTypes')}</SelectItem>
+                    <SelectItem value="all" className={isRTL ? 'text-right' : ''}>{t('priority.allDocTypes')}</SelectItem>
                     {docTypes.map(({ form, desc }) => (
                       <SelectItem key={form} value={form} className={isRTL ? 'text-right' : ''}>
                         {desc}
@@ -155,10 +153,10 @@ export function DocumentList({ open, onClose }: DocumentListProps) {
               {customers.length > 1 && (
                 <Select value={customerFilter} onValueChange={setCustomerFilter} dir={isRTL ? 'rtl' : 'ltr'}>
                   <SelectTrigger className={`h-8 text-xs flex-1 ${isRTL ? 'text-right' : ''}`}>
-                    <SelectValue placeholder={t('customer')} />
+                    <SelectValue placeholder={t('priority.customer')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all" className={isRTL ? 'text-right' : ''}>{t('allCustomers')}</SelectItem>
+                    <SelectItem value="all" className={isRTL ? 'text-right' : ''}>{t('priority.allCustomers')}</SelectItem>
                     {customers.map((cust) => (
                       <SelectItem key={cust} value={cust} className={isRTL ? 'text-right' : ''}>
                         {cust}
@@ -170,7 +168,7 @@ export function DocumentList({ open, onClose }: DocumentListProps) {
             </div>
             {/* Results count */}
             <div className="text-xs text-muted-foreground">
-              {filteredResults.length} / {searchResults.length} {t('documents')}
+              {filteredResults.length} / {searchResults.length} {t('priority.documents')}
             </div>
           </div>
         )}
@@ -201,13 +199,13 @@ export function DocumentList({ open, onClose }: DocumentListProps) {
 
             {filteredResults.length === 0 && searchResults.length > 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                {t('noFilteredResults')}
+                {t('priority.noFilteredResults')}
               </div>
             )}
 
             {searchResults.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                {t('noResults')}
+                {t('priority.noResults')}
               </div>
             )}
           </div>

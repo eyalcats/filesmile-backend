@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import {
   Select,
   SelectContent,
@@ -16,8 +14,8 @@ import { useSettingsStore, Resolution, ColorMode } from '@/stores/settings-store
 const RESOLUTIONS: Resolution[] = [100, 150, 200, 300, 600];
 
 export function ScanSettings() {
-  const t = useTranslations('scanner');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const { serviceStatus } = useScannerStore();
   const {
@@ -41,7 +39,7 @@ export function ScanSettings() {
       <div className="grid grid-cols-2 gap-4" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Resolution */}
         <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
-          <Label>{t('resolution')}</Label>
+          <Label>{t('scanner.resolution')}</Label>
           <Select
             value={resolution.toString()}
             onValueChange={(value) => setResolution(parseInt(value) as Resolution)}
@@ -63,7 +61,7 @@ export function ScanSettings() {
         {/* Duplex */}
         <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
           <Label htmlFor="duplex" className="cursor-pointer">
-            {t('duplex')}
+            {t('scanner.duplex')}
           </Label>
           <div className={`h-10 flex items-center ${isRTL ? 'justify-end' : ''}`}>
             <Switch
@@ -77,7 +75,7 @@ export function ScanSettings() {
 
         {/* Color Mode */}
         <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
-          <Label>{t('colorMode')}</Label>
+          <Label>{t('scanner.colorMode')}</Label>
           <Select
             value={colorMode}
             onValueChange={(value) => setColorMode(value as ColorMode)}
@@ -87,9 +85,9 @@ export function ScanSettings() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="gray">{t('gray')}</SelectItem>
-              <SelectItem value="bw">{t('bw')}</SelectItem>
-              <SelectItem value="rgb">{t('rgb')}</SelectItem>
+              <SelectItem value="gray">{t('scanner.gray')}</SelectItem>
+              <SelectItem value="bw">{t('scanner.bw')}</SelectItem>
+              <SelectItem value="rgb">{t('scanner.rgb')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -97,7 +95,7 @@ export function ScanSettings() {
         {/* Auto Feeder */}
         <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
           <Label htmlFor="autoFeeder" className="cursor-pointer">
-            {t('autoFeeder')}
+            {t('scanner.autoFeeder')}
           </Label>
           <div className={`h-10 flex items-center ${isRTL ? 'justify-end' : ''}`}>
             <Switch
@@ -112,7 +110,7 @@ export function ScanSettings() {
         {/* Auto Save */}
         <div className={`space-y-2 ${isRTL ? 'text-right' : ''}`}>
           <Label htmlFor="autoSave" className="cursor-pointer">
-            {t('autoSave')}
+            {t('scanner.autoSave')}
           </Label>
           <div className={`h-10 flex items-center ${isRTL ? 'justify-end' : ''}`}>
             <Switch

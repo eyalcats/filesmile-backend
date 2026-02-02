@@ -1,7 +1,5 @@
-'use client';
-
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { Settings, LogOut, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitch } from './LanguageSwitch';
@@ -9,7 +7,7 @@ import { ScannerSettingsModal } from '@/components/scanner';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function Header() {
-  const t = useTranslations();
+  const { t } = useTranslation();
   const [showSettings, setShowSettings] = useState(false);
   const { logout, isAuthenticated } = useAuthStore();
 

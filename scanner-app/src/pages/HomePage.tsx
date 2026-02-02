@@ -1,8 +1,6 @@
-'use client';
-
 import { useState, useRef, useCallback, useEffect, Suspense } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { ModeToggle } from '@/components/layout/ModeToggle';
 import { useSettingsStore } from '@/stores/settings-store';
@@ -29,11 +27,10 @@ import {
   AttachmentList,
 } from '@/components/priority';
 import { ScanButton } from '@/components/scanner';
-import { BarcodeProcessor, BarcodeFileList, BarcodeViewer, BarcodeFileTable } from '@/components/barcode';
+import { BarcodeProcessor, BarcodeFileTable, BarcodeViewer } from '@/components/barcode';
 import { ImageFileTable } from '@/components/document';
 import { ImageViewer } from '@/components/viewer';
 import { ExportFileTable } from '@/components/export';
-import { useBarcodeStore } from '@/stores/barcode-store';
 import { useImageStore } from '@/stores/image-store';
 import { useExportStore, type ExportFile } from '@/stores/export-store';
 import { api } from '@/lib/api';
@@ -41,11 +38,11 @@ import { splitPdfIntoPages } from '@/lib/barcode/pdf-extractor';
 import { cn } from '@/lib/utils';
 
 function HomePageContent() {
-  const t = useTranslations();
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
-  const router = useRouter();
-  const pathname = usePathname();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { mode } = useSettingsStore();
   const { isAuthenticated } = useAuthStore();
   const {
@@ -60,7 +57,7 @@ function HomePageContent() {
   } = useDocumentStore();
 
   // Deep link handling
-  const { params: deepLinkParams, isDeepLink, isProcessed, markProcessed, urlMode } = useDeepLink();
+  const { params: deepLinkParams, isProcessed, markProcessed, urlMode } = useDeepLink();
 
   // Handle mode URL parameter (e.g., ?mode=export)
   useEffect(() => {
@@ -154,7 +151,7 @@ function HomePageContent() {
       }
 
       // Clear the URL query string for cleaner UX
-      router.replace(pathname, { scroll: false });
+      navigate(location.pathname, { replace: true });
     };
 
     fetchDocumentDetails();
@@ -170,8 +167,8 @@ function HomePageContent() {
     setSelectedForm,
     setSearchTerm,
     markProcessed,
-    router,
-    pathname,
+    navigate,
+    location.pathname,
     t,
   ]);
   const {
@@ -179,7 +176,6 @@ function HomePageContent() {
     selectedPageIndex,
     getFlatPages,
     getCurrentPage,
-    getSelectedGroupIndex,
     removeFileGroup,
     goFirst,
     goPrev,
@@ -190,7 +186,6 @@ function HomePageContent() {
   // Get flattened pages for display
   const flatPages = getFlatPages();
   const currentPage = getCurrentPage();
-  const selectedGroupIndex = getSelectedGroupIndex();
 
   // Modal states
   const [showDocumentList, setShowDocumentList] = useState(false);
@@ -902,7 +897,7 @@ function HomePageContent() {
   );
 }
 
-// Wrapper component with Suspense boundary for useSearchParams
+// Wrapper component with Suspense boundary
 export default function HomePage() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>

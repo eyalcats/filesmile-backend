@@ -1,6 +1,4 @@
-'use client';
-
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +14,7 @@ import {
 import { useBarcodeStore, type BarcodeFile, type BarcodeStatus } from '@/stores/barcode-store';
 import { cn } from '@/lib/utils';
 
-function getStatusIcon(status: BarcodeStatus, isProcessing: boolean) {
+function getStatusIcon(status: BarcodeStatus, _isProcessing: boolean) {
   switch (status) {
     case 'pending':
       return <Clock className="h-5 w-5 text-muted-foreground" />;
@@ -59,7 +57,7 @@ interface BarcodeFileItemProps {
 }
 
 function BarcodeFileItem({ file, isRTL }: BarcodeFileItemProps) {
-  const t = useTranslations('barcode');
+  const { t } = useTranslation();
   const { removeFile, isProcessing, currentProcessingId } = useBarcodeStore();
   const isCurrentlyProcessing = currentProcessingId === file.id;
 
@@ -90,19 +88,19 @@ function BarcodeFileItem({ file, isRTL }: BarcodeFileItemProps) {
 
           {/* Status message */}
           <div className="text-sm text-muted-foreground mt-1">
-            {file.status === 'pending' && t('status.pending')}
-            {file.status === 'detecting' && t('status.detecting')}
-            {file.status === 'detected' && t('status.matching')}
-            {file.status === 'matched' && t('status.matched')}
-            {file.status === 'not_found' && t('status.notFound')}
-            {file.status === 'error' && (file.error || t('status.error'))}
+            {file.status === 'pending' && t('barcode.status.pending')}
+            {file.status === 'detecting' && t('barcode.status.detecting')}
+            {file.status === 'detected' && t('barcode.status.matching')}
+            {file.status === 'matched' && t('barcode.status.matched')}
+            {file.status === 'not_found' && t('barcode.status.notFound')}
+            {file.status === 'error' && (file.error || t('barcode.status.error'))}
           </div>
 
           {/* Barcode info */}
           {file.barcode && (
             <div className={cn('text-sm mt-2 space-y-0.5', isRTL && 'text-right')}>
               <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
-                <span className="text-muted-foreground">{t('barcodeValue')}:</span>
+                <span className="text-muted-foreground">{t('barcode.barcodeValue')}:</span>
                 <span className="font-mono">{file.barcode}</span>
               </div>
             </div>
@@ -112,11 +110,11 @@ function BarcodeFileItem({ file, isRTL }: BarcodeFileItemProps) {
           {file.matchedDocument && (
             <div className={cn('text-sm mt-2 p-2 rounded bg-background/50 space-y-1', isRTL && 'text-right')}>
               <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
-                <span className="text-muted-foreground">{t('documentForm')}:</span>
+                <span className="text-muted-foreground">{t('barcode.documentForm')}:</span>
                 <span>{file.matchedDocument.FormDesc || file.matchedDocument.Form}</span>
               </div>
               <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
-                <span className="text-muted-foreground">{t('documentNumber')}:</span>
+                <span className="text-muted-foreground">{t('barcode.documentNumber')}:</span>
                 <span className="font-medium">{file.matchedDocument.DocNo}</span>
               </div>
               {file.matchedDocument.CustName && (
@@ -135,7 +133,7 @@ function BarcodeFileItem({ file, isRTL }: BarcodeFileItemProps) {
           className="shrink-0 h-8 w-8 text-muted-foreground hover:text-destructive"
           onClick={() => removeFile(file.id)}
           disabled={isProcessing}
-          title={t('removeFile')}
+          title={t('barcode.removeFile')}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -145,15 +143,15 @@ function BarcodeFileItem({ file, isRTL }: BarcodeFileItemProps) {
 }
 
 export function BarcodeFileList() {
-  const t = useTranslations('barcode');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const { files, clearAll, isProcessing } = useBarcodeStore();
 
   if (files.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        {t('noFiles')}
+        {t('barcode.noFiles')}
       </div>
     );
   }
@@ -163,7 +161,7 @@ export function BarcodeFileList() {
       {/* Header with clear button */}
       <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
         <span className="text-sm text-muted-foreground">
-          {t('summary.total')}: {files.length}
+          {t('barcode.summary.total')}: {files.length}
         </span>
         <Button
           variant="ghost"
@@ -173,7 +171,7 @@ export function BarcodeFileList() {
           className="text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-4 w-4 me-1" />
-          {t('clearAll')}
+          {t('barcode.clearAll')}
         </Button>
       </div>
 

@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useScannerStore } from '@/stores/scanner-store';

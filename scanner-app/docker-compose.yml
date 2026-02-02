@@ -1,6 +1,6 @@
 # Scanner App Docker Compose
 # ==========================
-# Standalone deployment of the FileSmile Scanner App
+# Standalone deployment of the FileSmile Scanner App (React + Vite)
 #
 # Build and push:
 #   docker-compose build
@@ -9,8 +9,8 @@
 # Run locally:
 #   docker-compose up
 #
-# With custom API URL:
-#   NEXT_PUBLIC_API_URL=https://api.example.com/api/v1 docker-compose up
+# With custom API URL (build-time only):
+#   VITE_API_URL=https://api.example.com/api/v1 docker-compose build
 
 version: '3.8'
 
@@ -20,26 +20,16 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        # API URL - default uses relative path (same host)
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
-        # Base path for reverse proxy routing
-        NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-/scanner}
+        # Build-time args (baked into static files)
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
     image: eyalcats/scanner-app:latest
     container_name: scanner-app
     restart: unless-stopped
     ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      # VintaSoft SDK License (optional)
-      - NEXT_PUBLIC_VINTASOFT_REG_USER=${NEXT_PUBLIC_VINTASOFT_REG_USER:-}
-      - NEXT_PUBLIC_VINTASOFT_REG_CODE=${NEXT_PUBLIC_VINTASOFT_REG_CODE:-}
-      - NEXT_PUBLIC_VINTASOFT_REG_URL=${NEXT_PUBLIC_VINTASOFT_REG_URL:-}
-      - NEXT_PUBLIC_VINTASOFT_EXPIRATION=${NEXT_PUBLIC_VINTASOFT_EXPIRATION:-}
+      - "3001:80"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/scanner/he').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 5s

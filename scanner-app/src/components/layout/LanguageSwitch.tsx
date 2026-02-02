@@ -1,7 +1,4 @@
-'use client';
-
-import { useLocale } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react';
 import {
   DropdownMenu,
@@ -10,26 +7,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { locales, localeNames, type Locale } from '@/i18n/config';
+import { locales, localeNames, type Locale } from '@/i18n';
 import { sharedPreferences } from '@/lib/shared-preferences';
 
 export function LanguageSwitch() {
-  const locale = useLocale() as Locale;
-  const router = useRouter();
-  const pathname = usePathname();
+  const { i18n } = useTranslation();
+  const locale = i18n.language as Locale;
 
   const handleLocaleChange = (newLocale: Locale) => {
     // Save to shared preferences for outlook-addin sync
     sharedPreferences.setLanguage(newLocale);
 
-    // Replace the locale segment in the pathname
-    const segments = pathname.split('/');
-    if (locales.includes(segments[1] as Locale)) {
-      segments[1] = newLocale;
-    } else {
-      segments.splice(1, 0, newLocale);
-    }
-    router.push(segments.join('/'));
+    // Change language using i18next
+    i18n.changeLanguage(newLocale);
   };
 
   return (
@@ -37,7 +27,7 @@ export function LanguageSwitch() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2">
           <Globe className="h-4 w-4" />
-          <span>{localeNames[locale]}</span>
+          <span>{localeNames[locale] || localeNames.he}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

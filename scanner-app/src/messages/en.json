@@ -34,7 +34,8 @@
     "validating": "Validating...",
     "continue": "Continue",
     "back": "Back",
-    "storedCredentialsExpired": "Your saved credentials have expired. Please enter them again."
+    "storedCredentialsExpired": "Your saved credentials have expired. Please enter them again.",
+    "singleTenantOnly": "Only one organization available"
   },
   "scanner": {
     "title": "Scanner Settings",

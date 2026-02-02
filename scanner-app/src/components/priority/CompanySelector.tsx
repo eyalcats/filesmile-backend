@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import {
   Select,
   SelectContent,
@@ -16,8 +14,8 @@ import { useDocumentStore } from '@/stores/document-store';
 import { sharedPreferences } from '@/lib/shared-preferences';
 
 export function CompanySelector() {
-  const t = useTranslations('priority');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const {
     companies,
@@ -65,7 +63,7 @@ export function CompanySelector() {
 
   return (
     <div className="space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
-      <Label>{t('company')}</Label>
+      <Label>{t('priority.company')}</Label>
       <Select
         value={selectedCompany || ''}
         onValueChange={handleCompanyChange}
@@ -76,10 +74,10 @@ export function CompanySelector() {
           {isLoadingCompanies ? (
             <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-muted-foreground">{t('selectCompany')}</span>
+              <span className="text-muted-foreground">{t('priority.selectCompany')}</span>
             </div>
           ) : (
-            <SelectValue placeholder={t('selectCompany')} />
+            <SelectValue placeholder={t('priority.selectCompany')} />
           )}
         </SelectTrigger>
         <SelectContent>

@@ -34,7 +34,8 @@
     "validating": "מאמת...",
     "continue": "המשך",
     "back": "חזור",
-    "storedCredentialsExpired": "פרטי ההתחברות השמורים פגו. אנא הזן אותם מחדש."
+    "storedCredentialsExpired": "פרטי ההתחברות השמורים פגו. אנא הזן אותם מחדש.",
+    "singleTenantOnly": "יש לך גישה לארגון אחד בלבד"
   },
   "scanner": {
     "title": "הגדרות סורק",

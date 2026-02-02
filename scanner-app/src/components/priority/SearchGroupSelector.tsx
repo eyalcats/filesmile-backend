@@ -1,7 +1,5 @@
-'use client';
-
 import { useEffect, useMemo } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 import {
   Select,
   SelectContent,
@@ -16,8 +14,8 @@ import { useDocumentStore } from '@/stores/document-store';
 import { sharedPreferences } from '@/lib/shared-preferences';
 
 export function SearchGroupSelector() {
-  const t = useTranslations('priority');
-  const locale = useLocale();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const isRTL = locale === 'he';
   const {
     searchGroups,
@@ -95,7 +93,7 @@ export function SearchGroupSelector() {
     <div className="space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Search By (Group) */}
       <div className="space-y-2">
-        <Label>{t('searchBy')}</Label>
+        <Label>{t('priority.searchBy')}</Label>
         <Select
           value={selectedGroupId?.toString() || ''}
           onValueChange={handleGroupChange}
@@ -106,10 +104,10 @@ export function SearchGroupSelector() {
             {isLoadingGroups ? (
               <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-muted-foreground">{t('searchBy')}</span>
+                <span className="text-muted-foreground">{t('priority.searchBy')}</span>
               </div>
             ) : (
-              <SelectValue placeholder={t('searchBy')} />
+              <SelectValue placeholder={t('priority.searchBy')} />
             )}
           </SelectTrigger>
           <SelectContent>
@@ -125,7 +123,7 @@ export function SearchGroupSelector() {
       {/* Doc Type (Form) - Only show if group has multiple forms */}
       {forms.length > 0 && (
         <div className="space-y-2">
-          <Label>{t('docType')}</Label>
+          <Label>{t('priority.docType')}</Label>
           <Select
             value={selectedForm || '__all__'}
             onValueChange={handleDocTypeChange}
@@ -133,12 +131,12 @@ export function SearchGroupSelector() {
             dir={isRTL ? 'rtl' : 'ltr'}
           >
             <SelectTrigger className={isRTL ? 'text-right' : ''}>
-              <SelectValue placeholder={t('selectDocType')} />
+              <SelectValue placeholder={t('priority.selectDocType')} />
             </SelectTrigger>
             <SelectContent>
               {/* "All" option - searches all forms in the group */}
               <SelectItem value="__all__" className={isRTL ? 'text-right' : ''}>
-                {t('selectDocType')}
+                {t('priority.selectDocType')}
               </SelectItem>
               {forms.map((form) => (
                 <SelectItem key={form.ENAME} value={form.ENAME} className={isRTL ? 'text-right' : ''}>
