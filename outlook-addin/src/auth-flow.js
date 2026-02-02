@@ -269,94 +269,26 @@ class AuthFlow {
             const isRTL = lang === 'he';
             const dir = isRTL ? 'rtl' : 'ltr';
 
-            const messages = {
-                en: {
-                    title: 'Login',
-                    subtitle: 'Enter your email to login',
-                    emailLabel: 'Email',
-                    emailPlaceholder: 'your.email@company.com',
-                    login: 'Login',
-                    cancel: 'Cancel',
-                    invalidEmail: 'Please enter a valid email address'
-                },
-                he: {
-                    title: 'התחברות',
-                    subtitle: 'הזן את האימייל שלך להתחברות',
-                    emailLabel: 'אימייל',
-                    emailPlaceholder: 'your.email@company.com',
-                    login: 'התחבר',
-                    cancel: 'ביטול',
-                    invalidEmail: 'אנא הזן כתובת אימייל תקינה'
-                }
-            };
-            const t = messages[lang] || messages.en;
-
             const overlay = document.createElement('div');
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.7);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-            `;
+            overlay.className = 'modal-overlay';
 
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                background: white;
-                border-radius: 12px;
-                padding: 24px;
-                max-width: 340px;
-                width: 90%;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-                direction: ${dir};
-            `;
+            modal.className = 'modal-box';
+            modal.style.direction = dir;
 
             modal.innerHTML = `
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #333;">${t.title}</h2>
-                    <p style="margin: 0; font-size: 13px; color: #666;">${t.subtitle}</p>
+                <div class="modal-box-centered" style="margin-bottom: 20px;">
+                    <h2 class="modal-title modal-title-lg">${ConfigHelper.t('loginTitle')}</h2>
+                    <p class="modal-subtitle">${ConfigHelper.t('loginSubtitle')}</p>
                 </div>
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: #333;">${t.emailLabel}</label>
-                    <input type="email" id="email-input" placeholder="${t.emailPlaceholder}" style="
-                        width: 100%;
-                        padding: 12px;
-                        border: 1px solid #ddd;
-                        border-radius: 8px;
-                        font-size: 14px;
-                        box-sizing: border-box;
-                        direction: ltr;
-                        text-align: left;
-                    ">
-                    <p id="email-error" style="display: none; margin: 6px 0 0 0; font-size: 12px; color: #d32f2f;">${t.invalidEmail}</p>
+                <div class="modal-form-group">
+                    <label class="modal-label">${ConfigHelper.t('emailLabel')}</label>
+                    <input type="email" id="email-input" class="modal-input modal-input-ltr" placeholder="${ConfigHelper.t('emailPlaceholder')}">
+                    <p id="email-error" class="modal-error-text">${ConfigHelper.t('invalidEmail')}</p>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button id="cancel-btn" style="
-                        flex: 1;
-                        padding: 12px;
-                        background: #f5f5f5;
-                        color: #333;
-                        border: 1px solid #ddd;
-                        border-radius: 8px;
-                        font-size: 14px;
-                        cursor: pointer;
-                    ">${t.cancel}</button>
-                    <button id="login-btn" style="
-                        flex: 1;
-                        padding: 12px;
-                        background: #FFC107;
-                        color: #000;
-                        border: none;
-                        border-radius: 8px;
-                        font-size: 14px;
-                        font-weight: 600;
-                        cursor: pointer;
-                    ">${t.login}</button>
+                <div class="modal-btn-row">
+                    <button id="cancel-btn" class="modal-btn modal-btn-cancel">${ConfigHelper.t('cancel')}</button>
+                    <button id="login-btn" class="modal-btn modal-btn-primary">${ConfigHelper.t('login')}</button>
                 </div>
             `;
 
@@ -378,7 +310,7 @@ class AuthFlow {
                 const email = emailInput.value.trim();
                 if (!emailRegex.test(email)) {
                     emailError.style.display = 'block';
-                    emailInput.style.borderColor = '#d32f2f';
+                    emailInput.classList.add('modal-input-error');
                     return;
                 }
                 document.body.removeChild(overlay);
@@ -393,7 +325,7 @@ class AuthFlow {
 
             emailInput.addEventListener('input', () => {
                 emailError.style.display = 'none';
-                emailInput.style.borderColor = '#ddd';
+                emailInput.classList.remove('modal-input-error');
             });
 
             cancelBtn.addEventListener('click', () => {
@@ -419,81 +351,54 @@ class AuthFlow {
             
             // Create modal overlay
             const overlay = document.createElement('div');
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.7);
-                z-index: 10000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            `;
+            overlay.className = 'modal-overlay';
 
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                max-width: 400px;
-                width: 90%;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                direction: ${dir};
-                text-align: ${isRTL ? 'right' : 'left'};
-            `;
+            modal.className = 'modal-box';
+            modal.style.direction = dir;
 
             modal.innerHTML = `
-                <h3 style="margin-top: 0;">🔐 ${ConfigHelper.t('erpLoginRequired')}</h3>
-                <p style="color: #666; font-size: 14px;">
+                <h3 class="modal-title" style="margin-top: 0;">🔐 ${ConfigHelper.t('erpLoginRequired')}</h3>
+                <p class="modal-info-row">
                     <strong>${ConfigHelper.t('organization')}</strong> ${tenantName}<br>
                     <strong>${ConfigHelper.t('email')}</strong> ${email}
                 </p>
-                <p style="color: #666; font-size: 13px;">
+                <p class="modal-info-text">
                     ${ConfigHelper.t('enterErpCredentials')}
                 </p>
-                <div id="error-message" style="display: none; margin-bottom: 12px; padding: 8px; background: #ffebee; border: 1px solid #f44336; border-radius: 4px; color: #c62828; font-size: 13px;"></div>
+                <div id="error-message" class="modal-error-box"></div>
                 <form id="erp-credentials-form" autocomplete="off">
-                    <div style="margin-bottom: 12px;">
-                        <label style="display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500;">
+                    <div class="modal-form-group" style="margin-bottom: 12px;">
+                        <label class="modal-label">
                             ${ConfigHelper.t('erpUsername')} *
                         </label>
                         <input
                             type="text"
                             id="erp-username-input"
+                            class="modal-input"
                             required
                             placeholder="${ConfigHelper.t('enterErpUsername')}"
                             autocomplete="off"
-                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"
                         />
                     </div>
-                    <div style="margin-bottom: 16px;">
-                        <label style="display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500;">
+                    <div class="modal-form-group">
+                        <label class="modal-label">
                             ${ConfigHelper.t('erpPassword')} *
                         </label>
                         <input
                             type="password"
                             id="erp-password-input"
+                            class="modal-input"
                             required
                             placeholder="${ConfigHelper.t('enterErpPassword')}"
                             autocomplete="new-password"
-                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"
                         />
                     </div>
-                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                        <button
-                            type="button"
-                            id="cancel-btn"
-                            style="padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;"
-                        >
+                    <div class="modal-btn-row modal-btn-row-end">
+                        <button type="button" id="cancel-btn" class="modal-btn modal-btn-cancel">
                             ${ConfigHelper.t('cancel')}
                         </button>
-                        <button
-                            type="submit"
-                            id="login-btn"
-                            style="padding: 8px 16px; border: none; background: linear-gradient(135deg, #FDB913 0%, #FFD54F 100%); color: #2C2C2C; border-radius: 4px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);"
-                        >
+                        <button type="submit" id="login-btn" class="modal-btn modal-btn-primary">
                             ${ConfigHelper.t('login')}
                         </button>
                     </div>
@@ -583,70 +488,39 @@ class AuthFlow {
             
             // Create modal overlay
             const overlay = document.createElement('div');
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.7);
-                z-index: 10000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            `;
+            overlay.className = 'modal-overlay';
 
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                max-width: 400px;
-                width: 90%;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                direction: ${dir};
-                text-align: ${isRTL ? 'right' : 'left'};
-            `;
+            modal.className = 'modal-box';
+            modal.style.direction = dir;
 
-            const tenantOptions = tenants.map(t => 
+            const tenantOptions = tenants.map(t =>
                 `<option value="${t.tenant_id}">${t.tenant_name}</option>`
             ).join('');
 
             modal.innerHTML = `
-                <h3 style="margin-top: 0;">🏢 ${ConfigHelper.t('selectOrganization')}</h3>
-                <p style="color: #666; font-size: 14px;">
+                <h3 class="modal-title" style="margin-top: 0;">🏢 ${ConfigHelper.t('selectOrganization')}</h3>
+                <p class="modal-info-row">
                     <strong>${ConfigHelper.t('email')}</strong> ${email}
                 </p>
-                <p style="color: #666; font-size: 13px;">
+                <p class="modal-info-text">
                     ${ConfigHelper.t('emailDomainMultiOrg')}
                 </p>
                 <form id="tenant-selection-form">
-                    <div style="margin-bottom: 16px;">
-                        <label style="display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500;">
+                    <div class="modal-form-group">
+                        <label class="modal-label">
                             ${ConfigHelper.t('organization')} *
                         </label>
-                        <select
-                            id="tenant-select"
-                            required
-                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px;"
-                        >
+                        <select id="tenant-select" class="modal-select" required>
                             <option value="">${ConfigHelper.t('selectAnOrganization')}</option>
                             ${tenantOptions}
                         </select>
                     </div>
-                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                        <button
-                            type="button"
-                            id="cancel-btn"
-                            style="padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;"
-                        >
+                    <div class="modal-btn-row modal-btn-row-end">
+                        <button type="button" id="cancel-btn" class="modal-btn modal-btn-cancel">
                             ${ConfigHelper.t('cancel')}
                         </button>
-                        <button
-                            type="submit"
-                            id="continue-btn"
-                            style="padding: 8px 16px; border: none; background: linear-gradient(135deg, #FDB913 0%, #FFD54F 100%); color: #2C2C2C; border-radius: 4px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);"
-                        >
+                        <button type="submit" id="continue-btn" class="modal-btn modal-btn-primary">
                             ${ConfigHelper.t('continue')}
                         </button>
                     </div>
@@ -684,26 +558,14 @@ class AuthFlow {
      */
     static async showTenantNotFoundUI(email) {
         const domain = email.split('@')[1];
-        const lang = ConfigHelper.getLanguage();
-        const isRTL = lang === 'he';
+        const isRTL = ConfigHelper.getLanguage() === 'he';
 
-        const messages = {
-            en: {
-                title: 'Organization Not Found',
-                message: `No organization found for domain: ${domain}`,
-                instruction: 'Please contact your IT administrator to set up access for your organization.',
-                close: 'Close'
-            },
-            he: {
-                title: 'הארגון לא נמצא',
-                message: `לא נמצא ארגון עבור הדומיין: ${domain}`,
-                instruction: 'אנא פנה למנהל המערכת שלך כדי להגדיר גישה עבור הארגון שלך.',
-                close: 'סגור'
-            }
-        };
-        const t = messages[lang] || messages.en;
+        const title = ConfigHelper.t('tenantNotFoundTitle');
+        const message = ConfigHelper.t('tenantNotFoundMessage').replace('{domain}', domain);
+        const instruction = ConfigHelper.t('tenantNotFoundInstruction');
+        const closeText = ConfigHelper.t('close');
 
-        await this.showErrorModal(t.title, t.message, t.instruction, t.close, isRTL);
+        await this.showErrorModal(title, message, instruction, closeText, isRTL);
     }
 
     /**
@@ -711,24 +573,13 @@ class AuthFlow {
      * @param {string} message - Error message
      */
     static async showErrorUI(message) {
-        const lang = ConfigHelper.getLanguage();
-        const isRTL = lang === 'he';
+        const isRTL = ConfigHelper.getLanguage() === 'he';
 
-        const messages = {
-            en: {
-                title: 'Authentication Error',
-                instruction: 'Please try again or contact support.',
-                close: 'Close'
-            },
-            he: {
-                title: 'שגיאת אימות',
-                instruction: 'אנא נסה שוב או פנה לתמיכה.',
-                close: 'סגור'
-            }
-        };
-        const t = messages[lang] || messages.en;
+        const title = ConfigHelper.t('authErrorTitle');
+        const instruction = ConfigHelper.t('authErrorInstruction');
+        const closeText = ConfigHelper.t('close');
 
-        await this.showErrorModal(t.title, message, t.instruction, t.close, isRTL);
+        await this.showErrorModal(title, message, instruction, closeText, isRTL);
     }
 
     /**
@@ -744,49 +595,20 @@ class AuthFlow {
             const dir = isRTL ? 'rtl' : 'ltr';
 
             const overlay = document.createElement('div');
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-            `;
+            overlay.className = 'modal-overlay';
 
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                background: white;
-                border-radius: 8px;
-                padding: 24px;
-                max-width: 350px;
-                width: 90%;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-                direction: ${dir};
-                text-align: ${isRTL ? 'right' : 'left'};
-            `;
+            modal.className = 'modal-box modal-box-sm';
+            modal.style.direction = dir;
 
             modal.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                    <span style="font-size: 24px;">❌</span>
-                    <h3 style="margin: 0; color: #d32f2f; font-size: 18px;">${title}</h3>
+                <div class="modal-header-error">
+                    <span class="modal-icon-sm">❌</span>
+                    <h3 class="modal-title">${title}</h3>
                 </div>
-                <p style="margin: 0 0 12px 0; color: #333; font-size: 14px; line-height: 1.5;">${message}</p>
-                <p style="margin: 0 0 20px 0; color: #666; font-size: 13px; line-height: 1.4;">${instruction}</p>
-                <button id="error-close-btn" style="
-                    width: 100%;
-                    padding: 12px;
-                    background: #d32f2f;
-                    color: white;
-                    border: none;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    font-weight: 600;
-                    cursor: pointer;
-                ">${closeText}</button>
+                <p class="modal-info-text" style="color: #333; font-size: 14px; line-height: 1.5;">${message}</p>
+                <p class="modal-info-text">${instruction}</p>
+                <button id="error-close-btn" class="modal-btn modal-btn-danger modal-btn-full">${closeText}</button>
             `;
 
             overlay.appendChild(modal);

@@ -341,13 +341,13 @@ function showExportAttachmentsModal() {
     
     // Filter inline attachments
     const files = state.emailAttachments.filter(att => !att.isInline);
-    
+
     if (files.length === 0) {
-        container.innerHTML = '<div style="padding:12px;">No attachments found in this email.</div>';
+        container.innerHTML = '<div style="padding:12px;">' + ConfigHelper.t('noAttachmentsInEmail') + '</div>';
         toggleModal('attachmentsModal', true);
         return;
     }
-    
+
     // Create attachment list items
     files.forEach(att => {
         const item = document.createElement('div');
@@ -490,7 +490,7 @@ async function loadCompanies() {
         companySelect.innerHTML = '';
         
         if (companies.length === 0) {
-            companySelect.innerHTML = '<option value="">No companies found</option>';
+            companySelect.innerHTML = '<option value="">' + ConfigHelper.t('noCompaniesFound') + '</option>';
             return;
         }
         
@@ -512,7 +512,7 @@ async function loadCompanies() {
         }
     } catch (error) {
         console.error('Error loading companies:', error);
-        document.getElementById('company').innerHTML = '<option>Error loading companies</option>';
+        document.getElementById('company').innerHTML = '<option>' + ConfigHelper.t('errorLoadingCompanies') + '</option>';
     }
 }
 
@@ -619,7 +619,7 @@ async function handleSearch() {
             toggleModal('searchResultsModal', true);
         }
     } catch (error) {
-        showStatus('Search failed: ' + error.message, 'error');
+        showStatus(ConfigHelper.t('searchFailed') + ': ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
@@ -687,7 +687,7 @@ function clearSelection() {
  */
 function showAttachmentsModal() {
     if (!state.selectedDocument) {
-        showStatus('Please select a document first', 'error');
+        showStatus(ConfigHelper.t('selectDocumentFirst'), 'error');
         return;
     }
     
@@ -696,9 +696,9 @@ function showAttachmentsModal() {
     
     // Filter inline attachments
     const files = state.emailAttachments.filter(att => !att.isInline);
-    
+
     if (files.length === 0) {
-        container.innerHTML = '<div style="padding:12px;">No attachments found in this email.</div>';
+        container.innerHTML = '<div style="padding:12px;">' + ConfigHelper.t('noAttachmentsInEmail') + '</div>';
         toggleModal('attachmentsModal', true);
         return;
     }
@@ -820,7 +820,7 @@ async function exportEmailOnly() {
         showStatus(t('emailExported'), 'success');
     } catch (error) {
         console.error('Export failed:', error);
-        showStatus('Export failed: ' + error.message, 'error');
+        showStatus(ConfigHelper.t('exportFailed') + ': ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
@@ -856,13 +856,13 @@ async function exportSelectedFiles() {
             const result = await apiClient.addExportAttachment(exportData);
             count++;
         }
-        
-        showStatus(`Exported ${count} files to Priority staging area!`, 'success');
+
+        showStatus(ConfigHelper.t('exportedFilesSuccess').replace('{count}', count), 'success');
         toggleModal('attachmentsModal', false);
-        
+
     } catch (error) {
         console.error('Export failed:', error);
-        showStatus('Export failed: ' + error.message, 'error');
+        showStatus(ConfigHelper.t('exportFailed') + ': ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
@@ -1195,41 +1195,22 @@ async function handleLogout() {
 function showLogoutConfirmation() {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
+        overlay.className = 'modal-overlay';
 
         const modal = document.createElement('div');
-        modal.style.cssText = `
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            max-width: 300px;
-            width: 90%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            text-align: center;
-        `;
+        modal.className = 'modal-box modal-box-sm modal-box-centered';
 
         modal.innerHTML = `
-            <div style="font-size: 40px; margin-bottom: 12px;">🚪</div>
-            <h3 style="margin: 0 0 12px 0; font-size: 16px;">${ConfigHelper.t('logout')}</h3>
-            <p style="color: #666; font-size: 13px; margin-bottom: 20px;">
+            <div class="modal-icon">🚪</div>
+            <h3 class="modal-title">${ConfigHelper.t('logout')}</h3>
+            <p class="modal-info-text">
                 ${ConfigHelper.t('logoutConfirm')}
             </p>
-            <div style="display: flex; gap: 8px; justify-content: center;">
-                <button id="cancel-logout-btn" style="padding: 8px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">
-                    ${ConfigHelper.t('cancel') || 'Cancel'}
+            <div class="modal-btn-row modal-btn-row-center">
+                <button id="cancel-logout-btn" class="modal-btn modal-btn-cancel">
+                    ${ConfigHelper.t('cancel')}
                 </button>
-                <button id="confirm-logout-btn" style="padding: 8px 20px; border: none; background: #a80000; color: white; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                <button id="confirm-logout-btn" class="modal-btn modal-btn-danger">
                     ${ConfigHelper.t('logout')}
                 </button>
             </div>

@@ -410,7 +410,9 @@ class EmailHelper {
     static getDefaultDescription() {
         const subject = this.getSubject();
         const sender = this.getSender();
-        return `Email from ${sender}: ${subject}`;
+        return ConfigHelper.t('emailFromSubject')
+            .replace('{sender}', sender)
+            .replace('{subject}', subject);
     }
 }
 

@@ -281,7 +281,32 @@ const TRANSLATIONS = {
         login: 'Login',
         validating: 'Validating...',
         invalidErpCredentials: 'Invalid ERP credentials. Please check your username and password and try again.',
-        authenticationFailed: 'Authentication failed. Please try again.'
+        authenticationFailed: 'Authentication failed. Please try again.',
+
+        // Error messages
+        noAttachmentsInEmail: 'No attachments found in this email.',
+        noCompaniesFound: 'No companies found',
+        errorLoadingCompanies: 'Error loading companies',
+        searchFailed: 'Search failed',
+        selectDocumentFirst: 'Please select a document first',
+        exportFailed: 'Export failed',
+        exportedFilesSuccess: 'Exported {count} files to Priority staging area!',
+
+        // Auth flow (additional)
+        loginTitle: 'Login',
+        loginSubtitle: 'Enter your email to login',
+        emailLabel: 'Email',
+        emailPlaceholder: 'your.email@company.com',
+        invalidEmail: 'Please enter a valid email address',
+        tenantNotFoundTitle: 'Organization Not Found',
+        tenantNotFoundMessage: 'No organization found for domain: {domain}',
+        tenantNotFoundInstruction: 'Please contact your IT administrator to set up access for your organization.',
+        authErrorTitle: 'Authentication Error',
+        authErrorInstruction: 'Please try again or contact support.',
+        close: 'Close',
+
+        // Email helper
+        emailFromSubject: 'Email from {sender}: {subject}'
     },
     he: {
         // Header
@@ -384,6 +409,31 @@ const TRANSLATIONS = {
         login: 'התחבר',
         validating: 'מאמת...',
         invalidErpCredentials: 'פרטי התחברות ל-ERP שגויים. אנא בדוק את שם המשתמש והסיסמה ונסה שוב.',
-        authenticationFailed: 'האימות נכשל. אנא נסה שוב.'
+        authenticationFailed: 'האימות נכשל. אנא נסה שוב.',
+
+        // Error messages
+        noAttachmentsInEmail: 'לא נמצאו קבצים מצורפים בהודעה זו.',
+        noCompaniesFound: 'לא נמצאו חברות',
+        errorLoadingCompanies: 'שגיאה בטעינת חברות',
+        searchFailed: 'החיפוש נכשל',
+        selectDocumentFirst: 'אנא בחר מסמך קודם',
+        exportFailed: 'הייצוא נכשל',
+        exportedFilesSuccess: 'יוצאו {count} קבצים לאזור ההכנה של Priority!',
+
+        // Auth flow (additional)
+        loginTitle: 'התחברות',
+        loginSubtitle: 'הזן את האימייל שלך להתחברות',
+        emailLabel: 'אימייל',
+        emailPlaceholder: 'your.email@company.com',
+        invalidEmail: 'אנא הזן כתובת אימייל תקינה',
+        tenantNotFoundTitle: 'הארגון לא נמצא',
+        tenantNotFoundMessage: 'לא נמצא ארגון עבור הדומיין: {domain}',
+        tenantNotFoundInstruction: 'אנא פנה למנהל המערכת שלך כדי להגדיר גישה עבור הארגון שלך.',
+        authErrorTitle: 'שגיאת אימות',
+        authErrorInstruction: 'אנא נסה שוב או פנה לתמיכה.',
+        close: 'סגור',
+
+        // Email helper
+        emailFromSubject: 'הודעה מ-{sender}: {subject}'
     }
 };
