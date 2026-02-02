@@ -30,12 +30,21 @@ class FileSmileAPI {
         const url = `${this.baseUrl}${endpoint}`;
 
 
+        let response;
         try {
-            const response = await fetch(url, {
+            response = await fetch(url, {
                 ...options,
                 headers
             });
+        } catch (fetchError) {
+            // Network error (server unreachable, no internet, CORS, etc.)
+            console.error('Network error:', fetchError);
+            const error = new Error(`Unable to connect to server: ${fetchError.message || 'Network error'}`);
+            error.code = 'NETWORK_ERROR';
+            throw error;
+        }
 
+        try {
             // Handle 401 Unauthorized - token expired or invalid
             if (response.status === 401 && jwtToken) {
                 console.warn('JWT token expired or invalid, clearing auth');
@@ -47,8 +56,8 @@ class FileSmileAPI {
             }
 
             if (!response.ok) {
-                const error = await response.json().catch(() => ({ error: response.statusText }));
-                throw new Error(error.detail || error.error || `HTTP ${response.status}`);
+                const errorBody = await response.json().catch(() => ({ error: response.statusText }));
+                throw new Error(errorBody.detail || errorBody.error || `HTTP ${response.status}`);
             }
 
             return await response.json();
