@@ -4,8 +4,9 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { barcodeDetector, BarcodeResult } from './detector';
 
 // Configure PDF.js worker - use local worker file from public folder
+// BASE_URL is /scanner/ in production, / in development
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/js/pdf.worker.min.mjs';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `${import.meta.env.BASE_URL}js/pdf.worker.min.mjs`;
 }
 
 export interface PdfExtractionResult {
