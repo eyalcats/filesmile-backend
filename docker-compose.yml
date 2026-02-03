@@ -126,13 +126,18 @@ services:
       start_period: 5s
     labels:
       - "traefik.enable=true"
-      # Scanner app route - HTTPS
+      # Scanner app route - HTTPS (requires trailing slash for React Router)
       - "traefik.http.routers.scanner.rule=PathPrefix(`/scanner`)"
       - "traefik.http.routers.scanner.entrypoints=websecure"
       - "traefik.http.routers.scanner.tls=true"
       - "traefik.http.services.scanner.loadbalancer.server.port=80"
+      # Middleware chain: add trailing slash, then strip prefix
+      - "traefik.http.routers.scanner.middlewares=scanner-slash,scanner-strip"
+      # Redirect /scanner to /scanner/ (React Router needs trailing slash for basename)
+      - "traefik.http.middlewares.scanner-slash.redirectregex.regex=^(https?://[^/]+/scanner)$$"
+      - "traefik.http.middlewares.scanner-slash.redirectregex.replacement=$${1}/"
+      - "traefik.http.middlewares.scanner-slash.redirectregex.permanent=false"
       # Strip /scanner prefix before forwarding to nginx
-      - "traefik.http.routers.scanner.middlewares=scanner-strip"
       - "traefik.http.middlewares.scanner-strip.stripprefix.prefixes=/scanner"
 
 # ===========================================
