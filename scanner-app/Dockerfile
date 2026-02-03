@@ -25,6 +25,9 @@ FROM nginx:alpine AS production
 # Install curl for healthcheck (wget not available in alpine by default)
 RUN apk add --no-cache curl
 
+# Add .mjs MIME type for ES modules (not in default nginx mime.types)
+RUN echo "text/javascript mjs;" >> /etc/nginx/mime.types
+
 # Copy built files to nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
