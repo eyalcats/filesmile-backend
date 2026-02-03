@@ -16,6 +16,9 @@ RUN npm ci
 # Copy source files
 COPY . .
 
+# Copy PDF.js worker from node_modules to public (ensures version match)
+RUN mkdir -p public/js && cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/js/
+
 # Build the app (env vars are baked into the bundle)
 RUN npm run build
 
