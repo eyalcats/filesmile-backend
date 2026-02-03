@@ -69,7 +69,7 @@ python scripts/check_tenants.py          # Verify setup
 
 ### Docker Deployment
 ```bash
-# Full development stack: Traefik + PostgreSQL + API + Scanner + ngrok
+# Full development stack: Traefik + API + Scanner
 docker-compose up
 
 # Backend-only compose (production-like, uses Docker Hub image)
@@ -79,8 +79,6 @@ docker-compose -f backend/docker-compose.yml up
 # - API: http://localhost:8002 (direct) or http://localhost/api (via Traefik)
 # - Scanner: http://localhost:3001
 # - Traefik dashboard: http://localhost:8080
-# - ngrok inspector: http://localhost:4040
-# - Outlook add-in: https://filesmile.ngrok.app (via ngrok tunnel)
 
 # Volumes:
 # - filesmile-postgres-data: PostgreSQL database (primary)
@@ -178,7 +176,6 @@ Critical environment variables (generate secrets with `openssl rand -hex 32`):
 - `JWT_SECRET_KEY` - JWT signing key (must be different from SECRET_KEY)
 - `ENCRYPTION_KEY` - Fernet encryption key for ERP credentials (**MUST BE BACKED UP**)
 - `DATABASE_URL` - SQLite for dev (`sqlite:///./filesmile.db`) or PostgreSQL for prod
-- `NGROK_AUTHTOKEN` - Required for Outlook add-in development (tunnels API to https://filesmile.ngrok.app)
 
 ## Priority ERP Integration
 
