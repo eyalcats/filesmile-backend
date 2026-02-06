@@ -240,12 +240,17 @@ const TRANSLATIONS = {
         // Loading states
         loading: 'Loading...',
         processing: 'Processing...',
-        
+        uploadingFileOf: 'Uploading {current} of {total} files...',
+        exportingFileOf: 'Exporting {current} of {total} files...',
+        uploadSummary: '{success} succeeded, {failed} failed out of {total}',
+
         // Headers
         searchDocuments: 'Search Documents',
         selectedDocument: 'Selected Document',
         exportActions: 'Export Actions',
+        exportDescription: 'Save files to Priority staging area for later processing',
         attachActions: 'Attach Actions',
+        attachDescription: 'Link files directly to the selected document',
         
         // Modals
         selectDocument: 'Select Document',
@@ -355,7 +360,9 @@ const TRANSLATIONS = {
         // Headers
         searchDocuments: 'חיפוש מסמכים',
         exportActions: 'פעולות ייצוא',
+        exportDescription: 'שמירת קבצים לאזור ההכנה של Priority לעיבוד מאוחר יותר',
         attachActions: 'פעולות צירוף',
+        attachDescription: 'קישור קבצים ישירות למסמך שנבחר',
         
         // Buttons
         search: 'חיפוש',
@@ -374,7 +381,10 @@ const TRANSLATIONS = {
         // Loading states
         loading: 'טוען...',
         processing: 'מעבד...',
-        
+        uploadingFileOf: 'מעלה {current} מתוך {total} קבצים...',
+        exportingFileOf: 'מייצא {current} מתוך {total} קבצים...',
+        uploadSummary: '{success} הצליחו, {failed} נכשלו מתוך {total}',
+
         // Modals
         selectDocument: 'בחר מסמך',
         selectAttachments: 'בחר קבצים מצורפים',

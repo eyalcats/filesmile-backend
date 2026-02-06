@@ -28,6 +28,7 @@ const App = {
     tenants: [],
     domains: [],
     users: [],
+    _focusTraps: {},  // Focus trap instances per modal
     
     /**
      * Initialize the application
@@ -114,12 +115,63 @@ const App = {
         document.addEventListener('click', (e) => {
             const sidebar = document.querySelector('.sidebar');
             const menuToggle = document.getElementById('menuToggle');
-            if (window.innerWidth <= 1024 && 
-                !sidebar.contains(e.target) && 
+            if (window.innerWidth <= 1024 &&
+                !sidebar.contains(e.target) &&
                 !menuToggle.contains(e.target) &&
                 sidebar.classList.contains('open')) {
                 sidebar.classList.remove('open');
             }
+        });
+
+        // Escape key to close modals (Phase 1.2)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                // Close modals in reverse priority order (innermost first)
+                if (document.getElementById('userTenantFormModalOverlay').classList.contains('active')) {
+                    this.closeUserTenantFormModal();
+                } else if (document.getElementById('userTenantsModalOverlay').classList.contains('active')) {
+                    this.closeUserTenantsModal();
+                } else if (document.getElementById('deleteModalOverlay').classList.contains('active')) {
+                    this.closeDeleteModal();
+                } else if (document.getElementById('modalOverlay').classList.contains('active')) {
+                    this.closeModal();
+                }
+            }
+        });
+
+        // Delegated event listeners for table action buttons (Phase 1.3)
+        document.getElementById('tenantsTableBody').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const id = parseInt(btn.dataset.id);
+            if (btn.dataset.action === 'edit') this.editTenant(id);
+            else if (btn.dataset.action === 'delete') this.deleteTenant(id);
+        });
+
+        document.getElementById('domainsTableBody').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const id = parseInt(btn.dataset.id);
+            if (btn.dataset.action === 'edit') this.editDomain(id);
+            else if (btn.dataset.action === 'delete') this.deleteDomain(id);
+        });
+
+        document.getElementById('usersTableBody').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const id = parseInt(btn.dataset.id);
+            if (btn.dataset.action === 'edit') this.editUser(id);
+            else if (btn.dataset.action === 'delete') this.deleteUser(id);
+            else if (btn.dataset.action === 'manage-tenants') this.manageUserTenants(id);
+        });
+
+        // Delegated listener for user-tenant cards (Phase 1.3)
+        document.getElementById('userTenantsList').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const tenantId = parseInt(btn.dataset.tenantId);
+            if (btn.dataset.action === 'edit-user-tenant') this.editUserTenant(tenantId);
+            else if (btn.dataset.action === 'remove-user-tenant') this.removeUserTenantConfirm(tenantId);
         });
     },
     
@@ -245,13 +297,13 @@ const App = {
                 <td>${this.formatDate(tenant.created_at)}</td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn-icon edit" onclick="App.editTenant(${tenant.id})" title="Edit">
+                        <button class="btn-icon edit" data-action="edit" data-id="${tenant.id}" title="Edit" aria-label="Edit ${this.escapeHtml(tenant.name)}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                             </svg>
                         </button>
-                        <button class="btn-icon delete" onclick="App.deleteTenant(${tenant.id})" title="Delete">
+                        <button class="btn-icon delete" data-action="delete" data-id="${tenant.id}" title="Delete" aria-label="Delete ${this.escapeHtml(tenant.name)}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"></polyline>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -418,13 +470,13 @@ const App = {
                     <td>${this.formatDate(domain.created_at)}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn-icon edit" onclick="App.editDomain(${domain.id})" title="Edit">
+                            <button class="btn-icon edit" data-action="edit" data-id="${domain.id}" title="Edit" aria-label="Edit ${this.escapeHtml(domain.domain)}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                 </svg>
                             </button>
-                            <button class="btn-icon delete" onclick="App.deleteDomain(${domain.id})" title="Delete">
+                            <button class="btn-icon delete" data-action="delete" data-id="${domain.id}" title="Delete" aria-label="Delete ${this.escapeHtml(domain.domain)}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3 6 5 6 21 6"></polyline>
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -526,7 +578,7 @@ const App = {
                     <td>
                         <div class="tenant-badges-container">
                             ${tenantDisplay}
-                            <button class="btn-icon manage-tenants" onclick="App.manageUserTenants(${user.id})" title="Manage Tenants">
+                            <button class="btn-icon manage-tenants" data-action="manage-tenants" data-id="${user.id}" title="Manage Tenants" aria-label="Manage tenants for ${this.escapeHtml(user.email)}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="3"></circle>
                                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -543,13 +595,13 @@ const App = {
                     <td>${this.formatDate(user.created_at)}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn-icon edit" onclick="App.editUser(${user.id})" title="Edit">
+                            <button class="btn-icon edit" data-action="edit" data-id="${user.id}" title="Edit" aria-label="Edit ${this.escapeHtml(user.email)}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                 </svg>
                             </button>
-                            <button class="btn-icon delete" onclick="App.deleteUser(${user.id})" title="Delete">
+                            <button class="btn-icon delete" data-action="delete" data-id="${user.id}" title="Delete" aria-label="Delete ${this.escapeHtml(user.email)}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3 6 5 6 21 6"></polyline>
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -615,10 +667,22 @@ const App = {
     openModal(title, content) {
         document.getElementById('modalTitle').textContent = title;
         document.getElementById('modalBody').innerHTML = content;
-        document.getElementById('modalOverlay').classList.add('active');
+        const overlay = document.getElementById('modalOverlay');
+        overlay.classList.add('active');
         document.body.style.overflow = 'hidden';
+
+        // Re-attach dynamic button handlers inside modal
+        const validateBtn = document.getElementById('validateCredentialsBtn');
+        if (validateBtn) {
+            validateBtn.addEventListener('click', () => this.validateCredentials());
+        }
+
+        // Activate focus trap
+        const modal = document.getElementById('modal');
+        this._focusTraps.modal = createFocusTrap(modal);
+        this._focusTraps.modal.activate();
     },
-    
+
     /**
      * Close modal
      */
@@ -626,16 +690,24 @@ const App = {
         document.getElementById('modalOverlay').classList.remove('active');
         document.body.style.overflow = '';
         this.currentEditId = null;
+        if (this._focusTraps.modal) {
+            this._focusTraps.modal.deactivate();
+            this._focusTraps.modal = null;
+        }
     },
-    
+
     /**
      * Open delete confirmation modal
      */
     openDeleteModal() {
         document.getElementById('deleteModalOverlay').classList.add('active');
         document.body.style.overflow = 'hidden';
+
+        const modal = document.querySelector('#deleteModalOverlay .modal');
+        this._focusTraps.deleteModal = createFocusTrap(modal);
+        this._focusTraps.deleteModal.activate();
     },
-    
+
     /**
      * Close delete modal
      */
@@ -644,15 +716,57 @@ const App = {
         document.body.style.overflow = '';
         this.currentDeleteId = null;
         this.currentDeleteType = null;
+        if (this._focusTraps.deleteModal) {
+            this._focusTraps.deleteModal.deactivate();
+            this._focusTraps.deleteModal = null;
+        }
     },
     
     /**
      * Save item (create or update)
      */
+    /**
+     * Validate form fields and show inline errors
+     * @param {HTMLFormElement} form
+     * @returns {boolean} - True if valid
+     */
+    validateForm(form) {
+        let isValid = true;
+        // Clear previous errors
+        form.querySelectorAll('.form-error').forEach(el => el.remove());
+        form.querySelectorAll('.input-error').forEach(el => {
+            el.classList.remove('input-error');
+            el.removeAttribute('aria-invalid');
+            el.removeAttribute('aria-describedby');
+        });
+
+        // Check required fields and HTML5 validity
+        form.querySelectorAll('input[required], select[required], textarea[required]').forEach(input => {
+            if (!input.value.trim() || !input.checkValidity()) {
+                isValid = false;
+                input.classList.add('input-error');
+                input.setAttribute('aria-invalid', 'true');
+
+                const errorId = `error-${input.name || input.id}`;
+                input.setAttribute('aria-describedby', errorId);
+
+                const errorSpan = document.createElement('span');
+                errorSpan.className = 'form-error';
+                errorSpan.id = errorId;
+                errorSpan.textContent = input.validationMessage || 'This field is required';
+                input.closest('.form-group')?.appendChild(errorSpan);
+            }
+        });
+
+        return isValid;
+    },
+
     async saveItem() {
         const form = document.querySelector('#modalBody form');
         if (!form) return;
-        
+
+        if (!this.validateForm(form)) return;
+
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         
@@ -714,8 +828,12 @@ const App = {
                 case 'user':
                     await this.performDeleteUser(this.currentDeleteId);
                     break;
+                case 'user-tenant':
+                    await this.removeUserTenant(this.currentDeleteId);
+                    this.closeDeleteModal();
+                    return; // removeUserTenant handles its own toast and refresh
             }
-            
+
             this.closeDeleteModal();
             this.loadSection(this.currentSection);
             this.showToast('success', 'Deleted', `${this.currentDeleteType} deleted successfully`);
@@ -815,7 +933,7 @@ const App = {
                 </div>
                 
                 <div class="form-group">
-                    <button type="button" class="btn btn-secondary" id="validateCredentialsBtn" onclick="App.validateCredentials()">
+                    <button type="button" class="btn btn-secondary" id="validateCredentialsBtn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 6px; vertical-align: middle;">
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                             <polyline points="22 4 12 14.01 9 11.01"></polyline>
@@ -966,8 +1084,13 @@ const App = {
         this.renderUserTenantsList();
         
         // Show modal
-        document.getElementById('userTenantsModalOverlay').classList.add('active');
+        const overlay = document.getElementById('userTenantsModalOverlay');
+        overlay.classList.add('active');
         document.body.style.overflow = 'hidden';
+
+        const modal = overlay.querySelector('.modal');
+        this._focusTraps.userTenantsModal = createFocusTrap(modal);
+        this._focusTraps.userTenantsModal.activate();
     },
     
     /**
@@ -996,13 +1119,13 @@ const App = {
                     </span>
                 </div>
                 <div class="user-tenant-actions">
-                    <button class="btn-icon edit" onclick="App.editUserTenant(${ut.tenant_id})" title="Edit">
+                    <button class="btn-icon edit" data-action="edit-user-tenant" data-tenant-id="${ut.tenant_id}" title="Edit" aria-label="Edit ${this.escapeHtml(ut.tenant_name || 'Unknown')} association">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                     </button>
-                    <button class="btn-icon delete" onclick="App.removeUserTenantConfirm(${ut.tenant_id})" title="Remove">
+                    <button class="btn-icon delete" data-action="remove-user-tenant" data-tenant-id="${ut.tenant_id}" title="Remove" aria-label="Remove ${this.escapeHtml(ut.tenant_name || 'Unknown')} from user">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="3 6 5 6 21 6"></polyline>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -1020,6 +1143,10 @@ const App = {
         document.getElementById('userTenantsModalOverlay').classList.remove('active');
         document.body.style.overflow = '';
         this.currentUserForTenants = null;
+        if (this._focusTraps.userTenantsModal) {
+            this._focusTraps.userTenantsModal.deactivate();
+            this._focusTraps.userTenantsModal = null;
+        }
         // Reload users to reflect any changes
         this.loadUsers();
     },
@@ -1041,9 +1168,14 @@ const App = {
         
         document.getElementById('userTenantFormModalTitle').textContent = 'Add Tenant';
         document.getElementById('userTenantFormModalBody').innerHTML = this.getUserTenantForm(null, availableTenants);
-        document.getElementById('userTenantFormModalOverlay').classList.add('active');
+        const overlay = document.getElementById('userTenantFormModalOverlay');
+        overlay.classList.add('active');
+
+        const modal = overlay.querySelector('.modal');
+        this._focusTraps.userTenantFormModal = createFocusTrap(modal);
+        this._focusTraps.userTenantFormModal.activate();
     },
-    
+
     /**
      * Open form to edit an existing tenant association
      * @param {number} tenantId - Tenant ID
@@ -1051,12 +1183,17 @@ const App = {
     editUserTenant(tenantId) {
         const userTenant = (this.currentUserForTenants?.tenants || []).find(ut => ut.tenant_id === tenantId);
         if (!userTenant) return;
-        
+
         this.currentEditUserTenant = userTenant;
-        
+
         document.getElementById('userTenantFormModalTitle').textContent = 'Edit Tenant Association';
         document.getElementById('userTenantFormModalBody').innerHTML = this.getUserTenantForm(userTenant, null);
-        document.getElementById('userTenantFormModalOverlay').classList.add('active');
+        const overlay = document.getElementById('userTenantFormModalOverlay');
+        overlay.classList.add('active');
+
+        const modal = overlay.querySelector('.modal');
+        this._focusTraps.userTenantFormModal = createFocusTrap(modal);
+        this._focusTraps.userTenantFormModal.activate();
     },
     
     /**
@@ -1118,6 +1255,10 @@ const App = {
     closeUserTenantFormModal() {
         document.getElementById('userTenantFormModalOverlay').classList.remove('active');
         this.currentEditUserTenant = null;
+        if (this._focusTraps.userTenantFormModal) {
+            this._focusTraps.userTenantFormModal.deactivate();
+            this._focusTraps.userTenantFormModal = null;
+        }
     },
     
     /**
@@ -1167,10 +1308,12 @@ const App = {
     removeUserTenantConfirm(tenantId) {
         const userTenant = (this.currentUserForTenants?.tenants || []).find(ut => ut.tenant_id === tenantId);
         if (!userTenant) return;
-        
-        if (confirm(`Remove "${userTenant.tenant_name}" from this user?`)) {
-            this.removeUserTenant(tenantId);
-        }
+
+        this.currentDeleteId = tenantId;
+        this.currentDeleteType = 'user-tenant';
+        document.getElementById('deleteMessage').textContent =
+            `Remove "${userTenant.tenant_name}" from this user?`;
+        this.openDeleteModal();
     },
     
     /**
@@ -1321,5 +1464,57 @@ function debounce(func, wait) {
         };
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
+    };
+}
+
+/**
+ * Focus trap - keeps Tab/Shift+Tab within a modal (Phase 2.2)
+ * @param {HTMLElement} modalElement - The modal container element
+ * @returns {{ activate: Function, deactivate: Function }} - Trap controls
+ */
+function createFocusTrap(modalElement) {
+    let previouslyFocused = null;
+
+    function getFocusableElements() {
+        return modalElement.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+    }
+
+    function handleKeydown(e) {
+        if (e.key !== 'Tab') return;
+        const focusable = getFocusableElements();
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+            if (document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            }
+        } else {
+            if (document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    }
+
+    return {
+        activate() {
+            previouslyFocused = document.activeElement;
+            modalElement.addEventListener('keydown', handleKeydown);
+            // Focus first focusable element
+            const focusable = getFocusableElements();
+            if (focusable.length > 0) {
+                requestAnimationFrame(() => focusable[0].focus());
+            }
+        },
+        deactivate() {
+            modalElement.removeEventListener('keydown', handleKeydown);
+            if (previouslyFocused && previouslyFocused.focus) {
+                previouslyFocused.focus();
+            }
+        }
     };
 }

@@ -67,7 +67,10 @@ htmlcov/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Node modules (if using any JS tooling)
+# Turborepo
+.turbo
+
+# Node modules
 node_modules/
 npm-debug.log
 yarn-error.log

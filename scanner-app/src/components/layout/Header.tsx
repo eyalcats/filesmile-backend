@@ -32,6 +32,7 @@ export function Header() {
                 variant="ghost"
                 size="icon"
                 title={t('header.settings')}
+                aria-label={t('header.settings')}
                 className="text-primary-foreground hover:bg-white/20 h-8 w-8"
                 onClick={() => setShowSettings(true)}
               >
@@ -43,6 +44,7 @@ export function Header() {
                   variant="ghost"
                   size="icon"
                   title={t('header.logout')}
+                  aria-label={t('header.logout')}
                   className="text-primary-foreground hover:bg-white/20 h-8 w-8"
                   onClick={logout}
                 >

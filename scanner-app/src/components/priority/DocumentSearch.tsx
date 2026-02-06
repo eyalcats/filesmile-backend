@@ -98,7 +98,7 @@ export function DocumentSearch({ onResultsFound }: DocumentSearchProps) {
           ) : (
             <Search className="h-4 w-4" />
           )}
-          <span className={isRTL ? 'mr-2' : 'ml-2'}>{isSearching ? t('priority.searching') : t('priority.search')}</span>
+          <span className="ms-2">{isSearching ? t('priority.searching') : t('priority.search')}</span>
         </Button>
       </div>
     </div>

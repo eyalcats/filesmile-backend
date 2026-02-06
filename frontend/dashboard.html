@@ -10,7 +10,7 @@
 <body>
     <div class="app-container">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" role="navigation" aria-label="Main navigation">
             <div class="sidebar-header">
                 <img src="assets/icon-32.png" alt="FileSmile" class="sidebar-logo">
                 <h2>FileSmile</h2>
@@ -65,7 +65,7 @@
                         <span class="user-role">Administrator</span>
                     </div>
                 </div>
-                <button class="btn-logout" id="logoutBtn" title="Logout">
+                <button class="btn-logout" id="logoutBtn" title="Logout" aria-label="Logout">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                         <polyline points="16 17 21 12 16 7"></polyline>
@@ -76,11 +76,11 @@
         </aside>
         
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content" role="main">
             <!-- Header -->
             <header class="main-header">
                 <div class="header-left">
-                    <button class="menu-toggle" id="menuToggle">
+                    <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="3" y1="12" x2="21" y2="12"></line>
                             <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -236,10 +236,10 @@
     
     <!-- Modal -->
     <div class="modal-overlay" id="modalOverlay">
-        <div class="modal" id="modal">
+        <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div class="modal-header">
                 <h2 id="modalTitle">Add New</h2>
-                <button class="modal-close" id="modalClose">
+                <button class="modal-close" id="modalClose" aria-label="Close">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -258,10 +258,10 @@
     
     <!-- Delete Confirmation Modal -->
     <div class="modal-overlay" id="deleteModalOverlay">
-        <div class="modal modal-sm">
+        <div class="modal modal-sm" role="alertdialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteMessage">
             <div class="modal-header">
-                <h2>Confirm Delete</h2>
-                <button class="modal-close" id="deleteModalClose">
+                <h2 id="deleteModalTitle">Confirm Delete</h2>
+                <button class="modal-close" id="deleteModalClose" aria-label="Close">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -280,10 +280,10 @@
     
     <!-- User Tenants Modal -->
     <div class="modal-overlay" id="userTenantsModalOverlay">
-        <div class="modal modal-lg">
+        <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="userTenantsModalTitle">
             <div class="modal-header">
                 <h2 id="userTenantsModalTitle">Manage User Tenants</h2>
-                <button class="modal-close" id="userTenantsModalClose">
+                <button class="modal-close" id="userTenantsModalClose" aria-label="Close">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -313,10 +313,10 @@
     
     <!-- Add/Edit User Tenant Modal -->
     <div class="modal-overlay" id="userTenantFormModalOverlay">
-        <div class="modal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="userTenantFormModalTitle">
             <div class="modal-header">
                 <h2 id="userTenantFormModalTitle">Add Tenant</h2>
-                <button class="modal-close" id="userTenantFormModalClose">
+                <button class="modal-close" id="userTenantFormModalClose" aria-label="Close">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>

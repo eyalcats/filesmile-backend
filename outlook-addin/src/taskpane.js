@@ -68,7 +68,7 @@ const savedLang = localStorage.getItem('filesmile_language');
 console.log('DEBUG: Loading language from localStorage:', savedLang);
 // Default to Hebrew if browser language is Hebrew, otherwise English
 const browserLang = navigator.language || navigator.userLanguage || '';
-const defaultLang = browserLang.startsWith('he') ? 'he' : 'he'; // Default to Hebrew for this app
+const defaultLang = browserLang.startsWith('he') ? 'he' : 'en'; // Default to browser language, fallback to English
 let currentLang = savedLang || defaultLang;
 console.log('DEBUG: currentLang set to:', currentLang);
 
@@ -410,6 +410,25 @@ function toggleModal(modalId, show) {
         }
     }
 }
+
+// Escape key to close modals (Phase 1.2)
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modalIds = ['settingsModal', 'attachmentsModal', 'searchResultsModal'];
+        for (const id of modalIds) {
+            const modal = document.getElementById(id);
+            if (modal && modal.style.display === 'flex') {
+                toggleModal(id, false);
+                return;
+            }
+        }
+        // Also close any dynamically created modal-overlay (e.g. logout confirmation)
+        const overlay = document.querySelector('.modal-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+});
 
 /**
  * Helper: Format Date
@@ -832,32 +851,58 @@ async function exportSelectedFiles() {
         showStatus(ConfigHelper.t('noFilesSelected'), 'error');
         return;
     }
-    
+
+    const total = checkboxes.length;
+    let success = 0;
+    let failed = 0;
+
     showLoading(true);
     try {
-        let count = 0;
+        let index = 0;
         for (const cb of checkboxes) {
             const attId = cb.value;
             const att = state.emailAttachments.find(a => a.id === attId);
             if (!att) continue;
-            
-            const content = await EmailHelper.getAttachmentContent(att.id);
-            
-            // Prepare export request for each attachment (backend will handle user authentication)
-            const exportData = {
-                file_description: att.name,
-                file_base64: content,
-                file_extension: '.' + (att.name.split('.').pop() || 'bin'),
-                source_identifier: 'FileSmile',
-                mime_type: att.contentType
-            };
-            
-            // Exporting attachment to Priority staging area
-            const result = await apiClient.addExportAttachment(exportData);
-            count++;
+
+            index++;
+            showUploadProgress(index, total, att.name);
+            const textEl = document.getElementById('uploadProgressText');
+            if (textEl) {
+                textEl.textContent = ConfigHelper.t('exportingFileOf')
+                    .replace('{current}', index)
+                    .replace('{total}', total);
+            }
+
+            try {
+                const content = await EmailHelper.getAttachmentContent(att.id);
+
+                const exportData = {
+                    file_description: att.name,
+                    file_base64: content,
+                    file_extension: '.' + (att.name.split('.').pop() || 'bin'),
+                    source_identifier: 'FileSmile',
+                    mime_type: att.contentType
+                };
+
+                await apiClient.addExportAttachment(exportData);
+                success++;
+            } catch (fileError) {
+                console.error(`Export failed for ${att.name}:`, fileError);
+                failed++;
+            }
         }
 
-        showStatus(ConfigHelper.t('exportedFilesSuccess').replace('{count}', count), 'success');
+        if (failed === 0) {
+            showStatus(ConfigHelper.t('exportedFilesSuccess').replace('{count}', success), 'success');
+        } else {
+            showStatus(
+                ConfigHelper.t('uploadSummary')
+                    .replace('{success}', success)
+                    .replace('{failed}', failed)
+                    .replace('{total}', total),
+                failed === total ? 'error' : 'success'
+            );
+        }
         toggleModal('attachmentsModal', false);
 
     } catch (error) {
@@ -911,32 +956,59 @@ async function uploadSelectedFiles() {
         toggleModal('attachmentsModal', false);
         return;
     }
-    
+
     const baseDescription = document.getElementById('remarks').value.trim() || ConfigHelper.t('attachment');
+    const total = checkboxes.length;
+    let success = 0;
+    let failed = 0;
 
     showLoading(true);
     try {
-        let count = 0;
+        let index = 0;
         for (const cb of checkboxes) {
             const attId = cb.value;
             const att = state.emailAttachments.find(a => a.id === attId);
             if (!att) continue;
-            
-            const content = await EmailHelper.getAttachmentContent(att.id);
-            const ext = att.name.split('.').pop();
-            
-            await apiClient.uploadAttachment({
-                form: state.selectedDocument.Form,
-                form_key: state.selectedDocument.FormKey,
-                ext_files_form: state.selectedDocument.ExtFilesForm,
-                file_description: baseDescription + ' - ' + att.name,
-                file_base64: content,
-                file_extension: ext
-            });
-            count++;
+
+            index++;
+            showUploadProgress(index, total, att.name);
+            const textEl = document.getElementById('uploadProgressText');
+            if (textEl) {
+                textEl.textContent = ConfigHelper.t('uploadingFileOf')
+                    .replace('{current}', index)
+                    .replace('{total}', total);
+            }
+
+            try {
+                const content = await EmailHelper.getAttachmentContent(att.id);
+                const ext = att.name.split('.').pop();
+
+                await apiClient.uploadAttachment({
+                    form: state.selectedDocument.Form,
+                    form_key: state.selectedDocument.FormKey,
+                    ext_files_form: state.selectedDocument.ExtFilesForm,
+                    file_description: baseDescription + ' - ' + att.name,
+                    file_base64: content,
+                    file_extension: ext
+                });
+                success++;
+            } catch (fileError) {
+                console.error(`Upload failed for ${att.name}:`, fileError);
+                failed++;
+            }
         }
-        
-        showStatus(ConfigHelper.t('uploadedFilesSuccess').replace('{count}', count), 'success');
+
+        if (failed === 0) {
+            showStatus(ConfigHelper.t('uploadedFilesSuccess').replace('{count}', success), 'success');
+        } else {
+            showStatus(
+                ConfigHelper.t('uploadSummary')
+                    .replace('{success}', success)
+                    .replace('{failed}', failed)
+                    .replace('{total}', total),
+                failed === total ? 'error' : 'success'
+            );
+        }
         toggleModal('attachmentsModal', false);
         clearSelection();
     } catch (error) {
@@ -951,6 +1023,25 @@ async function uploadSelectedFiles() {
  */
 function showLoading(show) {
     document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+    if (!show) {
+        // Reset progress bar when hiding
+        const progress = document.getElementById('uploadProgress');
+        if (progress) progress.style.display = 'none';
+    }
+}
+
+function showUploadProgress(current, total, fileName) {
+    const progressEl = document.getElementById('uploadProgress');
+    const textEl = document.getElementById('uploadProgressText');
+    const fillEl = document.getElementById('uploadProgressFill');
+    const fileEl = document.getElementById('uploadProgressFile');
+    if (!progressEl) return;
+
+    progressEl.style.display = 'block';
+    const pct = Math.round((current / total) * 100);
+    fillEl.style.width = pct + '%';
+    fileEl.textContent = fileName || '';
+    return { textEl, fillEl, fileEl, progressEl };
 }
 
 function showStatus(msg, type = 'success') {

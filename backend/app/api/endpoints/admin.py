@@ -784,9 +784,9 @@ async def validate_erp_credentials(request: ValidateCredentialsRequest, admin: s
             tabula_ini=request.erp_tabula_ini or "tabula.ini"
         )
         
-        # Validate credentials
-        await client.validate_credentials()
-        
+        # Validate admin credentials (requires access to ENVIRONMENT system table)
+        await client.validate_credentials(use_admin_form=True)
+
         return ValidateCredentialsResponse(
             valid=True,
             message="Credentials validated successfully. Connection to Priority ERP established."

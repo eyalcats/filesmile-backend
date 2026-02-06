@@ -347,27 +347,40 @@ class PriorityClient:
             orderby="DNAME"
         )
 
-    async def validate_credentials(self) -> bool:
+    async def validate_credentials(self, use_admin_form: bool = False) -> bool:
         """
         Validate ERP credentials by making a simple API call.
-        
-        Tests connection by querying the ENVIRONMENT form with a minimal select.
-        This validates that the provided username/password can authenticate to Priority.
-        
+
+        For admin users: queries ENVIRONMENT (system table requiring admin access)
+        For regular users: queries USERS form (accessible to all authenticated users)
+
+        Args:
+            use_admin_form: If True, use ENVIRONMENT form (requires admin privileges).
+                          If False, use USERS form (works for regular users).
+
         Returns:
             True if credentials are valid
-            
+
         Raises:
             httpx.HTTPStatusError: If authentication fails (401) or other HTTP errors
             httpx.RequestError: If connection fails
         """
         try:
-            # Make a simple query to test authentication
-            await self.get(
-                form="ENVIRONMENT",
-                select=["DNAME"],
-                top=1  # Only need 1 record to validate connection
-            )
+            if use_admin_form:
+                # Admin validation: query ENVIRONMENT (system table)
+                await self.get(
+                    form="ENVIRONMENT",
+                    select=["DNAME"],
+                    top=1
+                )
+            else:
+                # User validation: query LOGPART form (parts catalog)
+                # All users should have access to this standard business form
+                await self.get(
+                    form="LOGPART",
+                    select=["PARTNAME"],
+                    top=1
+                )
             return True
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:

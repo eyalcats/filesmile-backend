@@ -314,7 +314,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="me-2 h-4 w-4 animate-spin" />
             {t('auth.loggingIn')}
           </>
         ) : (
@@ -355,7 +355,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
 
       <div className="flex gap-2">
         <Button variant="outline" onClick={handleBack} disabled={isLoading} className="flex-1">
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowLeft className="me-2 h-4 w-4" />
           {t('auth.back')}
         </Button>
         <Button
@@ -365,7 +365,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
         >
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="me-2 h-4 w-4 animate-spin" />
               {t('auth.loggingIn')}
             </>
           ) : (
@@ -425,13 +425,13 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
 
       <div className="flex gap-2">
         <Button variant="outline" onClick={handleBack} disabled={isLoading} type="button">
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowLeft className="me-2 h-4 w-4" />
           {t('auth.back')}
         </Button>
         <Button type="submit" disabled={isLoading} className="flex-1">
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="me-2 h-4 w-4 animate-spin" />
               {t('auth.validating')}
             </>
           ) : (

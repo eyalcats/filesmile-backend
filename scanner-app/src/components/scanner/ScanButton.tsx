@@ -82,12 +82,12 @@ export function ScanButton({ compact = false, onScanComplete }: ScanButtonProps)
       >
         {isScanning ? (
           <>
-            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            <Loader2 className="me-1 h-4 w-4 animate-spin" />
             <span className="text-xs">{scanProgress}%</span>
           </>
         ) : (
           <>
-            <ScanLine className="mr-1 h-4 w-4" />
+            <ScanLine className="me-1 h-4 w-4" />
             <span className="text-xs">{t('scanner.scan')}</span>
           </>
         )}
@@ -105,12 +105,12 @@ export function ScanButton({ compact = false, onScanComplete }: ScanButtonProps)
       >
         {isScanning ? (
           <>
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            <Loader2 className="me-2 h-5 w-5 animate-spin" />
             {t('scanner.scanning')}
           </>
         ) : (
           <>
-            <ScanLine className="mr-2 h-5 w-5" />
+            <ScanLine className="me-2 h-5 w-5" />
             {t('scanner.scan')}
           </>
         )}

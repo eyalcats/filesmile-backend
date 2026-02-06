@@ -3,6 +3,7 @@
     --primary-color: #facc15;
     --primary-hover: #eab308;
     --primary-light: #fef9c3;
+    --primary-text: #92700c; /* WCAG AA compliant yellow for text on white (~5.5:1 ratio) */
     --secondary-color: #64748b;
     --success-color: #10b981;
     --danger-color: #ef4444;
@@ -273,7 +274,7 @@ table {
 
 .btn-primary {
     background: var(--primary-color);
-    color: var(--text-white);
+    color: var(--text-primary);
 }
 
 .btn-primary:hover {
@@ -408,7 +409,7 @@ table {
 
 .nav-link.active {
     background: var(--primary-light);
-    color: var(--primary-hover);
+    color: var(--primary-text);
     font-weight: 500;
 }
 
@@ -700,7 +701,7 @@ table {
 }
 
 .btn-icon.edit:hover {
-    color: var(--primary-color);
+    color: var(--primary-text);
 }
 
 .btn-icon.delete:hover {
@@ -742,13 +743,13 @@ table {
 .pagination button:hover:not(:disabled) {
     background: var(--bg-color);
     border-color: var(--primary-color);
-    color: var(--primary-color);
+    color: var(--primary-text);
 }
 
 .pagination button.active {
     background: var(--primary-color);
     border-color: var(--primary-color);
-    color: var(--text-white);
+    color: var(--text-primary);
 }
 
 .pagination button:disabled {
@@ -1022,6 +1023,20 @@ table {
     margin-top: 4px;
 }
 
+/* Validation error state */
+.form-group input.input-error,
+.form-group select.input-error,
+.form-group textarea.input-error {
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.form-group input.input-error:focus,
+.form-group select.input-error:focus {
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+}
+
 .required::after {
     content: '*';
     color: var(--danger-color);
@@ -1191,7 +1206,7 @@ table {
 }
 
 .btn-icon.manage-tenants:hover {
-    color: var(--primary-hover);
+    color: var(--primary-text);
     background-color: var(--primary-light);
 }
 

@@ -12,7 +12,7 @@
     <!-- App Header -->
     <div class="app-header">
         <!-- Language switcher will be added here dynamically -->
-        <span class="settings-icon" id="settingsBtn" title="Settings">⚙️</span>
+        <span class="settings-icon" id="settingsBtn" title="Settings" role="button" aria-label="Settings" tabindex="0">⚙️</span>
     </div>
 
     <!-- Main Scrollable Container -->
@@ -65,7 +65,7 @@
                 <label data-i18n="searchValue">Search Value</label>
                 <div class="search-input-group">
                     <input type="text" id="searchTerm" class="full-width input-control has-clear" data-i18n-placeholder="enterNumber" placeholder="Enter number...">
-                    <button id="clearSearch" class="clear-icon" data-i18n-title="clear" title="Clear">×</button>
+                    <button id="clearSearch" class="clear-icon" data-i18n-title="clear" title="Clear" aria-label="Clear search">×</button>
                 </div>
             </div>
 
@@ -77,7 +77,8 @@
         <!-- Section 4: Export Actions (Always Visible) -->
         <div id="exportSection" class="actions-container">
             <div class="box-header" data-i18n="exportActions">Export Actions</div>
-            
+            <div class="section-subtitle" data-i18n="exportDescription">Save files to Priority staging area for later processing</div>
+
             <div class="form-row">
                 <label data-i18n="remarks">Remarks / Description</label>
                 <input type="text" id="exportRemarks" class="full-width input-control" data-i18n-placeholder="description" placeholder="Description...">
@@ -115,13 +116,14 @@
                 <span class="label" data-i18n="details">Details:</span>
                 <span id="selDocDetails" class="value"></span>
             </div>
-            <div class="close-selection" id="clearSelection" data-i18n-title="clearSelection" title="Clear Selection">×</div>
+            <div class="close-selection" id="clearSelection" data-i18n-title="clearSelection" title="Clear Selection" role="button" aria-label="Clear Selection" tabindex="0">×</div>
         </div>
 
         <!-- Section 6: Attach Actions (Hidden until selection) -->
         <div id="actionsSection" class="actions-container" style="display: none;">
             <div class="box-header" data-i18n="attachActions">Attach Actions</div>
-            
+            <div class="section-subtitle" data-i18n="attachDescription">Link files directly to the selected document</div>
+
             <div class="form-row">
                 <label data-i18n="remarks">Remarks / Description</label>
                 <input type="text" id="remarks" class="full-width input-control" data-i18n-placeholder="description" placeholder="Description...">
@@ -147,11 +149,11 @@
     </div>
 
     <!-- Search Results Modal -->
-    <div id="searchResultsModal" class="modal">
+    <div id="searchResultsModal" class="modal" role="dialog" aria-modal="true" aria-label="Search Results">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 data-i18n="selectDocument">Select Document</h3>
-                <span class="close-modal" id="closeResultsModal">×</span>
+                <span class="close-modal" id="closeResultsModal" role="button" aria-label="Close" tabindex="0">×</span>
             </div>
             <div class="modal-body">
                 <div class="list-view" id="resultsListBody">
@@ -162,11 +164,11 @@
     </div>
 
     <!-- Attachments Modal -->
-    <div id="attachmentsModal" class="modal">
+    <div id="attachmentsModal" class="modal" role="dialog" aria-modal="true" aria-label="Select Attachments">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 data-i18n="selectAttachments">Select Attachments</h3>
-                <span class="close-modal" id="closeAttachmentsModal">×</span>
+                <span class="close-modal" id="closeAttachmentsModal" role="button" aria-label="Close" tabindex="0">×</span>
             </div>
             <div class="modal-body">
                 <div class="list-view" id="attachmentsListBody">
@@ -183,14 +185,21 @@
     <div id="loadingOverlay" class="loading-overlay" style="display: none;">
         <div class="spinner"></div>
         <p data-i18n="processing">Processing...</p>
+        <div id="uploadProgress" class="upload-progress">
+            <div class="upload-progress-text" id="uploadProgressText"></div>
+            <div class="upload-progress-bar">
+                <div class="upload-progress-fill" id="uploadProgressFill"></div>
+            </div>
+            <div class="upload-progress-file" id="uploadProgressFile"></div>
+        </div>
     </div>
 
     <!-- Settings Modal -->
-    <div id="settingsModal" class="modal">
+    <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-label="Settings">
         <div class="modal-content settings-modal-content">
             <div class="modal-header">
                 <h3 data-i18n="settings">Settings</h3>
-                <span class="close-modal" id="closeSettingsModal">×</span>
+                <span class="close-modal" id="closeSettingsModal" role="button" aria-label="Close" tabindex="0">×</span>
             </div>
             <div class="modal-body settings-body">
                 <!-- User Info Section -->
