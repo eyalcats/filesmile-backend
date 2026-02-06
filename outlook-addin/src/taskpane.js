@@ -15,124 +15,19 @@ const state = {
     tempSelectedDoc: null // For modal selection
 };
 
-// Translations
-const translations = {
-    en: {
-        title: "FileSmile - Priority ERP Document Search",
-        company: "Company",
-        searchBy: "Search By",
-        docType: "Doc Type",
-        searchTerm: "Search Term",
-        search: "Search",
-        attachMail: "Attach Email",
-        attachFiles: "Attach Selected Files",
-        noAttachments: "No attachments found",
-        selectDocument: "Please select a document first",
-        selectFiles: "Please select files to attach",
-        loading: "Loading...",
-        noDocumentsFound: "No documents found",
-        searchResults: "Search Results",
-        attachments: "Attachments",
-        close: "Close",
-        select: "Select",
-        back: "Back",
-        emailExported: "Email exported successfully!",
-        emailUploaded: "Email attached successfully!"
-    },
-    he: {
-        title: "פיילסמייל - חיפוש מסמכי Priority ERP",
-        company: "חברה",
-        searchBy: "חיפוש לפי",
-        docType: "סוג מסמך",
-        searchTerm: "מונח חיפוש",
-        search: "חיפוש",
-        attachMail: "צרף דוא\"ל",
-        attachFiles: "צרף קבצים נבחרים",
-        noAttachments: "לא נמצאו קבצים מצורפים",
-        selectDocument: "אנא בחר מסמך תחילה",
-        selectFiles: "אנא בחר קבצים לצירוף",
-        loading: "טוען...",
-        noDocumentsFound: "לא נמצאו מסמכים",
-        searchResults: "תוצאות חיפוש",
-        attachments: "קבצים מצורפים",
-        close: "סגור",
-        select: "בחר",
-        back: "חזור",
-        emailExported: "הדוא\"ל יוצא בהצלחה!",
-        emailUploaded: "הדוא\"ל צורף בהצלחה!"
-    }
-};
-
 // Current language (loaded from storage to prevent LTR→RTL jump)
 const savedLang = localStorage.getItem('filesmile_language');
-console.log('DEBUG: Loading language from localStorage:', savedLang);
-// Default to Hebrew if browser language is Hebrew, otherwise English
 const browserLang = navigator.language || navigator.userLanguage || '';
-const defaultLang = browserLang.startsWith('he') ? 'he' : 'en'; // Default to browser language, fallback to English
+const defaultLang = browserLang.startsWith('he') ? 'he' : 'en';
 let currentLang = savedLang || defaultLang;
-console.log('DEBUG: currentLang set to:', currentLang);
-
-// Get translation function
-function t(key) {
-    const result = translations[currentLang][key] || translations.en[key];
-    console.log('DEBUG: t() called with key:', key, 'currentLang:', currentLang, 'result:', result);
-    return result;
-}
-
-// Update UI with translations
-function updateUIText() {
-    // Update main title
-    document.title = t('title');
-    const header = document.querySelector('.app-header h1');
-    if (header) header.textContent = t('title');
-    
-    // Set text direction based on language
-    const isRTL = currentLang === 'he';
-    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
-    document.dir = isRTL ? 'rtl' : 'ltr'; // Also set document dir for consistency
-    document.documentElement.lang = currentLang;
-    
-    // Update form labels
-    const labels = document.querySelectorAll('label');
-    labels.forEach(label => {
-        const text = label.textContent.trim();
-        if (text.includes('Company') || text.includes('חברה')) label.textContent = t('company');
-        else if (text.includes('Search By') || text.includes('חיפוש לפי')) label.textContent = t('searchBy');
-        else if (text.includes('Doc Type') || text.includes('סוג מסמך')) label.textContent = t('docType');
-        else if (text.includes('Search Term') || text.includes('מונח חיפוש')) label.textContent = t('searchTerm');
-    });
-    
-    // Update buttons
-    const buttons = document.querySelectorAll('button');
-    buttons.forEach(button => {
-        const text = button.textContent.trim();
-        if (text.includes('Search') || text.includes('חיפוש')) button.textContent = t('search');
-        else if (text.includes('Attach Email') || text.includes('צרף דוא\"ל')) button.textContent = t('attachMail');
-        else if (text.includes('Attach Selected Files') || text.includes('צרף קבצים נבחרים')) button.textContent = t('attachFiles');
-        else if (text.includes('Close') || text.includes('סגור')) button.textContent = t('close');
-        else if (text.includes('Select') || text.includes('בחר')) button.textContent = t('select');
-        else if (text.includes('Back') || text.includes('חזור')) button.textContent = t('back');
-    });
-    
-    // Update modal titles
-    const modalTitles = document.querySelectorAll('.modal-header h2');
-    modalTitles.forEach(title => {
-        const text = title.textContent.trim();
-        if (text.includes('Search Results') || text.includes('תוצאות חיפוש')) title.textContent = t('searchResults');
-        else if (text.includes('Attachments') || text.includes('קבצים מצורפים')) title.textContent = t('attachments');
-    });
-}
 
 // Switch language
 function switchLanguage(lang) {
-    console.log('DEBUG: switchLanguage called with:', lang);
     currentLang = lang;
-    // Save to localStorage to persist across sessions
     localStorage.setItem('filesmile_language', lang);
-    // Also update ConfigHelper so auth modals use correct language
     ConfigHelper.setLanguage(lang);
-    console.log('DEBUG: Saved language to localStorage:', lang);
-    updateUIText();
+    // Apply all data-i18n translations (comprehensive - replaces old updateUIText)
+    applyTranslations();
     // Update language switcher buttons
     const switcherButtons = document.querySelectorAll('.language-switcher button');
     switcherButtons.forEach(btn => {
@@ -208,11 +103,9 @@ async function initializeAddIn() {
     // Language is already loaded at the top of the file, no need to reload here
     // The currentLang variable already has the correct saved language
     
-    // Apply translations BEFORE auth flow so modals use correct language
-    updateUIText();
-    
-    // Also sync to ConfigHelper so auth-flow.js can access the language
+    // Sync language to ConfigHelper and apply all data-i18n translations
     ConfigHelper.setLanguage(currentLang);
+    applyTranslations();
     
     // Add language switcher to header
     addLanguageSwitcher();
@@ -251,23 +144,11 @@ async function initializeAddIn() {
         // Don't load data yet - AuthFlow will trigger registration and then load data
     }
     
-    // Initialize the app when Office is ready
-    Office.onReady(() => {
-        console.log('DEBUG: Office.onReady fired');
-        console.log('DEBUG: currentLang before sync:', currentLang);
-        // Sync ConfigHelper language with loaded language to prevent direction override
-        ConfigHelper.setLanguage(currentLang);
-        console.log('DEBUG: ConfigHelper language synced to:', currentLang);
-        
-        // Apply translations first
-        applyTranslations();
-        
-        if (typeof Office !== 'undefined' && Office.context && Office.context.mailbox) {
-            loadEmailDetails();
-            // Fetch attachments asynchronously
-            state.emailAttachments = EmailHelper.getEmailAttachments();
-        }
-    });
+    // Load email details if running inside Outlook
+    if (typeof Office !== 'undefined' && Office.context && Office.context.mailbox) {
+        loadEmailDetails();
+        state.emailAttachments = EmailHelper.getEmailAttachments();
+    }
 
     // Setup event listeners
     setupEventListeners();
@@ -622,7 +503,7 @@ async function handleSearch() {
     
 
     if (!searchTerm || !groupId) {
-        showStatus(t('selectDocument'), 'error');
+        showStatus(ConfigHelper.t('selectDocumentFirst'), 'error');
         return;
     }
 
@@ -632,7 +513,7 @@ async function handleSearch() {
         state.searchResults = result.documents;
         
         if (state.searchResults.length === 0) {
-            showStatus(t('noDocumentsFound'), 'error');
+            showStatus(ConfigHelper.t('noDocumentsFound'), 'error');
         } else {
             populateResultsList(result.documents);
             toggleModal('searchResultsModal', true);
@@ -836,7 +717,7 @@ async function exportEmailOnly() {
         // Exporting to Priority staging area
         const result = await apiClient.addExportAttachment(exportData);
         
-        showStatus(t('emailExported'), 'success');
+        showStatus(ConfigHelper.t('emailExportedSuccess'), 'success');
     } catch (error) {
         console.error('Export failed:', error);
         showStatus(ConfigHelper.t('exportFailed') + ': ' + error.message, 'error');
@@ -937,7 +818,7 @@ async function uploadEmailOnly() {
         // Calling apiClient.uploadAttachment
         const result = await apiClient.uploadAttachment(uploadData);
         
-        showStatus(t('emailUploaded'), 'success');
+        showStatus(ConfigHelper.t('emailAttachedSuccess'), 'success');
     } catch (error) {
         console.error('Upload failed with error:', error);
         console.error('Error details:', {
@@ -1045,15 +926,9 @@ function showUploadProgress(current, total, fileName) {
 }
 
 function showStatus(msg, type = 'success') {
-    console.log('DEBUG: showStatus called with msg:', msg, 'type:', type);
     const el = type === 'error' ? document.getElementById('errorMessage') : document.getElementById('statusMessage');
-    console.log('DEBUG: status element found:', el);
-    console.log('DEBUG: setting textContent to:', msg);
     el.textContent = msg;
     el.style.display = 'block';
-    console.log('DEBUG: element display set to block, computed style:', window.getComputedStyle(el));
-    
-    // Auto hide after 4 seconds
     setTimeout(() => el.style.display = 'none', 4000);
 }
 
