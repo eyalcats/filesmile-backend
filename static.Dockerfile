@@ -1,7 +1,8 @@
 # FileSmile Static Assets - nginx
 # Serves: Outlook add-in, Frontend admin, Scanner app
 FROM nginx:alpine
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl && \
+    sed -i 's|};|    text/javascript  mjs;\n};|' /etc/nginx/mime.types
 
 # Outlook add-in (served at root: /taskpane.html, /assets/*, /src/*)
 COPY outlook-addin/ /usr/share/nginx/html/outlook/
