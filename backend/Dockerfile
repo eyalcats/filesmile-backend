@@ -14,12 +14,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend application code
 COPY backend/ .
 
-# Copy frontend admin panel
-COPY frontend/ ./frontend/
-
-# Copy outlook-addin files
-COPY outlook-addin/ ./outlook-addin/
-
 # Create non-root user for security
 RUN useradd --create-home --uid 1000 appuser && chown -R appuser:appuser /app
 

@@ -2,8 +2,8 @@
 # =================================
 # This compose file includes all services for QA deployment:
 # - Traefik reverse proxy with HTTPS (via Cloudflare)
-# - FastAPI backend (filesmile-api) with SQLite
-# - React scanner app (scanner-app) - Vite build, nginx serving
+# - FastAPI backend (filesmile-api) with SQLite - pure API
+# - Static assets (filesmile-static) - nginx serving Outlook add-in, admin panel, scanner app
 #
 # Deploy via Portainer: Stacks > Add Stack > Upload this file
 #
@@ -99,23 +99,19 @@ services:
       - "traefik.http.routers.health.entrypoints=websecure"
       - "traefik.http.routers.health.tls=true"
       - "traefik.http.routers.health.service=api"
-      # Admin dashboard, Swagger docs, and Outlook add-in files (served by FastAPI) - HTTPS
-      - "traefik.http.routers.admin.rule=PathPrefix(`/admin`) || PathPrefix(`/assets`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`) || PathPrefix(`/static`) || PathPrefix(`/frontend`) || PathPrefix(`/outlook-addin`) || PathPrefix(`/src`) || Path(`/taskpane.html`) || Path(`/commands.html`) || Path(`/`)"
-      - "traefik.http.routers.admin.entrypoints=websecure"
-      - "traefik.http.routers.admin.tls=true"
-      - "traefik.http.routers.admin.service=api"
+      # Swagger docs and root endpoint - HTTPS
+      - "traefik.http.routers.docs.rule=PathPrefix(`/docs`) || PathPrefix(`/redoc`) || Path(`/openapi.json`) || Path(`/`)"
+      - "traefik.http.routers.docs.entrypoints=websecure"
+      - "traefik.http.routers.docs.tls=true"
+      - "traefik.http.routers.docs.service=api"
 
   # ===========================================
-  # Scanner App (React + Vite, served by nginx)
+  # Static Assets (nginx: Outlook add-in, Admin panel, Scanner app)
   # ===========================================
-  scanner-app:
-    image: eyalcats/scanner-app:latest
-    container_name: scanner-app
+  filesmile-static:
+    image: eyalcats/filesmile-static:latest
+    container_name: filesmile-static
     restart: unless-stopped
-    depends_on:
-      - filesmile-api
-    # ports:
-    #   - "3001:80"  # Not needed - Traefik routes via /scanner path
     networks:
       - filesmile-net
     healthcheck:
@@ -126,19 +122,11 @@ services:
       start_period: 5s
     labels:
       - "traefik.enable=true"
-      # Scanner app route - HTTPS (requires trailing slash for React Router)
-      - "traefik.http.routers.scanner.rule=PathPrefix(`/scanner`)"
-      - "traefik.http.routers.scanner.entrypoints=websecure"
-      - "traefik.http.routers.scanner.tls=true"
-      - "traefik.http.services.scanner.loadbalancer.server.port=80"
-      # Middleware chain: add trailing slash, then strip prefix
-      - "traefik.http.routers.scanner.middlewares=scanner-slash,scanner-strip"
-      # Redirect /scanner to /scanner/ (React Router needs trailing slash for basename)
-      - "traefik.http.middlewares.scanner-slash.redirectregex.regex=^(https?://[^/]+/scanner)$$"
-      - "traefik.http.middlewares.scanner-slash.redirectregex.replacement=$${1}/"
-      - "traefik.http.middlewares.scanner-slash.redirectregex.permanent=false"
-      # Strip /scanner prefix before forwarding to nginx
-      - "traefik.http.middlewares.scanner-strip.stripprefix.prefixes=/scanner"
+      # All static UI routes - HTTPS
+      - "traefik.http.routers.static.rule=PathPrefix(`/admin`) || PathPrefix(`/assets`) || PathPrefix(`/src`) || PathPrefix(`/scanner`) || Path(`/taskpane.html`) || Path(`/commands.html`)"
+      - "traefik.http.routers.static.entrypoints=websecure"
+      - "traefik.http.routers.static.tls=true"
+      - "traefik.http.services.static.loadbalancer.server.port=80"
 
 # ===========================================
 # Networks

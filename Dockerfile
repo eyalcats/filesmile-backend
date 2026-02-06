@@ -13,10 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend application code
 COPY backend/ .
 
-# Copy frontend and outlook-addin for serving static files
-COPY frontend/ /app/frontend/
-COPY outlook-addin/ /app/outlook-addin/
-
 # Move seed database to separate location (will be copied to volume on first run)
 RUN mkdir -p /app/db-seed && \
     if [ -f /app/db/filesmile.db ]; then mv /app/db/filesmile.db /app/db-seed/; fi

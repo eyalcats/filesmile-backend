@@ -12,7 +12,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.api.endpoints import search, attachments, auth, multitenant_auth, admin
@@ -91,32 +90,6 @@ app.include_router(multitenant_auth.router, prefix=f"{settings.api_prefix}/auth"
 # Admin panel endpoints
 app.include_router(admin.router, prefix=settings.api_prefix, tags=["admin"])
 
-# Get paths relative to this file
-import pathlib
-backend_dir = pathlib.Path(__file__).parent.parent
-# In Docker: /app/outlook-addin, locally: backend/../outlook-addin
-outlook_addin_dir = backend_dir / "outlook-addin" if (backend_dir / "outlook-addin").exists() else backend_dir.parent / "outlook-addin"
-
-# Mount assets from backend directory (for Render deployment)
-import os
-print(f"Current working directory: {os.getcwd()}")
-print(f"Backend dir path: {backend_dir}")
-print(f"Outlook addin dir path: {outlook_addin_dir}")
-print(f"Outlook addin dir exists: {outlook_addin_dir.exists()}")
-
-# Mount assets - prefer outlook-addin assets (has all icons)
-if (outlook_addin_dir / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=str(outlook_addin_dir / "assets")), name="assets")
-    print(f"✅ Mounted /assets from outlook-addin directory: {outlook_addin_dir / 'assets'}")
-elif (backend_dir / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=str(backend_dir / "assets")), name="assets")
-    print("✅ Mounted /assets from backend directory")
-else:
-    print("❌ WARNING: No assets directory found for mounting /assets")
-
-if (outlook_addin_dir / "src").exists():
-    app.mount("/src", StaticFiles(directory=str(outlook_addin_dir / "src")), name="src")
-
 
 @app.get("/api/v1/test-simple")
 async def test_simple():
@@ -190,68 +163,6 @@ async def debug_files():
         "app_files": os.listdir('app') if os.path.exists('app') else []
     }
 
-
-# Serve Outlook add-in HTML files
-from fastapi.responses import FileResponse
-
-@app.get("/taskpane.html")
-async def taskpane():
-    """Serve the taskpane HTML file."""
-    taskpane_path = outlook_addin_dir / "taskpane.html"
-    print(f"Taskpane requested. Path: {taskpane_path}, exists: {taskpane_path.exists()}")
-    if taskpane_path.exists():
-        return FileResponse(str(taskpane_path))
-    else:
-        print(f"❌ Taskpane not found at {taskpane_path}")
-        return {"error": f"Taskpane not available. Looked at: {taskpane_path}"}
-
-
-@app.get("/commands.html")
-async def commands():
-    """Serve the commands HTML file."""
-    if (outlook_addin_dir / "commands.html").exists():
-        return FileResponse(str(outlook_addin_dir / "commands.html"))
-    else:
-        return {"error": "Commands not available in backend-only deployment"}
-
-
-# Serve frontend admin panel
-# In Docker: /app/frontend, locally: backend/../frontend
-frontend_dir = backend_dir / "frontend" if (backend_dir / "frontend").exists() else backend_dir.parent / "frontend"
-
-# Mount frontend static files FIRST (before route handlers)
-if frontend_dir.exists():
-    if (frontend_dir / "css").exists():
-        app.mount("/admin/css", StaticFiles(directory=str(frontend_dir / "css")), name="admin-css")
-    if (frontend_dir / "js").exists():
-        app.mount("/admin/js", StaticFiles(directory=str(frontend_dir / "js")), name="admin-js")
-    if (frontend_dir / "assets").exists():
-        app.mount("/admin/assets", StaticFiles(directory=str(frontend_dir / "assets")), name="admin-assets")
-    print("✅ Mounted /admin frontend panel static files")
-
-
-async def serve_admin_index():
-    """Serve the admin panel index page."""
-    if (frontend_dir / "index.html").exists():
-        return FileResponse(str(frontend_dir / "index.html"))
-    else:
-        return {"error": "Admin panel not available"}
-
-
-async def serve_admin_dashboard():
-    """Serve the admin dashboard page."""
-    if (frontend_dir / "dashboard.html").exists():
-        return FileResponse(str(frontend_dir / "dashboard.html"))
-    else:
-        return {"error": "Admin dashboard not available"}
-
-
-# Register routes using add_api_route for reliable multiple path support
-app.add_api_route("/admin", serve_admin_index, methods=["GET"])
-app.add_api_route("/admin/", serve_admin_index, methods=["GET"])
-app.add_api_route("/admin/index.html", serve_admin_index, methods=["GET"])
-app.add_api_route("/admin/dashboard", serve_admin_dashboard, methods=["GET"])
-app.add_api_route("/admin/dashboard.html", serve_admin_dashboard, methods=["GET"])
 
 
 if __name__ == "__main__":
