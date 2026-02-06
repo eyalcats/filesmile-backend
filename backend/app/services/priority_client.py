@@ -352,11 +352,11 @@ class PriorityClient:
         Validate ERP credentials by making a simple API call.
 
         For admin users: queries ENVIRONMENT (system table requiring admin access)
-        For regular users: queries USERS form (accessible to all authenticated users)
+        For regular users: queries SOF_FSGROUPS form (FileSmile search groups)
 
         Args:
             use_admin_form: If True, use ENVIRONMENT form (requires admin privileges).
-                          If False, use USERS form (works for regular users).
+                          If False, use SOF_FSGROUPS form (validates user has FileSmile access).
 
         Returns:
             True if credentials are valid
@@ -374,11 +374,11 @@ class PriorityClient:
                     top=1
                 )
             else:
-                # User validation: query LOGPART form (parts catalog)
-                # All users should have access to this standard business form
+                # User validation: query SOF_FSGROUPS form (FileSmile search groups)
+                # Validates user has access to FileSmile functionality
                 await self.get(
-                    form="LOGPART",
-                    select=["PARTNAME"],
+                    form="SOF_FSGROUPS",
+                    select=["FSGROUP"],
                     top=1
                 )
             return True
